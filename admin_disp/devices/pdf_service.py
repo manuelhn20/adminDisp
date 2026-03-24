@@ -28,14 +28,23 @@ from admin_disp.services.docx_common import RemapData
 
 class PDFGeneratorService:
     """Genera PDFs de entrega de dispositivos copiando y modificando el documento Word original."""
-    
-    # Ruta al documento Word template (usar plantillas oficiales PRO-TI ubicadas en admin_disp/form)
-    TEMPLATE_WORD_PATH = os.path.normpath(os.path.join(
-        os.path.dirname(__file__),
-        '..',
-        'form',
-        'PRO-TI-CE-003-###### ENTREGA DE TELEFONO.docx'
-    ))
+
+    @staticmethod
+    def _resolve_template_word_path() -> str:
+        base_dir = Path(__file__).resolve().parent.parent / "form"
+        candidates = [
+            "PRO-TI-CE-001-CORRELATIVO CERTIFICADO DE COMPROMISO Y ENTREGA DE TELEFONO CORPORATIVO.docx",
+            "PRO-TI-CE-003-CORRELATIVO CERTIFICADO DE COMPROMISO Y ENTREGA DE TABLET.docx",
+            "PRO-TI-CE-003-###### ENTREGA DE TELEFONO.docx",
+        ]
+        for name in candidates:
+            candidate = base_dir / name
+            if candidate.exists():
+                return str(candidate)
+        return str(base_dir / candidates[0])
+
+    # Ruta al documento Word template (compatibilidad con nombres antiguos y nuevos)
+    TEMPLATE_WORD_PATH = _resolve_template_word_path.__func__()
     
     def __init__(self):
         self._check_libreoffice()

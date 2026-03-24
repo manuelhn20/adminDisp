@@ -72,11 +72,36 @@ else:
 # ---------------------------------------------------------------------------
 _FORMS_DIR = Path(__file__).parent.parent / "form"
 
-TEMPLATE_PRO_TI_001 = _FORMS_DIR / "PRO-TI-CE-001-###### CERTIFICADO DE COMPROMISO Y ENTREGA DE TELEFONO CORPORATIVO.docx"
-TEMPLATE_PRO_TI_002 = _FORMS_DIR / "PRO-TI-CE-002-###### MEMORANDO DE ENTREGA.docx"
-TEMPLATE_PRO_TI_003 = _FORMS_DIR / "PRO-TI-CE-003-###### ENTREGA DE TABLET.docx"
-TEMPLATE_PRO_TI_004 = _FORMS_DIR / "PRO-TI-CE-004-###### CERTIFICADO ENTREGA DE COMPUTADORA.docx"
-TEMPLATE_PRO_TI_005 = _FORMS_DIR / "PRO-TI-CE-005-###### ENTREGA DE PERIFERICO.docx"
+def _resolve_template_path(*candidate_names: str) -> Path:
+    """Retorna el primer template existente para mantener compatibilidad entre nombres."""
+    for name in candidate_names:
+        candidate = _FORMS_DIR / name
+        if candidate.exists():
+            return candidate
+    return _FORMS_DIR / candidate_names[0]
+
+
+TEMPLATE_PRO_TI_001 = _resolve_template_path(
+    "PRO-TI-CE-001-CORRELATIVO CERTIFICADO DE COMPROMISO Y ENTREGA DE TELEFONO CORPORATIVO.docx",
+    "PRO-TI-CE-001-###### CERTIFICADO DE COMPROMISO Y ENTREGA DE TELEFONO CORPORATIVO.docx",
+)
+TEMPLATE_PRO_TI_002 = _resolve_template_path(
+    "PRO-TI-CE-002-CORRELATIVO MEMORANDO DE ENTREGA.docx",
+    "PRO-TI-CE-002-###### MEMORANDO DE ENTREGA.docx",
+)
+TEMPLATE_PRO_TI_003 = _resolve_template_path(
+    "PRO-TI-CE-003-CORRELATIVO CERTIFICADO DE COMPROMISO Y ENTREGA DE TABLET.docx",
+    "PRO-TI-CE-003-CORRELATIVO ENTREGA DE TABLET.docx",
+    "PRO-TI-CE-003-###### ENTREGA DE TABLET.docx",
+)
+TEMPLATE_PRO_TI_004 = _resolve_template_path(
+    "PRO-TI-CE-004-CORRELATIVO CERTIFICADO ENTREGA DE COMPUTADORA.docx",
+    "PRO-TI-CE-004-###### CERTIFICADO ENTREGA DE COMPUTADORA.docx",
+)
+TEMPLATE_PRO_TI_005 = _resolve_template_path(
+    "PRO-TI-CE-005-CORRELATIVO ENTREGA DE PERIFERICO.docx",
+    "PRO-TI-CE-005-###### ENTREGA DE PERIFERICO.docx",
+)
 
 TIPOS_TELEFONO: Set[str] = {"Celular"}
 TIPOS_PC: Set[str] = {"Laptop"}
