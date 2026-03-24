@@ -9,7 +9,7 @@ class Config:
     SESSION_TYPE = 'filesystem'
 
     # Base de datos principal (admin_disp)
-    DB_DRIVER = os.getenv('DB_DRIVER', 'ODBC Driver 17 for SQL Server')
+    DB_DRIVER = os.getenv('DB_DRIVER', 'ODBC Driver 18 for SQL Server')
     DB_SERVER = os.getenv('DB_SERVER', 'SSPROIMA100')
     DB_DATABASE = os.getenv('DB_DATABASE', 'admin_disp')
     DB_USER = os.getenv('DB_USER', 'sa')

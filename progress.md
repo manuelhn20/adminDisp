@@ -9,3 +9,5 @@
 - Fase GREEN: pruebas unitarias ejecutadas en verde (1 test OK).
 - Analizado traceback de producción: ImportError libodbc.so.2 al importar pyodbc en admin_disp/core/db.py.
 - Agregados archivos de despliegue: Dockerfile y .dockerignore, instalando unixodbc y msodbcsql18 para entorno Linux.
+- Logs de Railway confirmaron dos causas simultáneas: driver 17 inexistente en contenedor y credenciales faltantes en conexiones no trusted.
+- Ajustados defaults a ODBC Driver 18 en configuración y mejorado mensaje de error de credenciales en core/db.py.

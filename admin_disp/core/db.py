@@ -7,7 +7,10 @@ def build_conn_str(driver, server, database, user=None, password=None, trusted=F
     if trusted:
         return f"DRIVER={{{driver}}};SERVER={server};DATABASE={database};Trusted_Connection=yes;"
     if not user or not password:
-        raise ValueError('Credenciales requeridas si no es Trusted Connection')
+        raise ValueError(
+            f"Credenciales requeridas para BD '{database}' cuando Trusted_Connection es false "
+            f"(esperado: DB_USER/DB_PASSWORD o EMP_USER/EMP_PASSWORD)."
+        )
     return f"DRIVER={{{driver}}};SERVER={server};DATABASE={database};UID={user};PWD={password};"
 
 
