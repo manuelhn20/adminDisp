@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Marcas - Inventario{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-material.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/inventario.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 20px;">Gestión de Marcas</h1>
+
+<!-- Panel de Controles -->
+<div class="button-group" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;">
+    <div style="display:flex;gap:12px;">
+        <button class="btn btn-primary offset-btn" onclick="openModalCrear()">
+            <span style="margin-right:8px;">+</span> Nueva Marca
+        </button>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+        <input id="marcasPageSearch" class="global-table-search" placeholder="Buscar marca..." style="width:220px;" />
+    </div>
+</div>
+
+<!-- Tabla de Marcas -->
+<div id="marcasGrid" style="height: 600px;" class="ag-theme-material"></div>
+
+<!-- Modal crear/editar -->
+<div class="modal fade" id="modalMarca" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nueva Marca</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formMarca" onsubmit="guardarMarca(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="marcaId">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre *</label>
+                        <input type="text" class="form-control" id="marcaNombre" required>
+                        <div class="invalid-feedback mt-1" id="errorNombre"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/inventario/marcas.js') }}"></script>
+{% endblock %}

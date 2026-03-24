@@ -1,0 +1,708 @@
+{% extends 'base.html' %}
+{% block title %}PROIMA - Marcas y Modelos{% endblock %}
+{% block content %}
+<hgroup>
+  <h2>Marcas y Modelos</h2>
+  <p>Gestión de marcas y modelos de dispositivos</p>
+</hgroup>
+
+<div style="margin-bottom: 1.5rem;">
+  <button class="btn btn-primary" onclick="openModal('modalNewModelo')">Nuevo modelo</button>
+  <button class="btn btn-secondary offset-btn" onclick="loadMarcasForManagement(); openModal('modalGestionarMarca')" style="margin-left: 0.5rem;">Gestionar marca</button>
+  <button class="btn btn-secondary offset-btn" onclick="loadModelosForManagement(); openModal('modalGestionarModelos')" style="margin-left: 0.5rem;">Gestionar modelos</button>
+  <button class="btn btn-secondary" onclick="window.location.href='/devices/ui'" style="background-color: #757575; color: white;">← Volver a Dispositivos</button>
+</div>
+
+{% if modelos %}
+  <table role="grid">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Marca</th>
+        <th>Tipo</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for m in modelos %}
+      <tr>
+        <td><strong>{{ m.id_modelo }}</strong></td>
+        <td>{{ m.nombre_modelo }}</td>
+        <td>{{ m.marca_nombre or '-' }}</td>
+        <td>{{ m.categoria }}</td>
+        <td class="table-actions">
+          <button class="btn btn-primary btn-small" onclick='openEditModeloModal({{ m.id_modelo }}, {{ m.nombre_modelo | tojson }}, {{ m.fk_id_marca }}, {{ m.categoria | tojson }})'>Editar</button>
+          <button class="btn btn-danger btn-small" onclick='openGlobalDeleteModal(`/devices/modelo/{{ m.id_modelo }}`, "Confirmar eliminación", {{ m.nombre_modelo | tojson }})'>Eliminar</button>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <article role="alert" class="empty-state">
+    No hay modelos registrados. Crea uno nuevo con el botón superior.
+  </article>
+{% endif %}
+
+<div id="modalNewModelo" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nuevo modelo</h3>
+      <button class="modal-close" onclick="closeModal('modalNewModelo')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formNewModelo" onsubmit="return false;">
+        <label>
+          <span class="label-title">Marca<span class="required">*</span></span>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+            <select id="selectMarcaNewModelo" name="fk_id_marca" required style="flex:1;">
+              <option value="">-- Seleccionar --</option>
+              {% for marca in marcas_options %}
+                <option value="{{ marca.id_marca }}">{{ marca.nombre_marca }}</option>
+              {% endfor %}
+            </select>
+            <button type="button" class="btn btn-primary btn-quick" onclick="openModal('modalNewMarcaQuick')" style="padding:2px 6px; font-size:0.9rem;" title="Agregar nueva marca">+</button>
+          </div>
+        </label>
+        <label>
+          <span class="label-title">Nombre del modelo<span class="required">*</span></span>
+          <input type="text" name="nombre_modelo" required placeholder="ej: Inspiron 15">
+        </label>
+        <label>
+          <span class="label-title">Tipo de dispositivo<span class="required">*</span></span>
+          <select name="categoria" id="selectTipoNewModelo" required>
+            <option value="">-- Seleccionar --</option>
+            <optgroup label="Dispositivos">
+              <option value="Laptop">Laptop</option>
+              <option value="PC">PC / Ordenador sobremesa</option>
+              <option value="Celular">Celular</option>
+              <option value="Tablet">Tablet</option>
+            </optgroup>
+            <optgroup label="Infraestructura de Red">
+              <option value="Router">Router</option>
+              <option value="Router AP">Router AP</option>
+              <option value="Switch">Switch</option>
+            </optgroup>
+            <optgroup label="Periféricos">
+              <option value="Monitor">Monitor</option>
+              <option value="Impresora">Impresora</option>
+              <option value="UPS">UPS</option>
+            </optgroup>
+          </select>
+        </label>
+        <!-- Campos UPS: salidas y capacidad -->
+        <div id="upsFieldsNew" style="display:none;">
+          <label>
+            <span class="label-title">Salidas<span class="required">*</span></span>
+            <select name="salidas" id="salidasNewModelo">
+              <option value="">-- Seleccionar --</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+          </label>
+          <label>
+            <span class="label-title">Capacidad<span class="required">*</span></span>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+              <input type="number" name="capacidad_va" id="capacidadVANewModelo" placeholder="VA" min="0" max="99999" style="flex:1;width:auto;">
+              <input type="number" name="capacidad_w" id="capacidadWNewModelo" placeholder="W" min="0" max="99999" style="flex:1;width:auto;">
+            </div>
+            <div style="font-size:0.85rem;color:var(--text-gray);margin-top:0.25rem;">Ejemplo: 1500 VA, 900 W</div>
+          </label>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeModal('modalNewModelo')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="document.getElementById('formNewModelo').dispatchEvent(new Event('submit'))">Guardar modelo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal edición modelo -->
+<div id="modalEditModelo" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Editar modelo</h3>
+      <button class="modal-close" onclick="closeEditModeloModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formEditModelo">
+        <input type="hidden" id="editModeloId">
+        <label>
+          <span class="label-title">Marca<span class="required">*</span></span>
+          <select id="editModeloMarca" name="fk_id_marca" required>
+            <option value="">-- Seleccionar --</option>
+            {% for marca in marcas_options %}
+              <option value="{{ marca.id_marca }}">{{ marca.nombre_marca }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          <span class="label-title">Nombre del modelo<span class="required">*</span></span>
+          <input type="text" id="editModeloNombre" name="nombre_modelo" required>
+        </label>
+        <label>
+          <span class="label-title">Tipo de dispositivo<span class="required">*</span></span>
+          <select id="editModeloTipo" name="categoria" required>
+            <option value="">-- Seleccionar --</option>
+            <optgroup label="Dispositivos">
+              <option value="Laptop">Laptop</option>
+              <option value="PC">PC / Ordenador sobremesa</option>
+              <option value="Celular">Celular</option>
+              <option value="Tablet">Tablet</option>
+            </optgroup>
+            <optgroup label="Infraestructura de Red">
+              <option value="Router">Router</option>
+              <option value="Router AP">Router AP</option>
+              <option value="Switch">Switch</option>
+            </optgroup>
+            <optgroup label="Periféricos">
+              <option value="Monitor">Monitor</option>
+              <option value="Impresora">Impresora</option>
+              <option value="UPS">UPS</option>
+            </optgroup>
+          </select>
+        </label>
+        <!-- Campos UPS: salidas y capacidad -->
+        <div id="upsFieldsEdit" style="display:none;">
+          <label>
+            <span class="label-title">Salidas</span>
+            <select name="salidas" id="salidasEditModelo">
+              <option value="">-- Seleccionar --</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+          </label>
+          <label>
+            <span class="label-title">Capacidad</span>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+              <input type="number" name="capacidad_va" id="capacidadVAEditModelo" placeholder="VA" min="0" max="99999" style="flex:1;width:auto;">
+              <input type="number" name="capacidad_w" id="capacidadWEditModelo" placeholder="W" min="0" max="99999" style="flex:1;width:auto;">
+            </div>
+            <div style="font-size:0.85rem;color:var(--text-gray);margin-top:0.25rem;">Ejemplo: 1500 VA, 900 W</div>
+          </label>
+        </div>
+        <div id="editModeloError" style="display:none; color:#b00020; font-weight:600; margin-top:0.5rem;"></div>
+        <label style="margin-top:0.75rem;">
+          <span class="label-title">Confirmación — escribe <span class="no-break">'CONFIRMAR'</span></span>
+          <input type="text" id="editModeloConfirm" placeholder="Escribe CONFIRMAR para aplicar" autocomplete="off">
+        </label>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeEditModeloModal()">Cancelar</button>
+      <button type="button" id="btnSaveModelo" class="btn btn-primary" disabled>Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openEditModeloModal(id, nombre, fk_marca, tipo, salidas, capacidad) {
+  document.getElementById('editModeloId').value = id;
+  document.getElementById('editModeloNombre').value = nombre || '';
+  document.getElementById('editModeloMarca').value = fk_marca || '';
+  document.getElementById('editModeloTipo').value = tipo || '';
+  document.getElementById('editModeloError').style.display = 'none';
+  document.getElementById('btnSaveModelo').disabled = true;
+  
+  // Mostrar campos UPS si es UPS
+  const upsFieldsEdit = document.getElementById('upsFieldsEdit');
+  const isUPS = tipo === 'UPS';
+  if (upsFieldsEdit) {
+    upsFieldsEdit.style.display = isUPS ? 'block' : 'none';
+  }
+  
+  // Parsear y llenar campos UPS
+  if (isUPS && capacidad) {
+    const parts = capacidad.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      document.getElementById('capacidadVAEditModelo').value = parts[0] || '';
+      document.getElementById('capacidadWEditModelo').value = parts[1] || '';
+    }
+  } else {
+    document.getElementById('capacidadVAEditModelo').value = '';
+    document.getElementById('capacidadWEditModelo').value = '';
+  }
+  
+  document.getElementById('salidasEditModelo').value = salidas || '';
+  
+  openModal('modalEditModelo', true);
+}
+
+function closeEditModeloModal() {
+  closeModal('modalEditModelo');
+}
+
+document.getElementById('btnSaveModelo').addEventListener('click', async () => {
+  const id = document.getElementById('editModeloId').value;
+  const nombre = document.getElementById('editModeloNombre').value.trim();
+  const fk = document.getElementById('editModeloMarca').value;
+  const tipo = document.getElementById('editModeloTipo').value;
+  const confirmText = document.getElementById('editModeloConfirm').value.trim();
+  
+  // Campos UPS
+  const salidas = document.getElementById('salidasEditModelo').value;
+  const capacidadVA = document.getElementById('capacidadVAEditModelo').value;
+  const capacidadW = document.getElementById('capacidadWEditModelo').value;
+  
+  if (confirmText !== 'CONFIRMAR') {
+    document.getElementById('editModeloError').textContent = 'Verificación incorrecta. Escribe CONFIRMAR para confirmar los cambios.';
+    document.getElementById('editModeloError').style.display = 'block';
+    return;
+  }
+  if (!nombre || !fk || !tipo) {
+    document.getElementById('editModeloError').textContent = 'Todos los campos son requeridos.';
+    document.getElementById('editModeloError').style.display = 'block';
+    return;
+  }
+  
+  // Validar UPS
+  if (tipo === 'UPS' && (!salidas || !capacidadVA || !capacidadW)) {
+    document.getElementById('editModeloError').textContent = 'Para UPS, salidas y capacidad son requeridos.';
+    document.getElementById('editModeloError').style.display = 'block';
+    return;
+  }
+  
+  // Construir capacidad
+  let capacidad = null;
+  if (tipo === 'UPS' && capacidadVA && capacidadW) {
+    capacidad = `${capacidadVA} ${capacidadW}`;
+  }
+  
+  try {
+    const resp = await fetch(`/devices/modelo/${id}`, { 
+      method: 'PUT', 
+      headers: {'Content-Type':'application/json'}, 
+      body: JSON.stringify({
+        nombre_modelo: nombre, 
+        categoria: tipo, 
+        fk_id_marca: fk, 
+        salidas: salidas || null, 
+        capacidad: capacidad
+      }) 
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok && data.success) {
+      closeEditModeloModal();
+      openGlobalSuccessModal(data.message || 'Se ha realizado con éxito');
+      await reloadModelosTable();
+    } else {
+      document.getElementById('editModeloError').textContent = data.message || 'No se pudo actualizar el modelo.';
+      document.getElementById('editModeloError').style.display = 'block';
+    }
+  } catch (err) {
+    document.getElementById('editModeloError').textContent = 'No se pudo actualizar el modelo.';
+    document.getElementById('editModeloError').style.display = 'block';
+  }
+});
+
+function refreshModeloSaveState() {
+  const nombre = document.getElementById('editModeloNombre').value.trim();
+  const fk = document.getElementById('editModeloMarca').value;
+  const tipo = document.getElementById('editModeloTipo').value;
+  const confirmText = document.getElementById('editModeloConfirm').value.trim();
+  document.getElementById('btnSaveModelo').disabled = !(nombre && fk && tipo && confirmText === 'CONFIRMAR');
+}
+['editModeloNombre','editModeloMarca','editModeloTipo','editModeloConfirm'].forEach(id => {
+  document.getElementById(id).addEventListener('input', refreshModeloSaveState);
+});
+</script>
+
+<!-- Modal para crear marca rápidamente desde modelos -->
+<div id="modalNewMarcaQuick" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nueva marca</h3>
+      <button class="modal-close" onclick="closeModal('modalNewMarcaQuick')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formNewMarcaQuick" onsubmit="return false;">
+        <label>
+          <span class="label-title">Nombre de la marca<span class="required">*</span></span>
+          <input type="text" name="nombre_marca" required placeholder="ej: Dell, HP, Apple">
+        </label>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeModal('modalNewMarcaQuick')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="document.getElementById('formNewMarcaQuick').dispatchEvent(new Event('submit'))">Guardar marca</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para gestionar marcas (habilitar/deshabilitar) -->
+<div id="modalGestionarMarca" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Gestionar marcas</h3>
+      <button class="modal-close" onclick="closeModal('modalGestionarMarca')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        <select id="selectMarcasGestionar" style="width: 100%;">
+        <option value="">-- Seleccionar marca --</option>
+        {% for marca in marcas_options %}
+        <option value="{{ marca.id_marca }}" data-nombre-marca="{{ marca.nombre_marca }}">{{ marca.nombre_marca }}</option>
+        {% endfor %}
+        </select>
+        <button class="btn btn-primary btn-quick" onclick="openModal('modalNewMarcaQuick')" title="Agregar nueva marca">+</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-primary" onclick="editarMarcaSeleccionada()" title="Editar marca" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+        <img src="/static/img/edi.png" alt="Editar" style="width:28px;height:28px;">
+      </button>
+      <button type="button" class="btn btn-danger" onclick="eliminarMarcaSeleccionada()" title="Eliminar marca" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;">
+        <img src="/static/img/del.png" alt="Eliminar" style="width:28px;height:28px;">
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para gestionar modelos (activar/desactivar) -->
+<div id="modalGestionarModelos" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Gestionar modelos</h3>
+      <button class="modal-close" onclick="closeModal('modalGestionarModelos')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="modelosCheckboxContainer" style="max-height:300px; overflow:auto;"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-success" onclick="activarModelosSeleccionados()" style="margin-right:8px;">Activar</button>
+      <button type="button" class="btn btn-danger" onclick="desactivarModelosSeleccionados()">Desactivar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para editar marca -->
+<div id="modalEditarMarca" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Editar marca</h3>
+      <button class="modal-close" onclick="closeModal('modalEditarMarca')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formEditarMarca" onsubmit="return false;">
+        <input type="hidden" id="editMarcaId">
+        <label>
+          <span class="label-title">Nombre de la marca<span class="required">*</span></span>
+          <input type="text" id="editMarcaNombre" required placeholder="ej: Dell, HP, Apple">
+        </label>
+        <div id="editMarcaError" style="display:none; color:#b00020; font-weight:600; margin-top:0.5rem;"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeModal('modalEditarMarca')">Cancelar</button>
+      <button type="button" id="btnSaveEditMarca" class="btn btn-primary">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('formNewMarcaQuick').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(document.getElementById('formNewMarcaQuick'));
+  try {
+    const resp = await fetch('/devices/marca/new', { method: 'POST', body: formData });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok && data.success) {
+      // Agregar la nueva marca al select
+      const selectMarca = document.getElementById('selectMarcaNewModelo');
+      const newOption = document.createElement('option');
+      newOption.value = data.id_marca;
+      newOption.text = data.nombre_marca;
+      selectMarca.appendChild(newOption);
+      selectMarca.value = data.id_marca;
+      closeModal('modalNewMarcaQuick');
+      document.getElementById('formNewMarcaQuick').reset();
+      openGlobalSuccessModal(data.message || 'Marca creada exitosamente');
+    } else {
+      showModalMessage('error', 'Error', data.message || 'No se pudo crear la marca');
+    }
+  } catch (err) {
+    showModalMessage('error', 'Error', 'No se pudo crear la marca');
+  }
+});
+
+// Cargar marcas cuando se abre el modal de gestión
+function loadMarcasForManagement() {
+  try {
+    if (window.__DEV_LOGS) console.log('Cargando marcas...');
+    const select = document.getElementById('selectMarcaNewModelo');
+    if (!select) {
+      console.error('Select no encontrado');
+      document.getElementById('marcasCheckboxContainer').innerHTML = '<p>Error: Select no encontrado</p>';
+      return;
+    }
+    
+    const marcas = [];
+    const options = select.querySelectorAll('option');
+    options.forEach(opt => {
+      if (opt.value) {
+        marcas.push({ id_marca: opt.value, nombre_marca: opt.textContent });
+      }
+    });
+    
+    if (window.__DEV_LOGS) console.log('Marcas cargadas:', marcas);
+    const container = document.getElementById('marcasCheckboxContainer');
+    container.innerHTML = '';
+    
+    if (!marcas || marcas.length === 0) {
+      container.innerHTML = '<p>No hay marcas disponibles</p>';
+      return;
+    }
+    
+    marcas.forEach(marca => {
+      const label = document.createElement('label');
+      label.style.display = 'flex';
+      label.style.alignItems = 'center';
+      label.style.gap = '0.5rem';
+      label.style.marginBottom = '0.5rem';
+      label.style.cursor = 'pointer';
+      
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = marca.id_marca;
+      checkbox.dataset.nombreMarca = marca.nombre_marca;
+      
+      const span = document.createElement('span');
+      span.textContent = marca.nombre_marca;
+      
+      label.appendChild(checkbox);
+      label.appendChild(span);
+      container.appendChild(label);
+    });
+  } catch (err) {
+    console.error('Error cargando marcas:', err);
+    document.getElementById('marcasCheckboxContainer').innerHTML = '<p>Error al cargar marcas</p>';
+  }
+}
+
+function loadModelosForManagement() {
+  fetch('/devices/modelo/all')
+    .then(r => r.json())
+    .then(list => {
+      const container = document.getElementById('modelosCheckboxContainer');
+      container.innerHTML = '';
+      if (!list || list.length === 0) { container.innerHTML = '<p>No hay modelos disponibles</p>'; return; }
+      list.forEach(m => {
+        const label = document.createElement('label');
+        label.style.display = 'flex'; label.style.alignItems = 'center'; label.style.gap = '0.5rem'; label.style.marginBottom = '0.5rem';
+        const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.value = m.id_modelo;
+        const span = document.createElement('span'); span.textContent = (m.nombre_modelo || m.NombreModelo || '') + ' — ' + (m.nombre_marca || m.marca_nombre || '');
+        if (m.estado == 0) span.textContent += ' (inactivo)';
+        label.appendChild(checkbox); label.appendChild(span); container.appendChild(label);
+      });
+    })
+    .catch(err => { console.error('Error cargando modelos:', err); document.getElementById('modelosCheckboxContainer').innerHTML = '<p>Error al cargar modelos</p>'; });
+}
+
+async function activarModelosSeleccionados() {
+  const checks = Array.from(document.querySelectorAll('#modelosCheckboxContainer input[type=checkbox]:checked'));
+  if (checks.length === 0) return alert('Selecciona al menos un modelo');
+  for (const c of checks) {
+    try { await fetch(`/devices/modelo/${c.value}/estado`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({estado:1}) }); } catch(e){console.error(e);} }
+  loadModelosForManagement(); openGlobalSuccessModal('Modelos activados');
+}
+
+async function desactivarModelosSeleccionados() {
+  const checks = Array.from(document.querySelectorAll('#modelosCheckboxContainer input[type=checkbox]:checked'));
+  if (checks.length === 0) return alert('Selecciona al menos un modelo');
+  for (const c of checks) {
+    try { await fetch(`/devices/modelo/${c.value}/estado`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({estado:0}) }); } catch(e){console.error(e);} }
+  loadModelosForManagement(); openGlobalSuccessModal('Modelos desactivados');
+}
+
+function editarMarcaSeleccionada() {
+  const select = document.getElementById('selectMarcasGestionar');
+  const marcaId = select.value;
+  const marcaNombre = select.options[select.selectedIndex].text;
+  
+  if (!marcaId) {
+    showModalMessage('error', 'Error', 'Selecciona una marca para editar');
+    return;
+  }
+  
+  // Abrir modal de edición
+  document.getElementById('editMarcaId').value = marcaId;
+  document.getElementById('editMarcaNombre').value = marcaNombre;
+  document.getElementById('editMarcaError').style.display = 'none';
+  document.getElementById('btnSaveEditMarca').disabled = false;
+  openModal('modalEditarMarca', true);
+}
+
+function eliminarMarcaSeleccionada() {
+  const select = document.getElementById('selectMarcasGestionar');
+  const marcaId = select.value;
+  const marcaNombre = select.options[select.selectedIndex].text;
+  
+  if (!marcaId) {
+    showModalMessage('error', 'Error', 'Selecciona una marca para eliminar');
+    return;
+  }
+  
+  closeModal('modalGestionarMarca');
+  openGlobalDeleteModal(async () => {
+    try {
+      const resp = await fetch(`/devices/marca/${marcaId}`, { method: 'DELETE' });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        openGlobalMessageModal('error', 'Error', data.message || 'No se pudo eliminar la marca');
+      } else {
+        openGlobalSuccessModal('Marca eliminada exitosamente');
+      }
+    } catch (err) {
+      openGlobalMessageModal('error', 'Error', 'No se pudo eliminar la marca');
+    }
+  }, 'Confirmar eliminación', marcaNombre);
+}
+
+document.getElementById('btnSaveEditMarca').addEventListener('click', async () => {
+  const marcaId = document.getElementById('editMarcaId').value;
+  const nuevoNombre = document.getElementById('editMarcaNombre').value.trim();
+  
+  if (!nuevoNombre) {
+    document.getElementById('editMarcaError').textContent = 'El nombre es requerido';
+    document.getElementById('editMarcaError').style.display = 'block';
+    return;
+  }
+  
+  try {
+    const resp = await fetch(`/devices/marca/${marcaId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre_marca: nuevoNombre })
+    });
+    const data = await resp.json();
+    if (resp.ok && data.success) {
+      closeModal('modalEditarMarca');
+      openGlobalSuccessModal(data.message || 'Marca actualizada exitosamente');
+    } else {
+      document.getElementById('editMarcaError').textContent = data.message || 'No se pudo actualizar la marca';
+      document.getElementById('editMarcaError').style.display = 'block';
+    }
+  } catch (err) {
+    document.getElementById('editMarcaError').textContent = 'No se pudo actualizar la marca';
+    document.getElementById('editMarcaError').style.display = 'block';
+  }
+});
+
+// Manejar envío de formulario de nuevo modelo
+document.getElementById('formNewModelo').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(document.getElementById('formNewModelo'));
+  
+  // Extraer campos UPS
+  const categoria = formData.get('categoria');
+  const salidas = formData.get('salidas');
+  const capacidadVA = formData.get('capacidad_va');
+  const capacidadW = formData.get('capacidad_w');
+  
+  // Validar campos UPS
+  if (categoria === 'UPS' && (!salidas || !capacidadVA || !capacidadW)) {
+    showModalMessage('error', 'Error', 'Para UPS, salidas y capacidad son requeridos');
+    return;
+  }
+  
+  // Construir capacidad como "VA W"
+  let capacidad = null;
+  if (categoria === 'UPS' && capacidadVA && capacidadW) {
+    capacidad = `${capacidadVA} ${capacidadW}`;
+  }
+  
+  // Crear payload JSON
+  const payload = {
+    nombre_modelo: formData.get('nombre_modelo'),
+    categoria: categoria,
+    fk_id_marca: formData.get('fk_id_marca'),
+    salidas: salidas || null,
+    capacidad: capacidad
+  };
+  
+  try {
+    const resp = await fetch('/devices/modelo/new', { 
+      method: 'POST', 
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (resp.ok) {
+      const data = await resp.json().catch(() => ({}));
+      closeModal('modalNewModelo');
+      document.getElementById('formNewModelo').reset();
+      // Recargar solo la tabla
+      await reloadModelosTable();
+      openGlobalSuccessModal(data.message || 'Modelo creado exitosamente');
+    } else {
+      const data = await resp.json().catch(() => ({}));
+      showModalMessage('error', 'Error', data.message || 'No se pudo crear el modelo');
+    }
+  } catch (err) {
+    showModalMessage('error', 'Error', 'No se pudo crear el modelo');
+  }
+});
+
+// Función para recargar tabla de modelos
+async function reloadModelosTable() {
+  try {
+    const resp = await fetch('/devices/modelos/tbody');
+    if (!resp.ok) return;
+    const html = await resp.text();
+    const tbody = document.querySelector('table tbody');
+    if (tbody) {
+      tbody.innerHTML = html;
+    }
+  } catch (err) {
+    console.error('Error recargando tabla:', err);
+  }
+}
+
+// Mostrar/ocultar campos UPS según el tipo seleccionado
+document.addEventListener('DOMContentLoaded', () => {
+  const selectTipoNew = document.getElementById('selectTipoNewModelo');
+  const upsFieldsNew = document.getElementById('upsFieldsNew');
+  
+  if (selectTipoNew && upsFieldsNew) {
+    selectTipoNew.addEventListener('change', () => {
+      const isUPS = selectTipoNew.value === 'UPS';
+      upsFieldsNew.style.display = isUPS ? 'block' : 'none';
+      
+      // Hacer campos requeridos si es UPS
+      const salidasInput = document.getElementById('salidasNewModelo');
+      const vaInput = document.getElementById('capacidadVANewModelo');
+      const wInput = document.getElementById('capacidadWNewModelo');
+      
+      if (salidasInput) salidasInput.required = isUPS;
+      if (vaInput) vaInput.required = isUPS;
+      if (wInput) wInput.required = isUPS;
+    });
+  }
+  
+  const editTipo = document.getElementById('editModeloTipo');
+  const upsFieldsEdit = document.getElementById('upsFieldsEdit');
+  
+  if (editTipo && upsFieldsEdit) {
+    editTipo.addEventListener('change', () => {
+      const isUPS = editTipo.value === 'UPS';
+      upsFieldsEdit.style.display = isUPS ? 'block' : 'none';
+    });
+  }
+});
+
+</script>
+
+{% endblock %}

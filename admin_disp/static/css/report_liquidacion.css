@@ -1,0 +1,115 @@
+@page { size: A4 landscape; margin: 30px; }
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  color: #111827;
+}
+
+.page { width: 100%; }
+
+.header-box{
+  border: 1px solid #111;
+  height: 50px;
+  display: grid;
+  grid-template-columns: 30% 50% 20%;
+}
+
+.header-col{
+  padding: 6px 8px;
+  border-right: 1px solid #111;
+}
+.header-col:last-child{ border-right: none; }
+
+.header-left{
+  font-size: 7px;
+  line-height: 8px;
+}
+.header-left .val{ font-weight: 600; }
+
+.header-center{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.title{
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.header-right{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.logo{
+  max-width: 100%;
+  max-height: 42px;
+  object-fit: contain;
+}
+
+.tbl{
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  border: 0.75px solid #9ca3af;
+}
+.tbl th, .tbl td{
+  border: 0.25px solid #d1d5db;
+  padding: 4px 6px;
+  vertical-align: top;
+}
+.tbl thead th{
+  background: #4b5563;
+  color: white;
+  font-weight: 700;
+  text-align: center;
+}
+.tbl tbody td{ background: white; }
+.right{ text-align: right; }
+.bold{ font-weight: 700; }
+.total-row td{
+  background: #e5e7eb !important;
+  font-weight: 700;
+}
+
+.w-idx{ width: 22px; }
+.w-cod{ width: 70px; }
+.w-nom{ width: 140px; }
+.w-met{ width: 80px; }
+.w-fac{ width: 70px; }
+.w-val{ width: 70px; }
+.w-rec{ width: 70px; }
+.w-com{ width: 200px; }
+
+.footer{
+  margin-top: 10px;
+  font-size: 8px;
+  color: #4b5563;
+  text-align: justify;
+}
+
+.signatures{
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 25px;
+}
+.signatures td{
+  border: 0.75px solid #d1d5db;
+  border-left: 0.75px solid #d1d5db;
+  border-right: 0.75px solid #d1d5db;
+  padding: 12px;
+  text-align: center;
+  vertical-align: top;
+  height: 70px;
+}
+.sig-title{
+  font-size: 9px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+.sig-line{ font-size: 9px; }
+.spacer{ height: 8px; }

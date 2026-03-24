@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PROIMA - Menú Principal</title>
+
+    <!-- Aplicar dark mode INMEDIATAMENTE para evitar flash de contenido -->
+    <script>
+      (function() {
+        let isDarkMode = false;
+        try {
+          const saved = localStorage.getItem('appTheme');
+          if (saved !== null) {
+            isDarkMode = saved === 'dark';
+          }
+        } catch(e) {}
+        
+        const html = document.documentElement;
+        
+        if (isDarkMode) {
+          html.setAttribute('data-dark-mode', 'true');
+          html.style.colorScheme = 'dark';
+        } else {
+          html.removeAttribute('data-dark-mode');
+          html.style.colorScheme = 'light';
+        }
+      })();
+    </script>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/parallax_cards.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/menu.css') }}" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    
+    <!-- Dropdown styles que responden al tema oscuro -->
+    <style>
+      .user-menu-dropdown {
+        position: relative;
+      }
+      
+      .user-menu-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        font-size: 13px;
+        font-weight: 700;
+        border-radius: 12px;
+        border: 1px solid rgba(34,197,94,.35);
+        background: white;
+        color: #333;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      
+      html.dark .user-menu-toggle {
+        background: #1e293b;
+        color: #e2e8f0;
+        border-color: rgba(34,197,94,.5);
+      }
+      
+      .user-menu-toggle:hover {
+        background: #f5f5f5;
+      }
+      
+      html.dark .user-menu-toggle:hover {
+        background: #334155;
+      }
+      
+      .user-menu-avatar {
+        font-size: 20px;
+        color: #22c55e;
+      }
+      
+      .user-menu-name {
+        color: inherit;
+        font-weight: 700;
+        font-size: 13px;
+      }
+      
+      .user-menu-arrow {
+        font-size: 18px;
+        color: #999;
+        transition: transform 0.2s;
+      }
+      
+      .user-menu-arrow.open {
+        transform: rotate(180deg);
+      }
+      
+      .user-menu-items {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: calc(100% + 6px);
+        min-width: 200px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,.15);
+        overflow: hidden;
+        z-index: 1000;
+        padding: 4px;
+      }
+      
+      html.dark .user-menu-items {
+        background: #1e293b;
+        border-color: #334155;
+        box-shadow: 0 4px 20px rgba(0,0,0,.3);
+      }
+      
+      .user-menu-items.visible {
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .user-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: none;
+        background: transparent;
+        color: #333;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        font-family: inherit;
+        transition: background 0.12s;
+      }
+      
+      html.dark .user-menu-item {
+        color: #e2e8f0;
+      }
+      
+      .user-menu-item:hover {
+        background: #f0f0f0;
+      }
+      
+      html.dark .user-menu-item:hover {
+        background: #334155;
+      }
+      
+      .user-menu-item-icon {
+        color: #22c55e;
+        font-size: 18px;
+      }
+      
+      .user-menu-item-text {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+      
+      .user-menu-item-label {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      
+      .user-menu-item-sub {
+        font-size: 11px;
+        font-weight: 500;
+        color: #999;
+      }
+      
+      html.dark .user-menu-item-sub {
+        color: #94a3b8;
+      }
+      
+      .user-menu-divider {
+        height: 1px;
+        background: #e0e0e0;
+        margin: 4px 0;
+      }
+      
+      html.dark .user-menu-divider {
+        background: #334155;
+      }
+      
+      .user-menu-item-danger {
+        color: #ef4444;
+      }
+      
+      html.dark .user-menu-item-danger {
+        color: #f87171;
+      }
+      
+      .user-menu-item-danger:hover {
+        background: #fee2e2;
+      }
+      
+      html.dark .user-menu-item-danger:hover {
+        background: #7f1d1d;
+      }
+      
+      .user-menu-item-danger-icon {
+        color: #ef4444;
+      }
+      
+      html.dark .user-menu-item-danger-icon {
+        color: #f87171;
+      }
+      
+      @media (max-width: 768px) {
+        .user-menu-name {
+          display: none;
+        }
+        .user-menu-items {
+          min-width: 160px;
+          right: -10px;
+        }
+      }
+    </style>
+    
+    <!-- Meta tag para pasar el username actual a menu.js -->
+    <meta name="current-user" content="{{ session.get('username', '') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.min.js"></script>
+  </head>
+
+  <body>
+    <!-- User Menu Dropdown -->
+    <div style="position: absolute; top: 12px; right: 12px; z-index: 100;">
+      <div class="user-menu-dropdown" id="userMenu">
+        <!-- Toggle Button -->
+        <button id="userMenuToggle" type="button" class="user-menu-toggle">
+          <span class="material-symbols-rounded user-menu-avatar">account_circle</span>
+          <span class="user-menu-name">{{ (session.get('empleado_nombre') or session.get('username', 'Usuario'))|replace('.', ' ')|title }}</span>
+          <span id="userMenuArrow" class="material-symbols-rounded user-menu-arrow">expand_more</span>
+        </button>
+
+        <!-- Dropdown Menu -->
+        <div id="userMenuDropdown" class="user-menu-items">
+          <!-- Theme Toggle Button -->
+          <button id="btnTheme" type="button" class="user-menu-item">
+            <span id="themeIcon" class="material-symbols-rounded user-menu-item-icon">light_mode</span>
+            <div class="user-menu-item-text">
+              <span class="user-menu-item-label">Tema</span>
+              <span class="user-menu-item-sub" id="themeModeLabel">Oscuro</span>
+            </div>
+          </button>
+
+          <!-- Divider -->
+          <div class="user-menu-divider"></div>
+
+          <!-- Logout Link -->
+          <a href="{{ url_for('auth.logout') }}" class="user-menu-item user-menu-item-danger">
+            <span class="material-symbols-rounded user-menu-item-danger-icon">logout</span>
+            <span>Cerrar sesión</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar removed per request -->
+    <section class="cards-panel" aria-label="Parallax cards panel">
+      <div class="cards-panel-content">
+        <div id="app" class="parallax-container">
+          <!-- Card Dispositivos: visible si tiene rol en sistema dispositivos -->
+          {% if session.get('sistemas_roles', {}).get('dispositivos') or session.get('is_super_admin') %}
+          <card data-image="{{ url_for('static', filename='img/card1.png') }}" data-route="/devices/ui">
+            <h1 slot="header">Administración de dispositivos</h1>
+            <p slot="content">Gestión integral de dispositivos: registro y asignación, seguimiento y monitoreo, gestión de garantías y administración de planes de servicio.</p>
+          </card>
+          {% endif %}
+
+          <!-- Card CxC: visible si tiene rol en sistema cxc -->
+          {% if session.get('sistemas_roles', {}).get('cxc') or session.get('is_super_admin') %}
+          <card data-image="{{ url_for('static', filename='img/card2.png') }}" data-route="{{ url_for('cxc.demo') }}">
+            <h1 slot="header">Cuentas por Cobrar</h1>
+            <p slot="content">Control y seguimiento de cobros, facturación y estados de cuenta.</p>
+          </card>
+          {% endif %}
+
+          <!-- Card Kardex: visible si tiene rol en sistema kardex -->
+          {% if session.get('sistemas_roles', {}).get('kardex') or session.get('is_super_admin') %}
+          <card data-image="{{ url_for('static', filename='img/card3.png') }}" data-route="{{ url_for('kardex.index') }}">
+            <h1 slot="header">Kardex</h1>
+            <p slot="content">Registro de stock y movimientos</p>
+          </card>
+          {% endif %}
+
+          <!-- Card Administración Usuarios: SOLO visible para superAdmin -->
+          {% if session.get('is_super_admin') %}
+          <card data-image="{{ url_for('static', filename='img/card11.png') }}" data-action="openModalUsuarios" onclick="openModalUsuarios()" role="button" tabindex="0">
+            <h1 slot="header">Administración de Usuarios</h1>
+            <p slot="content">Gestión de usuarios del sistema: crear, editar y asignar roles y permisos.</p>
+          </card>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Modal de Gestión de Usuarios -->
+    <div class="modal-overlay" id="modalUsuarios">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Administración de Usuarios</h3>
+          <button class="modal-close" onclick="closeModalUsuarios()">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+          <div id="errorMessage" style="display:none; background-color:#fee; border:1px solid #fcc; padding:12px; border-radius:4px; margin-bottom:16px; color:#c00;"></div>
+          <div id="successMessage" style="display:none; background-color:#efe; border:1px solid#cfc; padding:12px; border-radius:4px; margin-bottom:16px; color:#060;"></div>
+          
+          <form id="formUsuario">
+            <!-- Selección de Empleado -->
+            <div class="form-group">
+              <label for="selectEmpleado">Empleado *</label>
+              <select id="selectEmpleado" name="empleado" required>
+                <option value="">-- Seleccionar Empleado --</option>
+              </select>
+            </div>
+            
+            <!-- Usuario (autofill, readonly) -->
+            <div class="form-group" id="groupUsuario" style="display:none;">
+              <label for="inputUsuario">Usuario *</label>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="text" id="inputUsuario" name="usuario" readonly placeholder="Se llenará automáticamente" style="flex:1;" />
+                <!-- Deactivate button removed: synchronization handled via SharePoint webhook -->
+              </div>
+            </div>
+            
+            <!-- Selección de Sistema (solo visible después de autofill) -->
+            <div class="form-group" id="groupSistema" style="display:none;">
+              <label for="selectSistema">Sistema *</label>
+              <select id="selectSistema" name="sistema" required>
+                <option value="">-- Seleccionar Sistema --</option>
+                <option value="dispositivos">Administración de Dispositivos</option>
+                <option value="kardex">KARDEX</option>
+                <option value="cxc">Cuentas por Cobrar</option>
+              </select>
+            </div>
+            
+            <!-- Roles (se muestran al seleccionar sistema) -->
+            <div id="rolesContainer" style="display:none; margin-top:32px; padding-top:16px; border-top:1px solid #e8e8e8;">
+              <div class="radio-group">
+                <div class="radio-option">
+                  <label class="radio-wrapper">
+                    <input type="radio" class="radio-input" name="rol_sistema" value="1" />
+                    <span class="radio-tile">
+                      <span class="radio-icon"><img src="{{ url_for('static', filename='img/radm.png') }}" alt="Admin"></span>
+                      <span class="radio-label">Admin</span>
+                    </span>
+                  </label>
+                </div>
+                <div class="radio-option">
+                  <label class="radio-wrapper">
+                    <input type="radio" class="radio-input" name="rol_sistema" value="2" />
+                    <span class="radio-tile">
+                      <span class="radio-icon"><img src="{{ url_for('static', filename='img/rope.png') }}" alt="Operador"></span>
+                      <span class="radio-label">Operador</span>
+                    </span>
+                  </label>
+                </div>
+                <div class="radio-option">
+                  <label class="radio-wrapper">
+                    <input type="radio" class="radio-input" name="rol_sistema" value="3" />
+                    <span class="radio-tile">
+                      <span class="radio-icon"><img src="{{ url_for('static', filename='img/raud.png') }}" alt="Auditor"></span>
+                      <span class="radio-label">Auditor</span>
+                    </span>
+                  </label>
+                </div>
+                <div class="radio-option">
+                  <label class="radio-wrapper">
+                    <input type="radio" class="radio-input" name="rol_sistema" value="null" />
+                    <span class="radio-tile">
+                      <span class="radio-icon"><img src="{{ url_for('static', filename='img/rsin.png') }}" alt="Sin acceso"></span>
+                      <span class="radio-label">Sin acceso</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+          </form>
+        </div>
+        
+        <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+          <!-- Botón Mostrar/Generar Código (izquierda) -->
+          <div id="containerMostrarCodigo" style="display:none;">
+            <button type="button" class="btn" style="background-color:#10b981; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;" onclick="mostrarCodigoTemporal()">Mostrar Código</button>
+          </div>
+          
+          <!-- Botones de acción (derecha) -->
+          <div style="display:flex; gap:12px;">
+            <button class="btn btn-cancel" onclick="closeModalUsuarios()">Cancelar</button>
+            <button class="btn btn-primary" id="btnGuardar" onclick="guardarCambiosUsuario()" disabled>Guardar cambios</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Confirmar Regenerar Código -->
+    <div class="modal-overlay" id="modalConfirmRegenerar">
+      <div class="modal" style="max-width:500px;">
+        <div class="modal-header">
+          <h3>Confirmar Regeneración de Código</h3>
+          <button class="modal-close" onclick="closeModalConfirmRegenerar()">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+          <p style="color:#555; font-size:1rem;">¿Está seguro de regenerar el código temporal?</p>
+          <p style="color:#777; font-size:0.9rem; margin-top:10px;">Se generará un nuevo código de 6 dígitos válido por 1 hora.</p>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn btn-cancel" onclick="closeModalConfirmRegenerar()">Cancelar</button>
+          <button class="btn btn-primary" onclick="confirmarRegenerarCodigo()">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Re-auth modals removed: activation/deactivation handled via SharePoint sync -->
+
+    <!-- Modal Ver Código Temporal -->
+    <div class="modal-overlay" id="modalVerCodigo">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Código Temporal de Acceso</h3>
+          <button class="modal-close" onclick="closeModalCodigo()">&times;</button>
+        </div>
+        
+        <div class="modal-body" style="text-align:center;">
+          <p style="margin-bottom:20px; color:#10b981; font-weight:500;">Comparta este código con el empleado para su primer acceso:</p>
+          
+          <div style="background:#f5f5f5; padding:30px; border-radius:8px; margin:20px 0;">
+            <div style="font-size:36px; font-weight:bold; letter-spacing:8px; color:#2260ff;" id="codigoTemporalDisplay">------</div>
+          </div>
+          
+          <div style="text-align:left; margin-top:20px; padding:15px; background:#fffbeb; border:1px solid #fcd34d; border-radius:6px;">
+            <p style="margin:5px 0; font-size:0.9rem;"><strong>Fecha de generación:</strong> <span id="codigoFechaGeneracion">-</span></p>
+            <p style="margin:5px 0; font-size:0.9rem;"><strong>Vigencia:</strong> <span id="codigoVigenciaHora">-</span> <span id="codigoEstado"></span></p>
+            <p style="margin:5px 0; font-size:0.9rem;"><strong>Intentos permitidos:</strong> 3</p>
+            <p style="margin:5px 0; font-size:0.9rem;"><strong>Código regenerado:</strong> <span id="codigoRegenerado">No</span></p>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn btn-cancel" onclick="closeModalCodigo()">Cerrar</button>
+          <button class="btn btn-primary" style="background-color:#10b981;" onclick="regenerarCodigo()">Regenerar Código</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Éxito (Estilo claro del sistema) -->
+    <div class="modal-overlay" id="modalExito">
+      <div class="modal" style="max-width:440px; text-align:center; padding:1.5rem;">
+        <img src="{{ url_for('static', filename='img/chk.png') }}" alt="Éxito" style="width:72px; height:72px; display:block; margin:0 auto 8px auto;" />
+        <h3>Se ha realizado con éxito</h3>
+        <p id="mensajeExito" style="color:#555;">Rol asignado con éxito</p>
+        <div id="codigoExitoContainer" style="display:none; margin-top:20px; padding:15px; background:#f0f9ff; border-radius:8px;">
+          <p style="color:#333; margin:8px 0; font-weight:500; font-size:0.95rem;">Código de acceso:</p>
+          <p id="codigoExitoDisplay" style="font-size:28px; letter-spacing:6px; color:#00bcd4; font-weight:bold; margin:8px 0;">------</p>
+          <p style="color:#666; font-size:0.85rem; margin:8px 0;">Válido por 1 hora</p>
+        </div>
+        <div style="margin-top:1rem;"><button class="btn btn-primary" onclick="closeModalExito()">Cerrar</button></div>
+      </div>
+    </div>
+
+    <!-- Modal Fracaso -->
+    <div class="modal-overlay" id="modalFracaso">
+      <div class="modal">
+        <div class="modal-header" style="align-items:center;">
+          <img src="{{ url_for('static', filename='img/fail.png') }}" alt="Fracaso" style="width:40px; height:40px; margin-right:12px;" />
+          <h3>Error</h3>
+          <button class="modal-close" onclick="closeModalFracaso()">&times;</button>
+        </div>
+        
+        <div class="modal-body" style="text-align:center;">
+          <div style="margin:30px 0;">
+            <img src="{{ url_for('static', filename='img/fail.png') }}" alt="Error" style="width:80px; height:80px; display:block; margin:0 auto 20px;" />
+            <p id="mensajeFracaso" style="font-size:1.1rem; color:#333;">Error al asignar rol</p>
+            <p id="submensajeFracaso" style="margin-top:15px; color:#666; font-size:0.95rem;">Ocurrió un error al asignar el rol.</p>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn btn-primary" style="background:#ef4444;" onclick="closeModalFracaso()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Alerta Empleado Sin Usuario -->
+    <div class="modal-overlay" id="modalErrorEmpleado">
+      <div class="modal">
+        <div class="modal-header">
+          <button class="modal-close" onclick="closeModalErrorEmpleado()">&times;</button>
+        </div>
+        
+        <div class="modal-body" style="text-align:center;">
+          <div style="margin:30px 0;">
+            <img src="{{ url_for('static', filename='img/war.png') }}" alt="Alerta" style="width:80px; height:80px; display:block; margin:0 auto 20px;" />
+            <p style="font-size:1rem; color:#333; margin-bottom:12px;">El empleado seleccionado no cuenta con un usuario en el sistema</p>
+            <p style="color:#666; font-size:0.95rem;">Por favor, contactarse con el area de TI para obtener mas informacion al respecto.</p>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn btn-primary" style="background-color:#00bcd4;" onclick="closeModalErrorEmpleado()">Entendido</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Usuario Inactivo - estilo de error (fail) -->
+    <div class="modal-overlay" id="modalUsuarioInactivo">
+      <div class="modal">
+        <div class="modal-header" style="justify-content:flex-end;">
+          <!-- Title removed as requested -->
+          <button class="modal-close" onclick="closeModalUsuarioInactivo()" style="background:#ff9800;color:#fff;border-radius:4px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;">&times;</button>
+        </div>
+        <div class="modal-body" style="text-align:center;">
+          <div style="margin:30px 0;">
+            <div style="width:120px; height:120px; border-radius:50%; margin:0 auto 20px; display:flex; align-items:center; justify-content:center;">
+              <img src="{{ url_for('static', filename='img/fail.png') }}" alt="Fail" style="width:96px; height:96px; display:block;" />
+            </div>
+            <p id="mensajeUsuarioInactivo" style="font-size:1.1rem; color:#333;">No es posible asignar roles a un usuario desactivado</p>
+            <p id="submensajeUsuarioInactivo" style="margin-top:15px; color:#666; font-size:0.95rem;">Active al usuario primero para poder asignarle roles.</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" style="background:#ff9800;" onclick="closeModalUsuarioInactivo()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/parallax_cards.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/menu.js') }}"></script>
+    
+    <!-- Initialize theme and user menu dropdown -->
+    <script>
+      // Theme management with dark mode class support
+      function setTheme(isDark) {
+        const html = document.documentElement;
+
+        // If the opening animation has already finished, just swap the background
+        // directly instead of toggling html.dark — that would change the animation
+        // property and cause the whole sequence to restart from frame 0.
+        const panel = document.querySelector('.cards-panel');
+        if (panel && panel.classList.contains('panel-locked')) {
+          panel.style.backgroundColor = isDark ? '#0f172a' : '#ffffff';
+        }
+        
+        // Update dark class on html element
+        if (isDark) {
+          html.classList.add('dark');
+        } else {
+          html.classList.remove('dark');
+        }
+        
+        html.dataset.theme = isDark ? 'dark' : 'light';
+        html.style.colorScheme = isDark ? 'dark' : 'light';
+        document.body.classList.toggle('dark-mode', isDark);
+        
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.textContent = isDark ? 'dark_mode' : 'light_mode';
+        
+        const modeLabel = document.getElementById('themeModeLabel');
+        if (modeLabel) modeLabel.textContent = isDark ? 'Oscuro' : 'Claro';
+        
+        const gl = document.getElementById('globalLoadingModal');
+        if (gl) gl.classList.toggle('dark', isDark);
+      }
+
+      function initTheme() {
+        const btn = document.getElementById('btnTheme');
+        const saved = (() => { try { return localStorage.getItem('appTheme'); } catch { return null; } })();
+        const isDark = saved === 'dark';
+        setTheme(isDark);
+        if (!btn) return;
+        btn.addEventListener('click', () => {
+          const next = !document.documentElement.classList.contains('dark');
+          try { localStorage.setItem('appTheme', next ? 'dark' : 'light'); } catch {}
+          setTheme(next);
+        });
+      }
+
+      // User menu toggle with click-outside handling
+      function initUserMenu() {
+        const menu = document.getElementById('userMenu');
+        const toggle = document.getElementById('userMenuToggle');
+        const dropdown = document.getElementById('userMenuDropdown');
+        const arrow = document.getElementById('userMenuArrow');
+        
+        if (!menu || !toggle || !dropdown) return;
+        
+        toggle.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dropdown.classList.toggle('visible');
+          if (arrow) arrow.classList.toggle('open');
+        });
+        
+        document.addEventListener('click', (e) => {
+          if (!menu.contains(e.target)) {
+            dropdown.classList.remove('visible');
+            if (arrow) arrow.classList.remove('open');
+          }
+        });
+        
+        dropdown.addEventListener('click', (e) => e.stopPropagation());
+      }
+
+      // Initialize on DOM ready
+      document.addEventListener('DOMContentLoaded', () => {
+        initTheme();
+        initUserMenu();
+
+        // Lock the panel after the opening animation completes so that subsequent
+        // theme toggles don't replay the sequence. We capture the final computed
+        // state as inline styles, then 'animation: none !important' takes over.
+        (function() {
+          var panel = document.querySelector('.cards-panel');
+          if (!panel) return;
+          var finalAnims = ['materiaPanel', 'materiaPanelDark',
+                            'materiaPanel-mobile', 'materiaPanelDark-mobile'];
+          panel.addEventListener('animationend', function(e) {
+            if (finalAnims.indexOf(e.animationName) !== -1 &&
+                !panel.classList.contains('panel-locked')) {
+              var cs = window.getComputedStyle(panel);
+              panel.style.width          = cs.width;
+              panel.style.height         = cs.height;
+              panel.style.top            = cs.top;
+              panel.style.marginTop      = cs.marginTop;
+              panel.style.opacity        = cs.opacity;
+              panel.style.borderRadius   = cs.borderRadius;
+              panel.style.backgroundColor = cs.backgroundColor;
+              panel.classList.add('panel-locked');
+            }
+          });
+        })();
+      });
+    </script>
+  </body>
+</html>

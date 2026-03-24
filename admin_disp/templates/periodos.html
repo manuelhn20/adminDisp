@@ -1,0 +1,222 @@
+{% extends "base_kardex.html" %}
+
+{% block title %}Períodos — KARDEX{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-material.css">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/kardex.css') }}">
+{% endblock %}
+
+{% block page_title %}Períodos{% endblock %}
+
+{% block content %}
+<div class="kardex-toolbar">
+  <div class="kardex-toolbar__left">
+    <button class="btn btn-primary offset-btn" onclick="openModalCrear()">
+      + Nuevo Período
+    </button>
+  </div>
+  <div class="kardex-toolbar__right">
+    <input type="text" id="quickFilter" class="kardex-search"
+           placeholder="Buscar período..."
+           oninput="if(gridApi) gridApi.setGridOption('quickFilterText', this.value)">
+  </div>
+</div>
+
+<div class="kardex-grid-wrap">
+  <div id="periodosGrid" class="ag-theme-material kardex-grid"></div>
+</div>
+
+<!-- Modal Crear Período -->
+<div id="modalCrearPeriodo" class="kardex-modal-overlay">
+  <div class="kardex-modal">
+    <div class="kardex-modal__header">
+      <h3>Nuevo Período</h3>
+      <button class="kardex-modal__close" onclick="closeModalCrear()">&times;</button>
+    </div>
+    <div class="kardex-modal__body">
+      <div class="kardex-form-grid">
+        <div class="kardex-field">
+          <label>Período</label>
+          <input type="text" id="inpNombre" placeholder="Enero 2026" readonly style="background-color:#f0f0f0;cursor:default;">
+        </div>
+        <div class="kardex-field">
+          <label>Mes</label>
+          <select id="inpMes">
+            <option value="1">Enero</option><option value="2">Febrero</option>
+            <option value="3">Marzo</option><option value="4">Abril</option>
+            <option value="5">Mayo</option><option value="6">Junio</option>
+            <option value="7">Julio</option><option value="8">Agosto</option>
+            <option value="9">Septiembre</option><option value="10">Octubre</option>
+            <option value="11">Noviembre</option><option value="12">Diciembre</option>
+          </select>
+        </div>
+        <div class="kardex-field">
+          <label>Año</label>
+          <input type="number" id="inpAno" min="2020" max="2099" placeholder="2026">
+        </div>
+        <div class="kardex-field">
+          <label>Fecha inicio</label>
+          <input type="date" id="inpFechaInicio">
+        </div>
+        <div class="kardex-field">
+          <label>Fecha fin</label>
+          <input type="date" id="inpFechaFin">
+        </div>
+      </div>
+      <div id="errorCrear" class="kardex-error" style="display:none;"></div>
+    </div>
+    <div class="kardex-modal__footer">
+      <button class="kardex-btn kardex-btn--ghost" onclick="closeModalCrear()">Cancelar</button>
+      <button class="kardex-btn kardex-btn--primary" onclick="guardarPeriodo()">Guardar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let gridApi = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('inpAno').value = new Date().getFullYear();
+
+  gridApi = agGrid.createGrid(document.getElementById('periodosGrid'), {
+    columnDefs: [
+      { field: 'nombre',      headerName: 'Período', flex: 1, minWidth: 120 },
+      { field: 'fechaInicio', headerName: 'Fecha Inicio', width: 140,
+        valueFormatter: p => p.value ? String(p.value).substring(0, 10) : '—' },
+      { field: 'fechaFin',    headerName: 'Fecha Fin',    width: 140,
+        valueFormatter: p => p.value ? String(p.value).substring(0, 10) : '—' },
+    ],
+    rowData: [],
+    defaultColDef: { sortable: true, filter: true, resizable: true },
+    pagination: true, paginationPageSize: 25,
+    animateRows: true, suppressCellFocus: true,
+    getRowStyle: p => p.data.estado === 'A'
+      ? { background: 'rgba(14,157,127,0.08)' } : undefined,
+  });
+  loadPeriodos();
+
+  // Configurar event listeners para actualizar fechas cuando cambian mes/año
+  document.getElementById('inpMes').addEventListener('change', actualizarRangoFechas);
+  document.getElementById('inpAno').addEventListener('change', actualizarRangoFechas);
+  // Llamar inicial para establecer valores por defecto
+  actualizarRangoFechas();
+});
+
+async function loadPeriodos() {
+  try {
+    const r = await fetch('/kardex/api/periodos');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error);
+    gridApi.setGridOption('rowData', d.data);
+  } catch(e) {
+    console.error('[Periodos]', e);
+  }
+}
+
+async function activarPeriodo(id) {
+  // Obtener el período seleccionado y el período activo actual
+  const periodos = gridApi.getRenderedNodes().map(n => n.data);
+  const periodoSeleccionado = periodos.find(p => p.id === id);
+  const periodoActivo = periodos.find(p => p.estado === 'A');
+  
+  // Validar que no se puede retroceder a un período anterior
+  if (periodoActivo && periodoSeleccionado.fechaFin < periodoActivo.fechaFin) {
+    alert('No es posible retroceder a un período anterior.');
+    await loadPeriodos();
+    return;
+  }
+  
+  if (!confirm('¿Activar este período? El período activo anterior quedará inactivo.')) {
+    await loadPeriodos();
+    return;
+  }
+  
+  try {
+    const r = await fetch('/kardex/api/periodos/' + id + '/activar', { method: 'POST' });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error);
+    await loadPeriodos();
+  } catch(e) { alert('Error al activar: ' + e.message); }
+}
+
+function openModalCrear() {
+  document.getElementById('errorCrear').style.display = 'none';
+  document.getElementById('modalCrearPeriodo').classList.add('active');
+}
+function closeModalCrear() {
+  document.getElementById('modalCrearPeriodo').classList.remove('active');
+}
+
+async function guardarPeriodo() {
+  const errDiv = document.getElementById('errorCrear');
+  errDiv.style.display = 'none';
+  const body = {
+    nombre:      document.getElementById('inpNombre').value.trim(),
+    mes:         document.getElementById('inpMes').value,
+    ano:         document.getElementById('inpAno').value,
+    fechaInicio: document.getElementById('inpFechaInicio').value,
+    fechaFin:    document.getElementById('inpFechaFin').value,
+  };
+  if (!body.nombre || !body.fechaInicio || !body.fechaFin) {
+    errDiv.textContent = 'Todos los campos son obligatorios.';
+    errDiv.style.display = 'block'; return;
+  }
+  
+  try {
+    const r = await fetch('/kardex/api/periodos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error);
+    closeModalCrear();
+    await loadPeriodos();
+  } catch(e) {
+    errDiv.textContent = 'Error: ' + e.message;
+    errDiv.style.display = 'block';
+  }
+}
+
+// Actualizar nombre, fechas según mes/año seleccionado
+function actualizarRangoFechas() {
+  const mes = parseInt(document.getElementById('inpMes').value);
+  const ano = parseInt(document.getElementById('inpAno').value);
+  
+  // Array de nombres de meses
+  const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  
+  // Generar nombre automáticamente: "Enero 2026"
+  const nombrePeriodo = nombresMeses[mes - 1] + ' ' + ano;
+  document.getElementById('inpNombre').value = nombrePeriodo;
+  
+  // Primer día del mes
+  const fechaInicio = new Date(ano, mes - 1, 1);
+  const fechaInicioStr = fechaInicio.toISOString().split('T')[0];
+  
+  // Último día del mes
+  const fechaFin = new Date(ano, mes, 0);
+  const fechaFinStr = fechaFin.toISOString().split('T')[0];
+  
+  // Establecer atributos min y max en los inputs de fecha
+  const inpFechaInicio = document.getElementById('inpFechaInicio');
+  const inpFechaFin = document.getElementById('inpFechaFin');
+  
+  inpFechaInicio.setAttribute('min', fechaInicioStr);
+  inpFechaInicio.setAttribute('max', fechaFinStr);
+  inpFechaFin.setAttribute('min', fechaInicioStr);
+  inpFechaFin.setAttribute('max', fechaFinStr);
+  
+  // Pre-llenar/actualizar con fechas por defecto
+  inpFechaInicio.value = fechaInicioStr;
+  inpFechaFin.value = fechaFinStr;
+}
+</script>
+{% endblock %}

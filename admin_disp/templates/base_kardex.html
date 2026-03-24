@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="es" id="rootHtml" color-scheme="light dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}KARDEX — PROIMA{% endblock %}</title>
+  <style>
+    #appSplash {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+      background: #ffffff; transition: opacity 0.3s ease-out;
+    }
+    html[data-dark-mode="true"] #appSplash { background: #000000; }
+    #appSplash.hidden { opacity: 0; pointer-events: none; }
+    #appSplash .splash-logo {
+      width: 120px; height: 120px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; transform: scale(0.95); }
+      50%       { opacity: 1;   transform: scale(1.05); }
+    }
+  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ config.get('STATIC_VERSION', '2') }}">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
+  <!-- Tailwind CSS CDN — preflight desactivado para no romper estilos existentes -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      corePlugins: { preflight: false },
+      theme: { extend: { screens: { xs: '360px' } } }
+    }
+  </script>
+  <link id="faviconIco" rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2" type="image/x-icon">
+  <link id="favicon32" rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}?v=2">
+  <link id="favicon16" rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16x16.png') }}?v=2">
+
+  <script>
+    // Aplicar dark mode INMEDIATAMENTE para evitar flash de contenido
+    // Este script se ejecuta ANTES de que el navegador pinte la página
+    (function() {
+      // Leer preferencia guardada de localStorage
+      let isDarkMode = false;
+      try {
+        const saved = localStorage.getItem('appTheme');
+        if (saved !== null) {
+          isDarkMode = saved === 'dark';
+        }
+      } catch(e) {}
+      
+      const html = document.documentElement;
+      
+      if (isDarkMode) {
+        html.setAttribute('data-dark-mode', 'true');
+        html.style.colorScheme = 'dark';
+      } else {
+        html.removeAttribute('data-dark-mode');
+        html.style.colorScheme = 'light';
+      }
+      
+      // Aplicar al body cuando esté disponible
+      if (document.body) {
+        if (isDarkMode) {
+          document.body.classList.add('dark-mode');
+        } else {
+          document.body.classList.remove('dark-mode');
+        }
+      } else {
+        document.addEventListener('DOMContentLoaded', function() {
+          if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+          } else {
+            document.body.classList.remove('dark-mode');
+          }
+        });
+      }
+    })();
+  </script>
+
+  <!-- Variables CSS reutilizadas de base.html -->
+  <style>
+    :root {
+      --sidebar-width: 260px;
+      --sidebar-bg: linear-gradient(180deg,#0b7c6c 0%,#0e9d7f 45%,#0b845e 100%);
+      --main-bg: linear-gradient(180deg,#f7f8fb 0%,#eef2f7 100%);
+      --accent: #f9f871;
+      --sidebar-hover: #11826C;
+      --sidebar-text-primary: #FFFFFF;
+      --body-text: #1f2a37;
+      --body-bg-light: #ffffff;
+      --border-color: rgba(0,0,0,0.06);
+      --input-bg: #ffffff;
+      --input-text: #1f2a37;
+      --modal-bg: #ffffff;
+      --modal-text: #1f2a37;
+      --table-border: #e5e7eb;
+      --button-hover: #f3f4f6;
+    }
+    body.dark-mode {
+      --sidebar-bg: linear-gradient(180deg,#0a3d35 0%,#0d5a4f 45%,#082b22 100%);
+      --main-bg: linear-gradient(180deg,#000000 0%,#0a0a0a 100%);
+      --body-text: #e5e7eb;
+      --body-bg-light: #1a1a1a;
+      --border-color: rgba(255,255,255,0.1);
+      --input-bg: #1a1a1a;
+      --input-text: #e5e7eb;
+      --modal-bg: #0f0f0f;
+      --modal-text: #e5e7eb;
+      --table-border: #2a2a2a;
+      --button-hover: #2a2a2a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0; display: flex; min-height: 100vh;
+      font-family: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+      background: var(--main-bg); color: var(--body-text);
+      overflow-x: hidden; transition: background 0.3s,color 0.3s;
+    }
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed; top: 0; left: 0; height: 100%; width: 85px;
+      display: flex; overflow-x: hidden; flex-direction: column;
+      background: linear-gradient(180deg,#0b7c6c 0%,#0d9680 45%,#0a6656 100%);
+      padding: 25px 20px; transition: all 0.4s ease; z-index: 1000;
+    }
+    .sidebar:hover { width: 260px; }
+    html[data-dark-mode="true"] .sidebar {
+      background: linear-gradient(180deg,#0a3d35 0%,#0d5a4f 45%,#082b22 100%);
+    }
+    .sidebar-header-preview {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+    }
+    .sidebar-header-preview > div:first-child { display: flex; align-items: center; gap: 8px; }
+    .sidebar-logo-img { width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0; }
+    .sidebar-title {
+      color: #fff; font-size: 1.25rem; font-weight: 600;
+      white-space: nowrap; margin: 0; opacity: 0; transition: opacity 0.4s;
+    }
+    .sidebar:hover .sidebar-title { opacity: 1; }
+    .sidebar-links {
+      list-style: none; margin: 0; padding: 0; flex: 1 1 auto;
+      overflow-y: auto; scrollbar-width: none; padding-bottom: 140px;
+    }
+    .sidebar-links::-webkit-scrollbar { display: none; }
+    .sidebar-links h4 {
+      color: #fff; font-weight: 500; white-space: nowrap;
+      margin: 10px 0; position: relative;
+    }
+    .sidebar-links h4 span { opacity: 0; }
+    .sidebar:hover .sidebar-links h4 span { opacity: 1; }
+    .sidebar-links .menu-separator {
+      position: absolute; left: 0; top: 50%; width: 100%; height: 1px;
+      transform: scaleX(1) translateY(-50%); background: #16a34a;
+      transform-origin: right; transition-delay: 0.2s;
+    }
+    .sidebar:hover .sidebar-links .menu-separator {
+      transition-delay: 0s; transform: scaleX(0);
+    }
+    .sidebar-links li { list-style: none; }
+    .sidebar-links li a {
+      display: flex; align-items: center; gap: 0 20px; color: #fff;
+      font-weight: 500; white-space: nowrap; padding: 15px 10px;
+      text-decoration: none; transition: 0.2s ease;
+    }
+    .sidebar-links li a .material-symbols-outlined {
+      font-size: 24px; width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .sidebar-links li a:hover { color: #161a2d; background: #fff; border-radius: 4px; }
+    .sidebar-links li a.active { background: rgba(255,255,255,0.15); border-radius: 4px; }
+    /* User account (bottom) */
+    .user-account {
+      margin-top: auto; padding: 12px; position: relative; z-index: 0;
+    }
+    .user-profile { display: flex; align-items: center; color: #161a2d; }
+    .user-avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: rgba(255,255,255,0.26); display: flex;
+      align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 600; flex-shrink: 0; border: 2px solid #fff;
+      color: #fff;
+    }
+    .user-detail {
+      margin-left: 12px; white-space: nowrap;
+      display: flex; flex-direction: column; opacity: 0; transition: opacity 0.4s;
+    }
+    .sidebar:hover .user-detail { opacity: 1; }
+    .sidebar:hover .user-account {
+      background: #fff; border-radius: 6px; padding-left: 10px; padding-right: 10px;
+    }
+    body.dark-mode .sidebar:hover .user-account { background: #000; }
+    .user-profile h3 { font-size: 1rem; font-weight: 600; margin: 0; color: #161a2d; }
+    .user-profile span { font-size: 0.775rem; font-weight: 600; margin: 0; color: #161a2d; }
+    body.dark-mode .user-profile h3 { color: #fff; }
+    body.dark-mode .user-profile span { color: #e5e7eb; }
+    /* ── Main ── */
+    main {
+      margin-left: 85px; flex: 1; padding: 0;
+      display: flex; flex-direction: column;
+      transition: margin-left 0.35s; min-width: 0; background: var(--main-bg);
+    }
+    .main-header {
+      background: rgba(255,255,255,0.85); padding: 20px 30px; padding-left: 30px;
+      border-bottom: 1px solid var(--border-color); position: sticky; top: 0;
+      backdrop-filter: blur(6px); box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+      margin-bottom: 1px; transition: background 0.3s; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    }
+    body.dark-mode .main-header {
+      background: rgba(45,45,45,0.85); box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .main-header h1 { margin: 0; font-size: 28px; color: var(--body-text); font-weight: 600; }
+    .main-content {
+      flex: 1; padding: 1.5rem 2rem;
+      background: transparent; width: 100%;
+    }
+    /* ── Modals (compartidos) ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45); z-index: 2000;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: var(--modal-bg); color: var(--modal-text);
+      border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      width: min(520px,95vw); max-height: 90vh;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--table-border);
+      font-weight: 600; font-size: 15px;
+    }
+    .modal-close {
+      background: none; border: none; font-size: 22px;
+      cursor: pointer; color: var(--body-text); line-height: 1; padding: 0 4px;
+    }
+    .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: 14px 20px; border-top: 1px solid var(--table-border);
+      display: flex; justify-content: flex-end; gap: 8px;
+    }
+    /* ── Header user dropdown ── */
+    .hdr-user-dropdown { position: relative; }
+    .hdr-user-toggle {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+      font-size: 13px; font-weight: 700; border-radius: 12px;
+      border: 1px solid rgba(34,197,94,.35); background: white; color: #333;
+      cursor: pointer; transition: background 0.15s;
+    }
+    body.dark-mode .hdr-user-toggle { background: #1e293b; color: #e2e8f0; border-color: rgba(34,197,94,.5); }
+    .hdr-user-toggle:hover { background: #f5f5f5 !important; }
+    body.dark-mode .hdr-user-toggle:hover { background: #334155 !important; }
+    .hdr-user-arrow { font-size: 18px !important; color: #999; transition: transform 0.2s; }
+    .hdr-user-arrow.open { transform: rotate(180deg); }
+    .hdr-user-items {
+      display: none; position: absolute; right: 0; top: calc(100% + 6px);
+      min-width: 200px; background: white; border: 1px solid #ddd;
+      border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.15);
+      overflow: hidden; z-index: 1100; padding: 4px;
+    }
+    body.dark-mode .hdr-user-items { background: #1e293b; border-color: #334155; }
+    .hdr-user-items.visible { display: flex; flex-direction: column; }
+    .hdr-user-item {
+      display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+      border-radius: 8px; border: none; background: transparent; color: #333;
+      font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer;
+      font-family: inherit; transition: background 0.12s; width: 100%;
+    }
+    body.dark-mode .hdr-user-item { color: #e2e8f0; }
+    .hdr-user-item:hover { background: #f0f0f0 !important; transform: none !important; box-shadow: none !important; }
+    body.dark-mode .hdr-user-item:hover { background: #334155 !important; transform: none !important; box-shadow: none !important; }
+    .hdr-user-item-icon { color: #16a34a; font-size: 18px !important; }
+    body.dark-mode .hdr-user-item-icon { color: #00ff7a; }
+    .hdr-user-divider { height: 1px; background: #e0e0e0; margin: 4px 2px; }
+    body.dark-mode .hdr-user-divider { background: #334155; }
+    .hdr-user-item-danger { color: #ef4444 !important; }
+    .hdr-user-item-danger:hover { background: #fee2e2 !important; }
+    body.dark-mode .hdr-user-item-danger:hover { background: #7f1d1d !important; }
+    .hdr-font-ctrl {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 12px;
+      gap: 8px;
+    }
+    body.dark-mode .hdr-font-ctrl { color: #e5e7eb; }
+    .hdr-font-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #6b7280;
+      white-space: nowrap;
+    }
+    body.dark-mode .hdr-font-label { color: #9ca3af; }
+    .hdr-font-label .material-symbols-rounded {
+      font-size: 16px;
+      color: #16a34a;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    body.dark-mode .hdr-font-label .material-symbols-rounded { color: #00ff7a; }
+    .hdr-font-stepper {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+    body.dark-mode .hdr-font-stepper {
+      border: 1px solid #1f2937;
+      background: #111827;
+    }
+    .hdr-font-step-btn {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: #111827;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      transition: background 0.12s;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    body.dark-mode .hdr-font-step-btn { color: #e5e7eb; }
+    .hdr-font-step-btn:hover { 
+      background: rgba(34, 197, 94, 0.15); 
+      color: #16a34a; 
+      transform: none !important;
+      box-shadow: none !important;
+    }
+    body.dark-mode .hdr-font-step-btn:hover {
+      background: rgba(34, 197, 94, 0.15); 
+      color: #00ff7a; 
+      transform: none !important;
+      box-shadow: none !important;
+    }
+    .hdr-font-size-val {
+      min-width: 40px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: #111827;
+      padding: 0 4px;
+      border-left: 1px solid #e5e7eb;
+      border-right: 1px solid #e5e7eb;
+      line-height: 28px;
+      height: 28px;
+      display: inline-block;
+    }
+    body.dark-mode .hdr-font-size-val {
+      color: #e5e7eb;
+      border-left: 1px solid #1f2937;
+      border-right: 1px solid #1f2937;
+    }
+    /* ── Alerts ── */
+    .alerts-container { margin-bottom: 16px; }
+    /* ── Loading overlay ── */
+    #globalLoadingModal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45); z-index: 3000;
+      align-items: center; justify-content: center;
+    }
+    #globalLoadingModal .loading-box {
+      background: rgba(255,255,255,0.9); color: #111; padding: 16px 20px;
+      border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      display: flex; gap: 12px; align-items: center; min-width: 260px;
+      flex-direction: column; text-align: center; backdrop-filter: blur(4px);
+    }
+    body.dark-mode #globalLoadingModal .loading-box { background: rgba(20,20,20,0.85); color: #e5e7eb; }
+    #globalLoadingModal .loading-text { font-size: 16px; font-weight: 700; }
+    #globalLoadingModal .loading-visual { position: relative; width: 180px; }
+    #globalLoadingModal img.loading-ring { width: 180px; animation: spin 1.6s linear infinite; }
+    #globalLoadingModal img.loading-center {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+      width: 80px; height: 80px; border-radius: 50%;
+    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    /* ── Success / Error modals ── */
+    #globalSuccessModal, #globalMessageModal { text-align: center; }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div id="appSplash">
+    <img class="splash-logo" src="{{ url_for('static', filename='img/favicon.png') }}" alt="Cargando...">
+  </div>
+
+  {% if session.user_id %}
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header-preview">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <img src="{{ url_for('static', filename='img/favicon.png') }}" alt="logo" class="sidebar-logo-img">
+        <h2 class="sidebar-title">KARDEX</h2>
+      </div>
+    </div>
+
+    <ul class="sidebar-links">
+      <!-- Menú principal -->
+      <h4>
+        <span>Menú Principal</span>
+        <div class="menu-separator"></div>
+      </h4>
+      <li>
+        <a href="/kardex/productos" class="{{ 'active' if request.path == '/kardex/productos' else '' }}">
+          <span class="material-symbols-outlined">inventory_2</span>Productos
+        </a>
+      </li>
+      <li>
+      <!-- Inventario -->
+      <h4>
+        <span>Inventario</span>
+        <div class="menu-separator"></div>
+      </h4>
+      <li>
+        <a href="/kardex/movimientos/entrada" class="{{ 'active' if '/movimientos/entrada' in request.path else '' }}">
+          <span class="material-symbols-outlined">move_to_inbox</span>Mov. Entrada
+        </a>
+      </li>
+      <li>
+        <a href="/kardex/movimientos/salida" class="{{ 'active' if '/movimientos/salida' in request.path else '' }}">
+          <span class="material-symbols-outlined">outbox</span>Mov. Salida
+        </a>
+      </li>
+      <li>
+        <a href="/kardex/movimientos/reversar" class="{{ 'active' if '/movimientos/reversar' in request.path else '' }}">
+          <span class="material-symbols-outlined">undo</span>Reversar
+        </a>
+      </li>
+      <li>
+        <a href="/kardex/movimientos/anular" class="{{ 'active' if '/movimientos/anular' in request.path else '' }}">
+          <span class="material-symbols-outlined">cancel</span>Anular
+        </a>
+      </li>
+
+      <!-- Sync -->
+      <h4>
+        <span>Sincronización</span>
+        <div class="menu-separator"></div>
+      </h4>
+      <li>
+        <a href="#" onclick="kardexSyncProductos(); return false;">
+          <span class="material-symbols-outlined">sync</span>Sync Productos
+        </a>
+      </li>
+      <li>
+        <a href="#" onclick="kardexSyncAlmacenes(); return false;">
+          <span class="material-symbols-outlined">sync_alt</span>Sync Almacenes
+        </a>
+      </li>
+
+    </ul>
+
+    <!-- User card (bottom) -->
+    <div class="user-account">
+      <div class="user-profile">
+        <div class="user-avatar">
+          {{ (session.get('empleado_nombre') or session.get('username','U'))[0]|upper }}
+        </div>
+        <div class="user-detail">
+          <h3>{{ (session.get('empleado_nombre') or session.get('username','Usuario'))|replace('.',' ')|title }}</h3>
+          <span>
+            {% if session.get('is_super_admin') %}SuperAdmin
+            {% else %}
+              {% set rol = session.get('sistemas_roles',{}).get('kardex') %}
+              {{ 'Administrador' if rol == 'admin' else ('Operador' if rol == 'operador' else 'Usuario') }}
+            {% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+  </aside>
+  {% endif %}
+
+  <main>
+    <!-- Header -->
+    <header class="main-header">
+      <h1>{% block page_title %}{% endblock %}</h1>
+      <div style="display:flex;align-items:center;gap:10px;">
+        {% if session.user_id %}
+        <div class="hdr-user-dropdown" id="hdrUserMenu">
+          <button id="hdrUserToggle" type="button" class="hdr-user-toggle">
+            <span class="material-symbols-outlined" style="font-size:22px;color:#22c55e;flex-shrink:0;">account_circle</span>
+            <span>{{ (session.get('empleado_nombre') or session.get('username','Usuario'))|replace('.',' ')|title }}</span>
+            <span id="hdrUserArrow" class="material-symbols-outlined hdr-user-arrow">expand_more</span>
+          </button>
+          <div id="hdrUserDropdown" class="hdr-user-items">
+            <button id="hdrBtnTheme" type="button" class="hdr-user-item" onclick="toggleDarkMode()">
+              <span id="hdrThemeIcon" class="material-symbols-outlined hdr-user-item-icon">light_mode</span>
+              <div>
+                <div style="font-size:13px;font-weight:600;">Tema</div>
+                <div id="hdrThemeModeLabel" style="font-size:11px;color:#999;">Claro</div>
+              </div>
+            </button>
+            <div class="hdr-font-ctrl">
+              <span class="hdr-font-label">
+                <span class="material-symbols-rounded">text_fields</span>
+                Tamaño
+              </span>
+              <div class="hdr-font-stepper">
+                <button id="btnKardexFontDecrease" class="hdr-font-step-btn" type="button" aria-label="Reducir fuente">−</button>
+                <span id="kardexCurrentFontSizeDisplay" class="hdr-font-size-val">13px</span>
+                <button id="btnKardexFontIncrease" class="hdr-font-step-btn" type="button" aria-label="Aumentar fuente">+</button>
+              </div>
+            </div>
+            <div class="hdr-user-divider"></div>
+            <a href="/auth/menu" class="hdr-user-item">
+              <span class="material-symbols-outlined hdr-user-item-icon">home</span>
+              <span>Menú principal</span>
+            </a>
+            <div class="hdr-user-divider"></div>
+            <a href="/auth/logout" class="hdr-user-item hdr-user-item-danger">
+              <span class="material-symbols-outlined" style="color:#ef4444;font-size:18px!important;">logout</span>
+              <span>Cerrar sesión</span>
+            </a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </header>
+
+    <div class="main-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="alerts-container">
+            {% for cat, msg in messages %}
+              <article role="alert" class="alert alert-{{ 'success' if cat == 'success' else ('error' if cat == 'error' else 'info') }}">
+                {{ msg }}
+              </article>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <!-- Loading overlay -->
+  <div id="globalLoadingModal" aria-hidden="true">
+    <div class="loading-box" role="status">
+      <div class="loading-visual">
+        <img class="loading-ring" src="{{ url_for('static', filename='img/cg.png') }}" alt="">
+        <img class="loading-center" src="{{ url_for('static', filename='img/favicon.png') }}" alt="">
+      </div>
+      <div class="loading-text">Por favor espera...</div>
+    </div>
+  </div>
+
+  <!-- Success modal -->
+  <div id="globalSuccessModal" class="modal-overlay">
+    <div class="modal" style="max-width:400px;text-align:center;padding:1.5rem;">
+      <img src="{{ url_for('static', filename='img/chk.png') }}" alt="" style="width:64px;height:64px;display:block;margin:0 auto 8px;">
+      <h3>Operación exitosa</h3>
+      <p id="globalSuccessText"></p>
+      <button class="kardex-btn kardex-btn--primary" onclick="closeGlobalSuccessModal()" style="margin-top:1rem;">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- Error/Info modal -->
+  <div id="globalMessageModal" class="modal-overlay">
+    <div class="modal" style="max-width:460px;text-align:center;padding:1.25rem;">
+      <div id="globalMessageIcon" style="font-size:36px;margin-bottom:6px;"></div>
+      <h3 id="globalMessageTitle">Mensaje</h3>
+      <p id="globalMessageText" style="white-space:pre-line;"></p>
+      <div style="display:flex;justify-content:center;margin-top:1rem;">
+        <button class="kardex-btn kardex-btn--primary" onclick="closeGlobalMessageModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script>
+    // ── Dark mode ──────────────────────────────────────────────
+    function toggleDarkMode() {
+      const isDark = document.body.classList.toggle('dark-mode');
+      document.documentElement[isDark ? 'setAttribute' : 'removeAttribute']('data-dark-mode','true');
+      document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+      try { localStorage.setItem('appTheme', isDark ? 'dark' : 'light'); } catch(e) {}
+      updateThemeUI();
+    }
+    
+    function updateThemeUI() {
+      const isDark = document.body.classList.contains('dark-mode');
+      const icon = document.getElementById('hdrThemeIcon');
+      const label = document.getElementById('hdrThemeModeLabel');
+      if (icon) icon.textContent = isDark ? 'dark_mode' : 'light_mode';
+      if (label) label.textContent = isDark ? 'Oscuro' : 'Claro';
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      updateThemeUI();
+    });
+
+    // ── Header dropdown ────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggle = document.getElementById('hdrUserToggle');
+      const dropdown = document.getElementById('hdrUserDropdown');
+      const arrow = document.getElementById('hdrUserArrow');
+      const menu = document.getElementById('hdrUserMenu');
+      if (!toggle) return;
+      toggle.addEventListener('click', e => {
+        e.stopPropagation();
+        dropdown.classList.toggle('visible');
+        arrow.classList.toggle('open');
+      });
+      document.addEventListener('click', e => {
+        if (!menu.contains(e.target)) {
+          dropdown.classList.remove('visible');
+          arrow.classList.remove('open');
+        }
+      });
+    });
+
+    // ── Loading helpers ────────────────────────────────────────
+    window.showLoading = function(msg) {
+      const m = document.getElementById('globalLoadingModal');
+      if (!m) return;
+      const t = m.querySelector('.loading-text');
+      if (t) t.textContent = typeof msg === 'string' ? msg : 'Por favor espera...';
+      m.style.display = 'flex'; m.setAttribute('aria-hidden','false');
+      try { document.body.style.overflow = 'hidden'; } catch(e) {}
+    };
+    window.hideLoading = function() {
+      const m = document.getElementById('globalLoadingModal');
+      if (!m) return;
+      m.style.display = 'none'; m.setAttribute('aria-hidden','true');
+      try { document.body.style.overflow = 'auto'; } catch(e) {}
+    };
+
+    // ── Success / Message modals ───────────────────────────────
+    let _successTimer = null;
+    function openGlobalSuccessModal(msg) {
+      document.getElementById('globalSuccessText').textContent = msg || '';
+      document.getElementById('globalSuccessModal').classList.add('active');
+      if (_successTimer) clearTimeout(_successTimer);
+      _successTimer = setTimeout(() => closeGlobalSuccessModal(), 2500);
+    }
+    function closeGlobalSuccessModal() {
+      if (_successTimer) { clearTimeout(_successTimer); _successTimer = null; }
+      document.getElementById('globalSuccessModal').classList.remove('active');
+    }
+    function openGlobalMessageModal(type, title, msg) {
+      const icons = { success: '✓', error: '✕', info: 'ℹ' };
+      const colors = { success: '#22c55e', error: '#ef4444', info: '#3b82f6' };
+      const icon = document.getElementById('globalMessageIcon');
+      icon.textContent = icons[type] || 'ℹ';
+      icon.style.color = colors[type] || '#3b82f6';
+      document.getElementById('globalMessageTitle').textContent = title || '';
+      document.getElementById('globalMessageText').textContent = msg || '';
+      document.getElementById('globalMessageModal').classList.add('active');
+    }
+    function closeGlobalMessageModal() {
+      document.getElementById('globalMessageModal').classList.remove('active');
+    }
+
+    // ── Grid font-size controls (persisted) ──────────────────
+    function applyKardexGridFontSize(px) {
+      const val = (typeof px === 'number') ? `${px}px` : px;
+      document.documentElement.style.setProperty('--kardex-grid-font-size', val);
+      const disp = document.getElementById('kardexCurrentFontSizeDisplay');
+      if (disp) disp.textContent = `${String(val)}`;
+    }
+
+    function loadKardexGridFontSize() {
+      try {
+        const saved = localStorage.getItem('kardexGridFontSize');
+        const v = saved ? Number(saved) : 13;
+        const n = Math.min(18, Math.max(10, Number(v) || 13));
+        applyKardexGridFontSize(n);
+        return n;
+      } catch (e) {
+        applyKardexGridFontSize(13);
+        return 13;
+      }
+    }
+
+    function initKardexFontSizeControls() {
+      loadKardexGridFontSize();
+      const btnDec = document.getElementById('btnKardexFontDecrease');
+      const btnInc = document.getElementById('btnKardexFontIncrease');
+      if (btnDec) btnDec.addEventListener('click', () => {
+        const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--kardex-grid-font-size')) || 13;
+        const next = Math.max(10, cur - 1);
+        try { localStorage.setItem('kardexGridFontSize', String(next)); } catch (e) {}
+        applyKardexGridFontSize(next);
+      });
+      if (btnInc) btnInc.addEventListener('click', () => {
+        const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--kardex-grid-font-size')) || 13;
+        const next = Math.min(18, cur + 1);
+        try { localStorage.setItem('kardexGridFontSize', String(next)); } catch (e) {}
+        applyKardexGridFontSize(next);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initKardexFontSizeControls();
+    });
+
+    // ── Kardex sync ────────────────────────────────────────────
+    async function kardexSyncProductos() {
+      if (!confirm('¿Sincronizar productos y marcas desde SharePoint?')) return;
+      showLoading('Sincronizando productos desde SharePoint...');
+      try {
+        const r = await fetch('/kardex/api/sync/productos', { method: 'POST' });
+        const d = await r.json();
+        hideLoading();
+        if (d.success) {
+          openGlobalSuccessModal(
+            `Sync completado — Productos: ${d.productos?.inserted ?? 0} nuevos, ` +
+            `${d.productos?.updated ?? 0} actualizados.`
+          );
+        } else {
+          openGlobalMessageModal('error', 'Error en sync productos', d.error || 'Error desconocido');
+        }
+      } catch(e) {
+        hideLoading();
+        openGlobalMessageModal('error', 'Error de conexión', e.message);
+      }
+    }
+    async function kardexSyncAlmacenes() {
+      if (!confirm('¿Sincronizar almacenes desde SharePoint?')) return;
+      showLoading('Sincronizando almacenes desde SharePoint...');
+      try {
+        const r = await fetch('/kardex/api/sync/almacenes', { method: 'POST' });
+        const d = await r.json();
+        hideLoading();
+        if (d.success) {
+          openGlobalSuccessModal(
+            `Sync completado — Almacenes: ${d.almacenes?.inserted ?? 0} nuevos, ` +
+            `${d.almacenes?.updated ?? 0} actualizados.`
+          );
+        } else {
+          openGlobalMessageModal('error', 'Error en sync almacenes', d.error || 'Error desconocido');
+        }
+      } catch(e) {
+        hideLoading();
+        openGlobalMessageModal('error', 'Error de conexión', e.message);
+      }
+    }
+  </script>
+
+  <!-- Splash hide -->
+  <script>
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const s = document.getElementById('appSplash');
+        if (s) { s.classList.add('hidden'); setTimeout(() => s.remove(), 300); }
+      }, 80);
+    });
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

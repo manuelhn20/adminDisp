@@ -1,0 +1,32 @@
+{% for d in devices %}
+<tr data-device-id="{{ d.id_dispositivo }}">
+  <td>{{ d.categoria }}</td>
+  <td>{{ d.identificador or '' }}</td>
+  <td>
+    <code>{{ d.numero_serie }}</code>
+  </td>
+  <td>{{ d.nombre_modelo }}</td>
+  <td>{{ d.nombre_marca or '' }}</td>
+  <td>
+    {% set estado_val = d.estado|int if d.estado is defined else 0 %}
+    {% set estado_texto = 'Sin asignar' if estado_val == 0 else 'Asignado' if estado_val == 1 else 'En reparación' if estado_val == 2 else 'Eliminado' if estado_val == 3 else 'Uso general' if estado_val == 4 else 'Sin asignar' %}
+    {% set estado_color = 'danger' if estado_val == 0 else 'success' if estado_val == 1 else 'warning' if estado_val == 2 else 'secondary' if estado_val == 3 else 'primary' if estado_val == 4 else 'danger' %}
+    <span class="text-{{ estado_color }}">{{ estado_texto }}</span>
+  </td>
+  <td>{{ d.ip_asignada or '' }}</td>
+  <td class="table-actions">
+    <button class="btn btn-primary btn-small" title="Editar dispositivo" onclick="openEditDeviceModal({{ d.id_dispositivo }})" style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
+      <div style="width:42px; height:42px; border-radius:50%; background:#f59e0b; position:absolute;"></div>
+      <img src="/static/img/edd.png" alt="Editar" style="width:32px; height:32px; position:relative; z-index:1;">
+    </button>
+    <button class="btn btn-info btn-small" title="Ver historial de asignaciones" onclick="openDeviceHistoryModal({{ d.id_dispositivo }})" style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
+      <div style="width:42px; height:42px; border-radius:50%; background:#17a2b8; position:absolute;"></div>
+      <img src="/static/img/dh.png" alt="Historial" style="width:32px; height:32px; position:relative; z-index:1;">
+    </button>
+    <button class="btn btn-danger btn-small" title="Eliminar dispositivo" onclick="openDeleteDeviceModal({{ d.id_dispositivo }}, '{{ (d.numero_serie or '')|replace("'","\\'") }}', '{{ (d.nombre_marca or '')|replace("'","\\'") }}', '{{ (d.nombre_modelo or '')|replace("'","\\'") }}', '{{ (d.categoria or '')|replace("'","\\'") }}')" style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
+      <div style="width:42px; height:42px; border-radius:50%; background:#dc3545; position:absolute;"></div>
+      <img src="/static/img/dd.png" alt="Eliminar" style="width:28px; height:28px; position:relative; z-index:1;">
+    </button>
+  </td>
+</tr>
+{% endfor %}

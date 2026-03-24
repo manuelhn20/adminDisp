@@ -1,0 +1,12 @@
+{% for m in modelos %}
+  <tr>
+    <td><strong>{{ m.id_modelo }}</strong></td>
+    <td>{{ m.nombre_modelo }}</td>
+    <td>{{ m.marca_nombre or '-' }}</td>
+    <td>{{ m.categoria }}</td>
+    <td class="table-actions">
+      <button class="btn btn-primary btn-small" onclick='openEditModeloModal({{ m.id_modelo }}, {{ m.nombre_modelo | tojson }}, {{ m.fk_id_marca }}, {{ m.categoria | tojson }}, {{ m.salidas or "null" }}, {{ m.capacidad | tojson or "null" }})'>Editar</button>
+      <button class="btn btn-danger btn-small" onclick='openGlobalDeleteModal(`/devices/modelo/{{ m.id_modelo }}`, "Confirmar eliminación", {{ m.nombre_modelo | tojson }})'>Eliminar</button>
+    </td>
+  </tr>
+{% endfor %}

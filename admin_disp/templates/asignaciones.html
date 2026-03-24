@@ -1,0 +1,1583 @@
+﻿{% extends 'base.html' %}
+{% block title %}PROIMA - Asignaciones{% endblock %}
+{% block page_title %}Usuarios y Asignaciones{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pdf_cards.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/progress-steps.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/asignaciones.css') }}">
+{% endblock %}
+{% block content %}
+<div class="button-group" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+  <div style="display:flex;gap:12px;">
+    <button class="btn btn-primary offset-btn" onclick="openNewAsignacionModal()" aria-label="Nueva asignación">
+      <span style="position:relative; top:2px; display:inline-block;">Nueva asignación</span>
+    </button>
+    <button class="btn btn-primary offset-btn" onclick="openTransferDevicesModal()" id="topBtnTransferDevices">Transferir dispositivos</button>
+    <button class="btn btn-primary offset-btn" onclick="toggleHistoricoView()" id="btnHistoricoAsignaciones">Ver Histórico Asignaciones</button>
+
+    <button class="btn btn-primary offset-btn" onclick="toggleHistoricoView()" id="btnVolverResumen" style="display:none;">
+      <img src="{{ url_for('static', filename='img/backw.png') }}" alt="Volver" style="height:16px; vertical-align:middle; margin-right:8px;">
+      <span style="position:relative; top:2px; display:inline-block;">Volver al Resumen</span>
+    </button>
+    <span id="asignaciones-loading" class="htmx-indicator" style="color:var(--text-gray);font-size:14px;display:flex;align-items:center;gap:6px;">
+      <span class="spinner" style="display:inline-block;width:16px;height:16px;border:2px solid var(--text-gray);border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span>
+      Actualizando...
+    </span>
+  </div>
+  <div style="display:flex;align-items:center;">
+    <input id="asignacionesPageSearch" class="global-table-search" placeholder="Buscar..." style="width:220px;" />
+  </div>
+</div>
+
+
+
+
+
+<script src="{{ url_for('static', filename='js/progress-steps.js') }}"></script>
+
+
+
+<!-- Signature modal + logic -->
+<!-- Signature Pad library will be loaded on demand -->
+
+<div id="modalSignature" class="modal-overlay">
+  <div class="modal" style="max-width:900px;">
+    <div class="modal-header">
+      <h3 id="signatureModalTitle">Capturar Firma</h3>
+      <button class="modal-close" onclick="closeSignatureModal()">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:20px;">
+      <canvas id="signatureCanvas" style="width:100%; border:2px solid #ccc; display:block; margin-bottom:15px; cursor:crosshair; min-height:300px;"></canvas>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn btn-secondary" type="button" onclick="undoSignature()"><span class="material-symbols-outlined" aria-hidden="true">undo</span> Deshacer</button>
+        <button class="btn btn-secondary" type="button" onclick="redoSignature()"><span class="material-symbols-outlined" aria-hidden="true">redo</span> Rehacer</button>
+        <button class="btn btn-secondary" type="button" onclick="clearSignature()"><span class="material-symbols-outlined" aria-hidden="true">delete</span> Borrar</button>
+        <button class="btn btn-cancel" type="button" onclick="closeSignatureModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btnSaveSignature" type="button">Guardar firma</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- Modal: Dispositivos asignados al empleado -->
+<div id="modalEmpleadoDevices" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Dispositivos asignados</h3>
+      <button class="modal-close" onclick="closeModal('modalEmpleadoDevices')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="overflow:auto; max-height:60vh;">
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Identificador</th>
+              <th>No de Serie</th>
+              <th>Marca</th>
+              <th>Modelo</th>
+              <th>Fecha Inicio</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- rows inserted dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('modalEmpleadoDevices')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+    <!-- Modal: Transfer conflicts -->
+    <div id="modalTransferConflicts" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Conflictos de transferencia</h3>
+          <button class="modal-close" onclick="closeModal('modalTransferConflicts')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>No se puede completar la transferencia porque el empleado destino ya tiene los siguientes dispositivos:</p>
+          <ul id="transferConflictsList"></ul>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-cancel" onclick="closeModal('modalTransferConflicts')">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Confirm transfer -->
+    <div id="modalTransferConfirm" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Confirmar transferencia</h3>
+          <button class="modal-close" onclick="closeModal('modalTransferConfirm')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>¿Estás seguro que quieres realizar la transferencia?</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-cancel" id="btnTransferConfirmNo">Cancelar</button>
+          <button class="btn btn-primary" id="btnTransferConfirmYes">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Observaciones dispositivo -->
+    <div id="modalObservacionesDispositivo" class="modal-overlay">
+      <div class="modal" style="max-width:600px;">
+        <div class="modal-header">
+          <h3>Información del Dispositivo</h3>
+          <button class="modal-close" onclick="closeModal('modalObservacionesDispositivo')">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:24px;">
+          
+          <!-- Observación 1: Estética -->
+          <div class="obs-group">
+            <h4 class="obs-group-title">Estética</h4>
+            <div class="obs-options">
+              <div class="obs-option">
+                <input type="radio" id="estetica1" name="observacion-estetica" value="Pantalla sin detalles, totalmente funcional">
+                <label for="estetica1">Pantalla sin detalles, totalmente funcional</label>
+              </div>
+              <div class="obs-option">
+                <input type="radio" id="estetica2" name="observacion-estetica" value="Pantalla con detalles, totalmente funcional">
+                <label for="estetica2">Pantalla con detalles, totalmente funcional</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Observación 2: Accesorios -->
+          <div class="obs-group">
+            <h4 class="obs-group-title">Accesorios</h4>
+            <div class="obs-options">
+              <div class="obs-option">
+                <input type="radio" id="accesorios1" name="observacion-accesorios" value="Cable y adaptador AC incluido">
+                <label for="accesorios1">Cable y adaptador AC incluido</label>
+              </div>
+              <div class="obs-option">
+                <input type="radio" id="accesorios2" name="observacion-accesorios" value="Cable incluido">
+                <label for="accesorios2">Cable incluido</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-cancel" onclick="closeModal('modalObservacionesDispositivo')">Cancelar</button>
+          <button class="btn btn-primary" onclick="confirmarObservacionesDispositivo()">Continuar</button>
+        </div>
+      </div>
+    </div>
+
+<!-- Modal: Test OneDrive PDF Viewer -->
+
+<div id="modalDocumentosOneDrive" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Documentos en OneDrive</h3>
+      <button class="modal-close" onclick="closeModal('modalDocumentosOneDrive')">&times;</button>
+      <!-- stepper moved to modal body (below cards) to match design -->
+    </div>
+    <div class="modal-body" style="padding: 0;">
+    <div class="doc-progress-steps-wrapper">
+      <div class="doc-progress-container" id="docProgressContainer">
+        <div class="doc-progress" id="docProgressBar"></div>
+        <div class="doc-circle active">1</div>
+        <div class="doc-circle">2</div>
+        <div class="doc-circle">3</div>
+        <div class="doc-circle">4</div>
+      </div>
+    </div>
+      <div id="pdfCardsContainer" class="pdf-cards-container">
+        <!-- Las cards se cargarán dinámamente aquí -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: PDF Viewer con PDF.js -->
+<div id="modalPDFViewer" class="modal-overlay">
+  <div class="modal-content">
+    <div class="pdf-viewer-header">
+      <h3 id="pdfViewerTitle">Documento PDF</h3>
+      <div class="pdf-viewer-controls">
+        <div class="zoom-control-group">
+          <button onclick="zoomOutPDF()" title="Reducir zoom">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M2 8a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11A.5.5 0 0 1 2 8z"/>
+            </svg>
+          </button>
+          <div class="zoom-slider-wrapper">
+            <input type="range" id="zoomSlider" min="100" max="200" value="100" class="zoom-slider" oninput="onZoomSliderInput(this.value)" onchange="updateZoomFromSlider(this.value)">
+            <span id="zoomLabel" class="zoom-label">100%</span>
+          </div>
+          <button onclick="zoomInPDF()" title="Ampliar zoom">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/>
+            </svg>
+          </button>
+        </div>
+        <button id="btnRotateLeft" onclick="rotatePDFLeft()" title="Rotar izquierda">
+          <span class="material-symbols-outlined" aria-hidden="true">rotate_left</span>
+          Rotar
+        </button>
+        <button id="btnRotateRight" onclick="rotatePDFRight()" title="Rotar derecha">
+          <span class="material-symbols-outlined" aria-hidden="true">rotate_right</span>
+          Rotar
+        </button>
+        <button id="btnFitWidth" onclick="fitToWidth()" title="Ajustar">Ajustar</button>
+        <button onclick="downloadCurrentPDF()">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+          </svg>
+          Descargar
+        </button>
+        <button onclick="printCurrentPDF()" title="Imprimir" aria-label="Imprimir documento">
+          <!-- Material Icons 'print' (viewBox 0 0 24 24) -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M19 8h-1V3H6v5H5c-1.1 0-2 .9-2 2v6h4v4h10v-4h4v-6c0-1.1-.9-2-2-2zm-5 10H10v-4h4v4zm3-8H6V5h11v5z"/>
+          </svg>
+          Imprimir
+        </button>
+        <button onclick="closeModal('modalPDFViewer')">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+          </svg>
+          Cerrar
+        </button>
+      </div>
+    </div>
+    <div class="pdf-viewer-body" id="pdfViewerBody">
+      <div id="pdfLoaderContainer" class="pdf-loader-container" style="display: none;">
+        <div class="pdf-loader-visual">
+          <img class="pdf-loader-ring" src="{{ url_for('static', filename='img/cg.png') }}" alt="" />
+          <div class="pdf-loader-center">
+            <img src="{{ url_for('static', filename='img/favicon.png') }}" alt="" />
+          </div>
+        </div>
+        <p class="pdf-loader-text">Cargando documento...</p>
+      </div>
+      <canvas id="pdfViewerCanvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Transferir dispositivos -->
+<div id="modalTransferDevices" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Transferir dispositivos</h3>
+      <button class="modal-close" onclick="closeModal('modalTransferDevices')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex; gap:0.75rem; align-items:flex-end; margin-bottom:0.1875rem;">
+        <label style="flex:1;">
+          <span class="label-title">Empleado origen<span class="required">*</span></span>
+          <select id="selectSourceEmpleado" style="width:100%;" onchange="loadSourceDevices(this.value)">
+            <option value="">-- Seleccionar empleado origen --</option>
+            {% for emp in empleados_options %}
+              <option value="{{ emp.IdEmpleado }}">{{ emp.NombreCompleto }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label style="flex:1;">
+          <span class="label-title">Empleado receptor<span class="required">*</span></span>
+          <select id="selectTargetEmpleado" style="width:100%;" onchange="loadTargetDevices(this.value)">
+            <option value="">-- Seleccionar empleado receptor --</option>
+            {% for emp in empleados_options %}
+              <option value="{{ emp.IdEmpleado }}">{{ emp.NombreCompleto }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <div id="transferNotice" class="transfer-notice" style="display:none;">Selecciona los dispositivos a transferir</div>
+      <div style="display:flex; gap:1rem;">
+        <div style="flex:1;">
+          <div class="table-container">
+            <div style="font-weight:600; margin-bottom:6px;">Origen: <span id="transferSourceLabel">-</span></div>
+            <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="transferSelectAll" aria-label="Seleccionar todo"></th>
+                  <th>Tipo</th>
+                  <th>No de Serie</th>
+                  <th>Marca</th>
+                  <th>Modelo</th>
+                </tr>
+              </thead>
+              <tbody id="transferSourceTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div style="flex:1;">
+          <div class="table-container">
+            <div style="font-weight:600; margin-bottom:6px;">Destino: <span id="transferTargetLabel">-</span></div>
+            <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Tipo</th>
+                  <th>No de Serie</th>
+                  <th>Marca</th>
+                  <th>Modelo</th>
+                </tr>
+              </thead>
+              <tbody id="transferTargetTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+          <!-- Modal: Confirmar finalización de asignación (para vista de asignaciones) -->
+          <div id="modalFinalizeAsignacionEmpleado" class="modal-overlay">
+            <div class="modal" style="max-width:520px;">
+              <div class="modal-header">
+                <h3>Confirmar finalización de asignación</h3>
+                <button class="modal-close" onclick="closeModal('modalFinalizeAsignacionEmpleado')">&times;</button>
+              </div>
+              <div class="modal-body">
+                <p id="finalizeEmpleadoMessage">¿Estás seguro que quieres finalizar la asignación?</p>
+                <p style="font-size:0.95rem; color:var(--text-gray);">Escribe <strong>CONFIRMAR</strong> para realizar el proceso.</p>
+                <div style="margin-top:8px;">
+                  <input id="confirmFinalizeEmpleadoInput" type="text" placeholder="Escribe CONFIRMAR para continuar" style="width:100%; padding:10px; border-radius:6px;" />
+                </div>
+                <div id="finalizeEmpleadoError" style="display:none; color:#b00020; margin-top:8px; font-weight:600;"></div>
+              </div>
+              <div class="modal-footer" style="display:flex; gap:8px; justify-content:flex-end;">
+                <button type="button" id="btnCancelFinalizeEmpleado" class="btn btn-secondary">Cancelar</button>
+                <button type="button" id="btnConfirmFinalizeEmpleado" class="btn btn-primary" disabled>Confirmar finalización</button>
+              </div>
+            </div>
+          </div>
+
+          
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('modalTransferDevices')">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmTransfer">Confirmar transferencia</button>
+    </div>
+  </div>
+</div>
+
+<!-- Vista de Resumen por Empleado -->
+<div id="viewResumen">
+  {% if empleados_options %}
+    <table role="grid" id="asignacionesTable">
+      <thead>
+        <tr>
+          <th data-sortable="empleado">Empleado <img id="sortIndicator_empleado" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+          <th data-sortable="empresa">Empresa <img id="sortIndicator_empresa" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+          <th data-sortable="puesto">Puesto Asignado <img id="sortIndicator_puesto" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+          <th id="thActionsAsignaciones">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="asignacionesTbody">
+      {% for emp in empleados_options %}
+        <tr data-emp-id="{{ emp.IdEmpleado }}">
+          <td>
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="flex:1;">{{ emp.NombreCompleto }}</div>
+              <div style="flex:0 0 auto; margin-left:8px; text-align:right; display:flex; align-items:center; gap:8px;">
+                {% if emp.IsActive is defined and not emp.IsActive %}
+                  <span class="inactive-badge" title="Empleado inactivo">Inactivo</span>
+                {% endif %}
+                <span class="device-count-badge {% if (emp.DispositivosCount|default(0)) > 0 %}has-count{% endif %}">{{ emp.DispositivosCount|default(0) }}</span>
+              </div>
+            </div>
+          </td>
+          <td>{{ emp.Empresa or '' }}</td>
+          <td>{{ emp.Cargo or '-' }}</td>
+            <td class="table-actions">
+            <button class="btn btn-primary btn-small" onclick="openEmpleadoDevicesModalFromResumen({{ emp.IdEmpleado }})" style="display:inline-flex;align-items:center;gap:8px;">
+              <span>Ver</span>
+              <img src="{{ url_for('static', filename='img/devicesb.png') }}" alt="Dispositivos" style="width:30px; height:30px; vertical-align:middle;">
+            </button>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <article role="alert" class="empty-state">
+      No hay empleados registrados.
+    </article>
+  {% endif %}
+</div>
+
+<!-- Vista de Histórico de Asignaciones -->
+<div id="viewHistorico" style="display:none;">
+  {% if asignaciones %}
+    <table role="grid" id="historicoTable">
+      <thead>
+        <tr>
+          <th data-sortable="dispositivo">Dispositivo <img id="sortIndicator_h_dispositivo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+          <th data-sortable="empleado">Empleado <img id="sortIndicator_h_empleado" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+          <th data-sortable="fecha_inicio">Fecha Inicio <img id="sortIndicator_h_fecha_inicio" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+          <th data-sortable="fecha_fin">Fecha Fin <img id="sortIndicator_h_fecha_fin" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+          <th data-sortable="correlativo">Correlativo <img id="sortIndicator_h_correlativo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+          <th id="thActionsHistorico">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for a in asignaciones %}
+        <tr data-asignacion-id="{{ a.id_asignacion }}">
+          <td>{{ a.categoria or '-' }}</td>
+          <td>{{ a.empleado_nombre or a.fk_id_empleado }}</td>
+          <td>{{ a.fecha_inicio_asignacion }}</td>
+          <td>{{ a.fecha_fin_asignacion or '-' }}</td>
+          <td>{{ a.correlativo|format_correlativo }}</td>
+          <td class="table-actions">
+            <button class="btn btn-primary btn-small" title="Editar asignación" onclick="openEditAsignacionModal({{ a.id_asignacion }})" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:none;position:relative;margin-right:6px;"><div style="width:42px;height:42px;border-radius:50%;background:#06a7e6;position:absolute;"></div><img src="/static/img/edi.png" alt="Editar" style="width:28px;height:28px;position:relative;z-index:1;"></button>
+            <button class="btn btn-primary btn-small" title="Generar documentacion" onclick="abrirModalSeleccionarTipoDocumentacion({{ a.id_asignacion }})" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:1.0rem;background:transparent;border:none;position:relative;"><div style="width:42px;height:42px;border-radius:50%;background:transparent;position:absolute;"></div><img src="{{ url_for('static', filename='img/docgen.png') }}" alt="Generar documentación" style="width:38px;height:38px;position:relative;z-index:1;"></button>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <article role="alert" class="empty-state">
+      No hay asignaciones registradas.
+    </article>
+  {% endif %}
+</div>
+
+<div id="modalNewAsignacion" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nueva asignación</h3>
+      <button class="modal-close" onclick="closeModal('modalNewAsignacion')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formNewAsignacion" onsubmit="handleSubmitNewAsignacion(event)">
+        <label style="width:100%;">
+          <div class="grid-404040">
+            <div>
+              <span class="label-title">Tipo de Dispositivo<span class="required">*</span></span>
+              <select id="filterTipoDispositivo" style="width:100%;" onchange="filterDispositivosPorTipo()">
+                <option value="">Seleccionar dispositivo</option>
+                <optgroup label="Dispositivos">
+                  <option value="Laptop">Laptop</option>
+                  <option value="PC">PC / Ordenador sobremesa</option>
+                  <option value="Celular">Celular</option>
+                  <option value="Tablet">Tablet</option>
+                </optgroup>
+                <optgroup label="Infraestructura de Red">
+                  <option value="Router">Router</option>
+                  <option value="Router AP">Router AP</option>
+                  <option value="Switch">Switch</option>
+                </optgroup>
+                <optgroup label="Periféricos">
+                  <option value="Monitor">Monitor</option>
+                  <option value="Impresora">Impresora</option>
+                  <option value="UPS">UPS</option>
+                  <option value="Telefono VoIP">Teléfono VoIP</option>
+                  <option value="Teclado">Teclado</option>
+                  <option value="Mouse">Mouse</option>
+                  <option value="Auriculares">Auriculares</option>
+                </optgroup>
+              </select>
+            </div>
+            <div></div>
+            <div>
+              <span class="label-title">Empresa</span>
+              <select id="selectEmpresaNew" name="empresa" style="width:100%;">
+                <option value="">Seleccionar empresa</option>
+              </select>
+            </div>
+          </div>
+        </label>
+        <label>
+          <span class="label-title">Dispositivo<span class="required">*</span></span>
+          <select id="selectDispositivo" name="fk_id_dispositivo" required>
+            <option value="">Seleccionar dispositivo</option>
+            {% for disp in dispositivos_options %}
+              <option value="{{ disp.id_dispositivo }}"
+                      data-tipo="{{ disp.categoria }}"
+                      data-fk-plan="{{ disp.fk_id_plan if disp.fk_id_plan is not none else '' }}"
+                      data-imei="{{ disp.imei | default('') }}"
+                      data-marca="{{ disp.nombre_marca | default('') }}"
+                      data-modelo="{{ disp.nombre_modelo | default('') }}">
+                {{ disp.nombre_marca | default('') }} {{ disp.nombre_modelo | default('') }}{% if disp.imei %} | {{ disp.imei }}{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          <span class="label-title">Empleado<span class="required">*</span></span>
+          <div style="display:flex; gap:12px; align-items:center;">
+              <select name="fk_id_empleado" id="selectEmpleadoNew" required style="flex:1; min-width:220px;">
+              <option value="">Seleccionar empleado</option>
+                {% for emp in empleados_options %}
+                  {%- set inactive = (emp.IsActive is defined and not emp.IsActive) -%}
+                  <option value="{{ emp.IdEmpleado }}"
+                          data-cargo="{{ emp.Cargo | default('') }}"
+                          data-empresa="{{ emp.Empresa | default('') }}"
+                          data-active="{{ '1' if (emp.IsActive|default(true)) else '0' }}"
+                          {% if inactive %}disabled{% endif %}>
+                    {{ emp.NombreCompleto }}
+                  </option>
+                {% endfor %}
+            </select>
+            <button type="button" id="btnShowEmpleadoDevices" class="btn btn-primary" disabled title="Ver dispositivos asignados">Ver dispositivos</button>
+          </div>
+        </label>
+        <div id="infoEmpleadoDevices" style="margin-top:0.25rem; margin-bottom:0.5rem; color:var(--text-gray); display:none">Dispositivos asignados: <span id="countEmpleadoDevices">0</span></div>
+        <label>
+          Código de plaza
+          <input type="text" name="codigo_plaza" placeholder="Introduce el Código de plaza">
+        </label>
+        <label>
+          Fecha de inicio
+          <input type="date" name="fecha_inicio_asignacion" required style="flex:1; padding:10px; border-radius:6px;" />
+        </label>
+        <label>
+          Observaciones
+          <textarea name="observaciones" placeholder="Notas adicionales"></textarea>
+        </label>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeModal('modalNewAsignacion')">Cancelar</button>
+      <button type="submit" form="formNewAsignacion" class="btn btn-primary">Guardar asignación</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Modal: Confirmación para asignar celular sin plan -->
+<div id="modalConfirmAssignNoPlan" class="modal-overlay">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <h3>Celular no vinculado a plan</h3>
+      <button class="modal-close" onclick="closeModal('modalConfirmAssignNoPlan')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmAssignNoPlanMessage">El celular seleccionado no tiene un plan vinculado.</p>
+      <div style="margin-top:10px; font-weight:600;">Detalles del dispositivo:</div>
+      <ul style="margin-top:6px; color:var(--text-gray);">
+        <li><strong>Marca:</strong> <span id="confirmDispMarca">-</span></li>
+        <li><strong>Modelo:</strong> <span id="confirmDispModelo">-</span></li>
+        <li><strong>IMEI:</strong> <span id="confirmDispImei">-</span></li>
+        <li><strong>Empleado:</strong> <span id="confirmEmpleadoName">-</span></li>
+      </ul>
+    </div>
+    <div style="display:flex; gap:12px; justify-content:flex-end; padding:16px;">
+      <button class="btn btn-cancel" id="btnCancelAssignNoPlan">Cancelar</button>
+      <button class="btn btn-primary" id="btnAcceptAssignNoPlan">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal edición asignación -->
+<div id="modalEditAsignacion" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Editar asignación</h3>
+      <button class="modal-close" onclick="closeEditAsignacionModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formEditAsignacion">
+        <input type="hidden" id="editAsignacionId">
+        <label>
+          Dispositivo
+          <div id="editAsignacionDevice" class="form-label-value" style="display:flex;flex-direction:column;gap:0.25rem;align-items:flex-start;text-align:left;padding:0;margin:0;width:100%;">
+            <div><span>Tipo:</span> <strong><span id="editAsignacionTipo"></span></strong></div>
+            <div><span>Serie:</span> <strong><span id="editAsignacionSerie"></span></strong></div>
+            <div><span>Marca:</span> <strong><span id="editAsignacionMarca"></span></strong></div>
+            <div><span>Modelo:</span> <strong><span id="editAsignacionModelo"></span></strong></div>
+          </div>
+        </label>
+        <label>
+          Empleado
+          <div id="editAsignacionEmpleado" class="form-label-value" style="padding:0;margin:0;text-align:left;align-items:flex-start;width:100%;"></div>
+        </label>
+        <label>
+          Fecha inicio
+          <div id="editAsignacionFechaInicio" class="form-label-value" style="padding:0;margin:0;text-align:left;align-items:flex-start;width:100%;"></div>
+        </label>
+        <label>
+          Fecha fin
+          <input type="date" id="editAsignacionFechaFin">
+        </label>
+        <label>
+          Observaciones
+          <textarea id="editAsignacionObservaciones" rows="3"></textarea>
+        </label>
+        <label style="margin-top:0.75rem;">
+          <span class="label-title">Confirmación necesaria </span>
+          <input type="text" id="editAsignacionConfirm" placeholder="Escribe CONFIRMAR para aplicar" autocomplete="off">
+        </label>
+        <div id="editAsignacionError" style="display:none; color:#b00020; font-weight:600; margin-top:0.5rem;"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeEditAsignacionModal()">Cancelar</button>
+      <button type="button" id="btnSaveAsignacion" class="btn btn-primary" disabled>Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<!-- Embedded device editor modal and scripts (copied from dispositivos.html) -->
+<!-- Modal: Editar Dispositivo -->
+<div id="modalEditDevice" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <div>
+        <h3 style="margin:0;">Editar dispositivo</h3>
+        <div id="editDeviceHeaderLabel" style="font-size:0.9rem; color:var(--text-gray); margin-top:4px;"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="modal-close" onclick="closeModal('modalEditDevice')">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <form id="formEditDevice" onsubmit="return false;">
+        <input type="hidden" id="editDeviceId">
+        <fieldset>
+          <legend>Marca y Modelo</legend>
+          <label>
+            <span class="label-title">Marca</span>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <select id="editSelectMarca" name="fk_id_marca" style="flex:1;">
+                <option value="">-- Seleccionar marca --</option>
+                {% for marca in marcas_options %}
+                  <option value="{{ marca.id_marca }}">{{ marca.nombre_marca }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </label>
+          <label>
+            <span class="label-title">Modelo</span>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <select id="editSelectModelo" name="fk_id_modelo" style="flex:1;">
+                <option value="">-- Seleccionar modelo --</option>
+                {% for modelo in modelos_options %}
+                  <option value="{{ modelo.id_modelo }}" data-tipo="{{ modelo.categoria }}" data-fk-marca="{{ modelo.fk_id_marca if modelo.fk_id_marca is defined else '' }}">{{ modelo.nombre_modelo }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </label>
+          <label>
+            <span class="label-title">Tipo de dispositivo</span>
+            <select id="editDeviceTipo" name="categoria">
+              <option value="">-- Seleccionar --</option>
+              <optgroup label="Dispositivos">
+                <option value="Laptop">Laptop</option>
+                <option value="Celular">Celular</option>
+                <option value="Tablet">Tablet</option>
+              </optgroup>
+              <optgroup label="Infraestructura de Red">
+                <option value="Router">Router</option>
+                <option value="Router AP">Router AP</option>
+                <option value="Switch">Switch</option>
+              </optgroup>
+              <optgroup label="Periféricos">
+                <option value="Monitor">Monitor</option>
+                <option value="Impresora">Impresora</option>
+                <option value="UPS">UPS</option>
+                <option value="Telefono VoIP">Teléfono VoIP</option>
+                <option value="Teclado">Teclado</option>
+                <option value="Mouse">Mouse</option>
+                <option value="Auriculares">Auriculares</option>
+                <option value="Adaptador">Adaptador</option>
+              </optgroup>
+            </select>
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>Información</legend>
+          <label>
+            Número de serie
+            <input type="text" id="editDeviceSerial" name="numero_serie" class="form-input" oninput="this.value = this.value.toUpperCase()" />
+          </label>
+          <label id="labelEditIdentificador">
+            Identificador
+            <input type="text" id="editDeviceIdentificador" name="identificador" class="form-input">
+          </label>
+          <label id="labelEditImei">
+            IMEI
+            <input type="text" id="editDeviceImei" name="imei">
+          </label>
+          <label id="labelEditImei2Checkbox" class="checkbox-label" style="display:block; width:100%; text-align:left;">
+            <div style="display:flex; justify-content:flex-start; align-items:center; gap:0.5rem; width:100%;">
+              <input type="checkbox" id="checkEditImei2" onchange="toggleEditImei2Field()" style="margin:0; width:16px; height:16px; vertical-align:middle; flex:0 0 auto;">
+              <span style="vertical-align:middle; flex:1;">El dispositivo tiene 2 IMEI</span>
+            </div>
+          </label>
+          <label id="labelEditImei2" style="display:none;">
+            IMEI 2
+            <input type="text" id="editDeviceImei2" name="imei2">
+          </label>
+          <label id="labelEditMac" style="display:none;">
+            Dirección MAC
+            <input type="text" id="editDeviceMac" name="direccion_mac">
+          </label>
+          <label id="labelEditIp" style="display:none;">
+            Dirección IP
+            <input type="text" id="editDeviceIp" name="ip_asignada">
+            <div class="field-error" id="editIpError" style="display:none;color:#b00020;font-size:0.9rem;margin-top:4px;"></div>
+          </label>
+          <label id="labelEditObservaciones">
+            Observaciones
+            <textarea id="editDeviceObservaciones" name="observaciones" rows="2" placeholder="Observaciones o notas adicionales del dispositivo"></textarea>
+          </label>
+          <label id="labelEditExtension" style="display:none;">
+            <span class="label-title">Extensión VoIP</span>
+            <input type="text" id="editDeviceExtension" name="extension" placeholder="Número de extensión">
+          </label>
+          <label id="labelEditFechaObt">
+            <span class="label-title">Fecha de obtención</span>
+            <input type="date" id="editDeviceFechaObtencion" name="fecha_obt" placeholder="Fecha de obtención del dispositivo">
+          </label>
+          <label id="labelEditColor">
+            Color
+            <select id="editDeviceColor" name="color">
+              <option value="">-- Seleccionar color --</option>
+              <option value="Negro">Negro</option>
+              <option value="Gris">Gris</option>
+              <option value="Blanco">Blanco</option>
+              <option value="Plata">Plata</option>
+              <option value="Verde">Verde</option>
+              <option value="Dorado">Dorado</option>
+              <option value="Azul">Azul</option>
+            </select>
+          </label>
+          <!-- Campos UPS: salidas y capacidad -->
+          <div id="upsFieldsEditDevice" style="display:none;">
+            <label>
+              <span class="label-title">Salidas</span>
+              <select name="salidas" id="salidasEditDevice">
+                <option value="">-- Seleccionar --</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+              </select>
+            </label>
+            <label>
+              <span class="label-title">Capacidad (en VA y W)</span>
+              <div style="display:flex;gap:0.5rem;align-items:center;">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" name="capacidad_va" id="capacidadVAEditDevice" placeholder="VA" maxlength="5" style="flex:1;width:auto;">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" name="capacidad_w" id="capacidadWEditDevice" placeholder="W" maxlength="4" style="flex:1;width:auto;">
+              </div>
+              <div style="font-size:0.85rem;color:var(--text-gray);margin-top:0.25rem;">Ejemplo: 1500 VA, 900 W</div>
+            </label>
+          </div>
+          <label id="labelEditTamano">
+            Tamaño
+            <select id="editDeviceTamano" name="tamano">
+              <option value="">-- Seleccionar tamaño --</option>
+              <option value='4.7"'>4.7"</option>
+              <option value='5.5"'>5.5"</option>
+              <option value='6.1"'>6.1"</option>
+              <option value='6.7"'>6.7"</option>
+              <option value='13"'>13"</option>
+              <option value='14"'>14"</option>
+              <option value='15.6"'>15.6"</option>
+              <option value='16"'>16"</option>
+              <option value='21"'>21"</option>
+              <option value='24"'>24"</option>
+              <option value='27"'>27"</option>
+              <option value='32"'>32"</option>
+              <option value='43"'>43"</option>
+              <option value='50"'>50"</option>
+            </select>
+          </label>
+          <label id="labelEditDeviceCargador" class="checkbox-label" style="display:block; width:100%; text-align:left;">
+            <div style="display:flex; justify-content:flex-start; align-items:center; gap:0.5rem; width:100%;">
+              <input type="checkbox" id="editDeviceCargador" name="cargador" style="margin:0; width:16px; height:16px; vertical-align:middle; flex:0 0 auto;">
+              <span style="vertical-align:middle; flex:1;">Cargador o Adaptador AC</span>
+            </div>
+          </label>
+          <label id="labelEditDeviceEstado" style="display:none;">
+            <span class="label-title">Estado</span>
+            <select id="editDeviceEstado" name="estado">
+              <option value="">-- Seleccionar --</option>
+              <option value="0">Sin asignar</option>
+              <option value="1">Asignado</option>
+              <option value="2">En reparación</option>
+              <option value="4">Uso general</option>
+            </select>
+          </label>
+        </fieldset>
+        <fieldset id="fieldsetAsignacion" style="display:none;">
+          <legend>Asignación Actual</legend>
+          <label id="labelAsignacionInfo" style="display:flex; flex-direction:column; gap:8px;">
+            <div>
+              <strong>Propietario:</strong> <span id="infoAsignadoPersona" style="color:var(--text-primary); font-weight:600;">-</span>
+            </div>
+            <div>
+              <strong>Desde:</strong> <span id="infoAsignadoDesde" style="color:var(--text-primary); font-weight:600;">-</span>
+            </div>
+          </label>
+          <button type="button" id="btnFinalizeAsignacion" class="btn btn-warning" style="display:none; margin-top:12px; width:100%;" onclick="finalizarAsignacionClick()">Finalizar asignación</button>
+
+          <div id="inlineFinalizeContainer" style="display:none; margin-top:10px;">
+            <div style="margin-bottom:6px;">
+              <span class="label-title">Confirmación necesaria <span class="no-break">'CONFIRMAR'</span></span>
+            </div>
+            <div>
+              <input type="text" id="editAsignacionConfirm" placeholder="Escribe CONFIRMAR para aplicar" autocomplete="off" style="width:100%; padding:10px; border-radius:6px;" />
+            </div>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <button id="btnConfirmFinalizeInline" class="btn btn-primary" disabled onclick="confirmFinalizeAsignacionInline()">Confirmar</button>
+              <button class="btn btn-danger" onclick="cancelFinalizeAsignacionInline()">Cancelar</button>
+            </div>
+            <div id="inlineFinalizeAsignacionError" style="display:none; color:#b00020; font-weight:600; margin-top:6px;"></div>
+          </div>
+        </fieldset>
+        <div id="editDeviceError" style="display:none; color:#b00020; font-weight:600; margin-top:0.5rem;"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeModal('modalEditDevice')">Cancelar</button>
+      <button type="button" id="btnSaveEditDevice" class="btn btn-primary">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Fecha futura no permitida -->
+<div id="modalFechaFutura" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Fecha inválida</h3>
+      <button class="modal-close" onclick="closeModal('modalFechaFutura')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>No se permiten fechas futuras en el campo <strong>Fecha de obtención</strong>. Por favor selecciona una fecha igual o anterior a hoy.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('modalFechaFutura')">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de conflicto de IP -->
+<div id="modalIpConflict" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Conflicto de dirección IP</h3>
+      <button class="modal-close" onclick="closeModal('modalIpConflict')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p id="ipConflictMessage" style="margin-bottom:12px;"></p>
+      <p>¿Qué acción desea realizar?</p>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;">
+      <button type="button" class="btn btn-secondary" id="btnIpKeep">Mantener</button>
+      <button type="button" class="btn btn-danger" id="btnIpReplace">Reemplazar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar finalización de asignación (desde Editar Dispositivo) -->
+<div id="modalFinalizeAsignacion" class="modal-overlay">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <h3>Confirmar finalización de asignación</h3>
+      <button class="modal-close" onclick="closeModal('modalFinalizeAsignacion')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Estás seguro que quieres finalizar la asignación del <strong id="finalizeDeviceLabel">dispositivo</strong> de <strong id="finalizeAsignadoPersona">Empleado</strong>?</p>
+      <p style="font-size:0.95rem; color:var(--text-gray);">Escribe <strong>CONFIRMAR</strong> para realizar el proceso.</p>
+      <div style="margin-top:8px;">
+        <input id="confirmFinalizeInput" type="text" placeholder="Escribe CONFIRMAR para continuar" style="width:100%; padding:10px; border-radius:6px;" />
+      </div>
+      <div id="finalizeAsignacionError" style="display:none; color:#b00020; margin-top:8px; font-weight:600;"></div>
+    </div>
+    <div class="modal-footer" style="display:flex; gap:8px; justify-content:flex-end;">
+      <button type="button" id="btnCancelFinalizeAsignacion" class="btn btn-secondary">Cancelar</button>
+      <button type="button" id="btnConfirmFinalizeAsignacion" class="btn btn-primary" disabled>Confirmar finalización</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<!-- Modal: PDF de Entrega de Teléfono -->
+<div id="modalDocumentacion" class="modal-overlay">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <h3>Generar documentacion</h3>
+      <button class="modal-close" onclick="closeModal('modalDocumentacion')">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <p class="modal-description">
+        A continuación se mostrará el documento con los datos de la asignación (PDF o DOCX), términos y condiciones, y espacios para firmas.
+      </p>
+      
+      <div id="pdfPreviewContent" style="margin-bottom:20px;">
+        <p style="text-align:center; color:#999;">Cargando datos...</p>
+      </div>
+
+      <!-- Device-specific detail blocks removed per request -->
+      
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+          <button class="btn btn-secondary" onclick="closeModal('modalDocumentacion')">Cancelar</button>
+          <button class="btn btn-primary" onclick="downloadPDFPreview()" style="display:inline-flex; align-items:center; gap:8px;">
+            <span>Previsualizar PDF</span>
+          </button>
+          <button class="btn btn-success" onclick="downloadPDF()" style="display:inline-flex; align-items:center; gap:8px;">
+            <span>Descargar DOCX</span>
+          </button>
+        </div>
+    </div>
+  </div>
+
+        <!-- Modal: Confirmación Términos y Firma -->
+        <div id="modalConfirmTerminos" class="modal-overlay">
+          <div class="modal" style="max-width:520px;">
+            <div class="modal-header">
+              <h3>Confirmar términos y condiciones</h3>
+              <button class="modal-close" onclick="closeModal('modalConfirmTerminos')">&times;</button>
+            </div>
+            <div class="modal-body">
+              <p>¿Está de acuerdo con los términos y condiciones mostrados en el documento? Al aceptar se solicitarán las firmas (Usuario primero, luego Empleado).</p>
+            </div>
+            <div style="display:flex; gap:12px; justify-content:flex-end; padding:16px;">
+              <button class="btn btn-secondary" onclick="closeModal('modalConfirmTerminos')">Cancelar</button>
+              <button class="btn btn-primary" onclick="iniciarFirmaTrasTerminos()">Aceptar y firmar</button>
+            </div>
+          </div>
+        </div>
+</div>
+
+<!-- Auditoría de asignaciones eliminadas: modal eliminado por petición del usuario. -->
+
+<!-- ========================================================
+     FASE 4 - MODALES DE documentación (Digital/Manual)
+     SISTEMA NUEVO BASADO EN doc/proceso.txt
+     ======================================================== -->
+
+<!-- Modal: Previsualizaciín de documentos (PASO B2 - Estado 11?12) -->
+<div id="modalDocsPreview" class="modal-overlay">
+  <div class="modal" style="max-width:1100px; width:95%; max-height:90vh;">
+    <div class="modal-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+      <div>
+        <h3>Revisa los documentos</h3>
+        <div style="color:var(--text-gray,#6b7280); font-size:0.95rem; margin-top:6px; max-width:760px;">
+          Lee detenidamente los documentos antes de confirmar. Para continuar, debes abrir y marcar todos los archivos como leídos y aceptar los términos.
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalDocsPreview')" aria-label="Cerrar">&times;</button>
+    </div>
+
+    <div class="modal-body" style="padding:22px; overflow-y:auto; max-height:calc(90vh - 180px);">
+      
+
+      <div id="docsPreviewError" style="display:none; padding:12px; background:#ffe6e6; border-left:4px solid #dc3545; border-radius:8px; color:#721c24; font-size:0.95rem; margin-bottom:12px;"></div>
+
+      <div class="close" aria-hidden="true"><span>&#59206;</span></div>
+
+      <div id="docsPreviewGrid" aria-live="polite">
+        <div class="loading">Buscando archivos...</div>
+      </div>
+
+      <div style="margin-top:18px; display:flex; gap:12px; align-items:center;">
+        <label style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="chkAcceptTerms"> Acepto que he revisado los documentos
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-footer" style="display:flex;gap:12px;justify-content:flex-end;padding:12px;">
+      <button class="btn btn-secondary" onclick="closeModal('modalDocsPreview')">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmDocs" onclick="confirmarLecturaDocsPreview()" disabled>Confirmar lectura</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Captura de Firmas (PASO B3 - Estado 12?13) -->
+<div id="modalCapturaFirmas" class="modal-overlay">
+  <div class="modal" style="max-width:800px;">
+    <div class="modal-header">
+      <h3>Captura de Firmas Digitales</h3>
+      <button class="modal-close" onclick="closeModal('modalCapturaFirmas')">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:25px;">
+      
+      <p style="margin-bottom:20px; color:#666; font-size:0.95em;">
+        Por favor, capture las firmas digitales de ambas partes.
+      </p>
+      
+      <!-- Firma del Empleado -->
+      <div style="margin-bottom:30px;">
+        <h4 style="margin-bottom:12px; color:#0066cc;">Empleado (quien recibe)</h4>
+        
+        <div style="margin-bottom:12px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">
+            Nímero de Identidad <span style="color:red;">*</span>
+          </label>
+          <input type="text" id="capturaIdentidadEmpleado" placeholder="0801-1990-12345" 
+                 maxlength="13" 
+                 oninput="this.value = this.value.replace(/\D/g, '').slice(0, 13); validarIdentidadCaptura();"
+                 style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size:1em;">
+        </div>
+        
+        <div style="margin-bottom:8px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">
+            Firma Digital <span style="color:red;">*</span>
+          </label>
+          <div style="border:2px solid #ddd; border-radius:8px; background:#fff;">
+            <canvas id="canvasFirmaEmpleado" width="700" height="200" 
+                    style="display:block; cursor:crosshair; touch-action:none;"></canvas>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="limpiarFirma('empleado')">Limpiar</button>
+      </div>
+      
+      <hr style="margin:30px 0; border:none; border-top:1px solid #eee;">
+      
+      <!-- Firma del Usuario -->
+      <div style="margin-bottom:20px;">
+        <h4 style="margin-bottom:12px; color:#ff9800;">Usuario (quien entrega)</h4>
+        
+        <div style="margin-bottom:12px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">
+            Nímero de Identidad <span style="color:red;">*</span>
+          </label>
+          <input type="text" id="capturaIdentidadUsuario" placeholder="0801-1990-12345" 
+                 maxlength="13" 
+                 oninput="this.value = this.value.replace(/\D/g, '').slice(0, 13); validarIdentidadCaptura();"
+                 style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size:1em;">
+        </div>
+        
+        <div style="margin-bottom:8px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600; color:#333;">
+            Firma Digital <span style="color:red;">*</span>
+          </label>
+          <div style="border:2px solid #ddd; border-radius:8px; background:#fff;">
+            <canvas id="canvasFirmaUsuario" width="700" height="200" 
+                    style="display:block; cursor:crosshair; touch-action:none;"></canvas>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="limpiarFirma('usuario')">Limpiar</button>
+      </div>
+      
+      <div id="msgErrorFirmas" style="display:none; margin-top:15px; padding:12px; background:#ffe6e6; border-left:4px solid #dc3545; border-radius:4px; color:#721c24; font-size:0.9em;">
+        Por favor complete todos los campos y ambas firmas.
+      </div>
+    </div>
+    
+    <div style="display:flex; gap:12px; justify-content:flex-end; padding:20px; border-top:1px solid #eee;">
+      <button class="btn btn-secondary" onclick="closeModal('modalCapturaFirmas')">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmarFirmas" onclick="confirmarFirmas()">
+        Confirmar Firmas
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Documentos Firmados Finales (PASO B5 - Estado 14?90) -->
+<div id="modalDocumentosFirmadosFinales" class="modal-overlay">
+  <div class="modal" style="max-width:900px; max-height:90vh;">
+    <div class="modal-header" style="background:linear-gradient(135deg, #43cea2 0%, #185a9d 100%); color:white;">
+      <h3>Documentos Firmados Exitosamente</h3>
+      <button class="modal-close" onclick="closeModal('modalDocumentosFirmadosFinales')" style="color:white;">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:25px; overflow-y:auto; max-height:calc(90vh - 200px);">
+      
+      <div style="text-align:center; margin-bottom:25px;">
+        <div style="width:80px; height:80px; margin:0 auto 15px; background:#28a745; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:3em;">
+          ?
+        </div>
+        <h4 style="color:#28a745; margin-bottom:10px;">documentación Firmada Correctamente</h4>
+        <p style="color:#666; font-size:0.95em;">
+          Los documentos han sido firmados digitalmente y están listos para su resguardo final.
+        </p>
+      </div>
+      
+      <!-- Lista de documentos firmados -->
+      <div id="listaDocumentosFirmados" style="margin-bottom:25px;">
+        <!-- Se popula dinámamente -->
+      </div>
+      
+      <!-- Visor de PDF firmado -->
+      <div id="visorPDFFirmado" style="display:none; margin-bottom:25px; border:2px solid #28a745; border-radius:8px; overflow:hidden;">
+        <div style="background:#f0f8f5; padding:10px; border-bottom:1px solid #28a745; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:600; color:#333;" id="nombreDocumentoVisorFirmado"></span>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="btn btn-secondary btn-small" onclick="zoomPDFFirmado('out')">?</button>
+            <span id="zoomLevelFirmado" style="min-width:50px; text-align:center; font-size:0.9em;">100%</span>
+            <button class="btn btn-secondary btn-small" onclick="zoomPDFFirmado('in')">?</button>
+            <button class="btn btn-secondary btn-small" onclick="cerrarVisorPDFFirmado()">? Cerrar</button>
+          </div>
+        </div>
+        <div id="pdfViewerContainerFirmado" style="height:600px; overflow:auto; background:#525252;">
+          <canvas id="pdfCanvasFirmado"></canvas>
+        </div>
+        <div style="background:#f0f8f5; padding:8px; border-top:1px solid #28a745; display:flex; justify-content:center; align-items:center; gap:12px;">
+          <button class="btn btn-secondary btn-small" onclick="navegarPDFFirmado('prev')">? Anterior</button>
+          <span id="pdfPageInfoFirmado" style="font-size:0.9em; min-width:100px; text-align:center;">Pígina 1 de 1</span>
+          <button class="btn btn-secondary btn-small" onclick="navegarPDFFirmado('next')">Siguiente ?</button>
+        </div>
+      </div>
+      
+      <div style="margin-top:20px; padding:15px; background:#d4edda; border-left:4px solid #28a745; border-radius:4px; color:#155724; font-size:0.9em;">
+        Al confirmar el resguardo, los documentos quedarín almacenados permanentemente en OneDrive.
+      </div>
+    </div>
+    
+    <div style="display:flex; gap:12px; justify-content:flex-end; padding:20px; border-top:1px solid #eee;">
+      <button class="btn btn-secondary" onclick="descargarTodosLosPDFs()">Descargar Todos</button>
+      <button class="btn btn-primary" onclick="confirmarResguardoFinal()">
+        Confirmar y Resguardar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Descarga de Documentos para Firma Manual (PASO C2 - Estado 21) -->
+<div id="modalDescargaFirmaManual" class="modal-overlay">
+  <div class="modal" style="max-width:800px;">
+    <div class="modal-header" style="background:linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color:white;">
+      <h3>Descargar Documentos para Firma Manual</h3>
+      <button class="modal-close" onclick="closeModal('modalDescargaFirmaManual')" style="color:white;">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:25px;">
+      
+      <div style="padding:15px; background:#fff3cd; border-left:4px solid #ff9800; border-radius:4px; margin-bottom:20px;">
+        <h4 style="margin:0 0 10px 0; color:#856404;">Instrucciones:</h4>
+        <ol style="margin:0; padding-left:20px; color:#856404; font-size:0.95em;">
+          <li>Descarga todos los documentos haciendo clic en cada uno</li>
+          <li>Imprímelos y fírmalos físicamente</li>
+          <li>Escaníalos (mantín exactamente el mismo nombre del archivo)</li>
+          <li>Sube los archivos firmados usando el Botón al final</li>
+        </ol>
+      </div>
+      
+      <!-- Lista de documentos para descargar -->
+      <div id="listaDocumentosDescarga" style="margin-bottom:25px;">
+        <!-- Se popula dinámamente -->
+      </div>
+      
+      <div style="padding:12px; background:#e3f2fd; border-left:4px solid #2196f3; border-radius:4px; font-size:0.9em; color:#0d47a1;">
+        <strong>Importante:</strong> Los archivos firmados deben mantener exactamente el mismo nombre que los originales.
+      </div>
+    </div>
+    
+    <div style="display:flex; gap:12px; justify-content:flex-end; padding:20px; border-top:1px solid #eee;">
+      <button class="btn btn-secondary" onclick="closeModal('modalDescargaFirmaManual')">Cerrar</button>
+      <button class="btn btn-primary" onclick="abrirModalSubidaFirmados()">
+        Subir Archivos Firmados
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Subir Documentos Firmados Manualmente (Estado 22→23) -->
+<div id="modalSubidaManual" class="modal-overlay">
+  <div class="modal" style="max-width:700px;">
+    <div class="modal-header">
+      <h3>Subir Documentos Firmados</h3>
+      <button class="modal-close" onclick="closeModal('modalSubidaManual')">&times;</button>
+    </div>
+    <div class="doc-progress-steps-wrapper">
+      <div class="doc-progress-container" id="docProgressContainerSubida">
+        <div class="doc-progress" id="docProgressBarSubida" style="width: 33.33%;"></div>
+        <div class="doc-circle active">1</div>
+        <div class="doc-circle active">2</div>
+        <div class="doc-circle">3</div>
+        <div class="doc-circle">4</div>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:24px;">
+      <p style="margin: 0 0 20px 0; color: #9ca3af; font-size: 0.95rem;">
+        Selecciona los documentos firmados en formato PDF. Puedes subir múltiples archivos a la vez.
+      </p>
+      
+      <div id="dropZoneManual" style="border: 2px dashed #4b5563; border-radius: 10px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: transparent;" onclick="document.getElementById('fileInputManual').click()">
+        <svg style="width: 52px; height: 52px; color: #6b7280; margin: 0 auto 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+        </svg>
+        <p style="margin: 0; font-weight: 600; color: #e5e7eb; font-size: 1rem;">Haz clic o arrastra archivos aquí</p>
+        <p style="margin: 10px 0 0 0; font-size: 0.875rem; color: #9ca3af;">Solo archivos PDF</p>
+      </div>
+      
+      <input type="file" id="fileInputManual" accept=".pdf" multiple style="display: none;" onchange="handleFileSelect(event)">
+      <div id="fileList" style="margin-top: 20px;"></div>
+    </div>
+    <div class="modal-footer" style="display: flex; justify-content: space-between; gap: 12px;">
+      <button class="btn" style="background: #10b981; color: white;" onclick="descargarArchivosZip(window._correlativoParaDescarga || '')">
+        <svg style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+        Descargar archivos
+      </button>
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-cancel" onclick="closeModal('modalSubidaManual')">Cancelar</button>
+        <button class="btn btn-primary" id="btnSubirArchivos" onclick="subirDocumentosFirmadosManual()" disabled>Subir Archivos</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Subida de Archivos Firmados (PASO C3 - Estado 21?22) -->
+<div id="modalSubidaFirmados" class="modal-overlay">
+  <div class="modal" style="max-width:900px; max-height:90vh;">
+    <div class="modal-header">
+      <h3>Subir Archivos Firmados</h3>
+      <button class="modal-close" onclick="closeModal('modalSubidaFirmados')">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:25px; overflow-y:auto; max-height:calc(90vh - 200px);">
+      
+      <p style="margin-bottom:20px; color:#666; font-size:0.95em;">
+        Seleccione los archivos firmados. Deben tener exactamente el mismo nombre que los documentos originales.
+      </p>
+      
+      <!-- Zona de carga de archivos -->
+      <div id="dropZoneSubida" 
+           style="border:2px dashed #ddd; border-radius:8px; padding:40px; text-align:center; background:#f9f9f9; margin-bottom:20px; transition:all 0.3s;"
+           ondrop="handleDropSubida(event)" 
+           ondragover="handleDragOverSubida(event)" 
+           ondragleave="handleDragLeaveSubida(event)">
+        <input type="file" id="inputArchivosSubida" accept=".pdf" multiple style="display:none;" onchange="handleFilesSubida(this.files)">
+        <div style="font-size:3em; color:#ddd; margin-bottom:15px;"></div>
+        <p style="margin:0 0 10px 0; font-size:1.1em; color:#333;">Arrastra archivos aquí o</p>
+        <button class="btn btn-primary" onclick="document.getElementById('inputArchivosSubida').click()">
+          Seleccionar Archivos
+        </button>
+        <p style="margin:15px 0 0 0; font-size:0.85em; color:#999;">Solo archivos PDF</p>
+      </div>
+      
+      <!-- Lista de archivos seleccionados -->
+      <div id="listaArchivosSubida" style="margin-bottom:20px;">
+        <!-- Se popula dinámamente -->
+      </div>
+      
+      <!-- Errores de validaciín -->
+      <div id="erroresValidacionSubida" style="display:none; padding:12px; background:#ffe6e6; border-left:4px solid #dc3545; border-radius:4px; margin-bottom:15px;">
+        <!-- Se popula con errores -->
+      </div>
+    </div>
+    
+    <div style="display:flex; gap:12px; justify-content:flex-end; padding:20px; border-top:1px solid #eee;">
+      <button class="btn btn-secondary" onclick="closeModal('modalSubidaFirmados')">Cancelar</button>
+      <button class="btn btn-primary" id="btnEnviarFirmados" onclick="enviarArchivosFirmados()" disabled style="opacity:0.5;">
+        Enviar para Revisión
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Revisión de Documentos (PASO C4 - Para Operador/Admin) -->
+<div id="modalRevisionDocumentos" class="modal-overlay">
+  <div class="modal" style="max-width:1000px; max-height:90vh;">
+    <div class="modal-header" style="background:linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color:white;">
+      <h3>Revisión de Documentos Firmados</h3>
+      <button class="modal-close" onclick="closeModal('modalRevisionDocumentos')" style="color:white;">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:25px; overflow-y:auto; max-height:calc(90vh - 200px);">
+      
+      <div style="padding:12px; background:#e0e7ff; border-left:4px solid #6366f1; border-radius:4px; margin-bottom:20px; color:#3730a3;">
+        <strong>Revisor:</strong> <span id="nombreRevisor"></span>
+      </div>
+      
+      <!-- Lista de documentos con checkboxes de verificaciín -->
+      <div id="listaDocumentosRevision" style="margin-bottom:25px;">
+        <!-- Se popula dinámamente -->
+      </div>
+      
+      <!-- Campo de comentarios (solo si se rechaza) -->
+      <div id="campoComentariosRechazo" style="display:none; margin-bottom:20px;">
+        <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">
+          Comentarios de Rechazo <span style="color:red;">*</span>
+        </label>
+        <textarea id="textareaComentariosRechazo" 
+                  placeholder="Especifique quí debe corregirse..." 
+                  style="width:100%; padding:12px; border:1px solid #ddd; border-radius:4px; font-size:0.95em; height:100px; resize:vertical;"></textarea>
+      </div>
+      
+      <div id="msgErrorRevision" style="display:none; padding:12px; background:#ffe6e6; border-left:4px solid #dc3545; border-radius:4px; color:#721c24; font-size:0.9em;">
+        <!-- Se popula con errores -->
+      </div>
+    </div>
+    
+    <div style="display:flex; gap:12px; justify-content:flex-end; padding:20px; border-top:1px solid #eee;">
+      <button class="btn btn-secondary" onclick="closeModal('modalRevisionDocumentos')">Cancelar</button>
+      <button class="btn btn-danger" onclick="mostrarCampoRechazo()">
+        Rechazar
+      </button>
+      <button class="btn btn-success" id="btnAprobarDocumentos" onclick="aprobarDocumentos()" disabled style="opacity:0.5;">
+        ? Aprobar Todos
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     MODALES ANTIGUOS (A DEPRECAR)
+     ======================================================== -->
+
+<!-- Modal 1: Seleccionar tipo de documentación (Digital o Manual) -->
+<div id="modalSeleccionarTipoDocumentacion" class="modal-overlay">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <h3>Generar documentación</h3>
+      <button class="modal-close" onclick="closeModal('modalSeleccionarTipoDocumentacion')">&times;</button>
+    </div>
+    <div class="doc-progress-steps-wrapper">
+      <div class="doc-progress-container" id="docProgressContainer">
+        <div class="doc-progress" id="docProgressBar"></div>
+        <div class="doc-circle active">1</div>
+        <div class="doc-circle">2</div>
+        <div class="doc-circle">3</div>
+        <div class="doc-circle">4</div>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:30px; text-align:center;">
+      <p style="margin-bottom:30px; font-size:1.05em; color:#555;">
+        ¿Cómo desea procesar la documentación?
+      </p>
+      
+      <div style="display:flex; gap:20px; justify-content:center;">
+        <!-- Opciín Digital -->
+        <div style="flex:1; padding:20px; border:2px solid #ddd; border-radius:8px; cursor:pointer; transition:all 0.3s ease;" 
+             onmouseover="this.style.borderColor='#0066cc'; this.style.boxShadow='0 4px 12px rgba(0,102,204,0.2)'" 
+             onmouseout="this.style.borderColor='#ddd'; this.style.boxShadow='none'" 
+             onclick="seleccionarTipoDocumentacion('digital')">
+          <img src="{{ url_for('static', filename='img/dsign.png') }}" alt="Digital" style="width:50px; height:50px; margin-bottom:10px;">
+          <h4 style="margin:10px 0; color:#0066cc;">DIGITAL</h4>
+          <p style="margin:0; font-size:0.9em; color:#666;">
+            Firma digital en línea
+          </p>
+          <p style="margin:8px 0 0 0; font-size:0.85em; color:#999;">
+            Rápido y sencillo
+          </p>
+        </div>
+        
+        <!-- Opciín Manual -->
+        <div style="flex:1; padding:20px; border:2px solid #ddd; border-radius:8px; cursor:pointer; transition:all 0.3s ease;" 
+             onmouseover="this.style.borderColor='#ff9800'; this.style.boxShadow='0 4px 12px rgba(255,152,0,0.2)'" 
+             onmouseout="this.style.borderColor='#ddd'; this.style.boxShadow='none'" 
+             onclick="seleccionarTipoDocumentacion('manual')">
+          <img src="{{ url_for('static', filename='img/sign.png') }}" alt="Manual" style="width:50px; height:50px; margin-bottom:10px;">
+          <h4 style="margin:10px 0; color:#ff9800;">MANUAL</h4>
+          <p style="margin:0; font-size:0.9em; color:#666;">
+            Subir firmas después
+          </p>
+          <p style="margin:8px 0 0 0; font-size:0.85em; color:#999;">
+            Mayor flexibilidad para empleados
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal 2: Cargar firmas manualmente -->
+<div id="modalCargarFirmasManualmente" class="modal-overlay">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <h3>Cargar Firmas Manualmente</h3>
+      <button class="modal-close" onclick="closeModal('modalCargarFirmasManualmente')">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:25px;">
+      <form id="formCargarFirmas" enctype="multipart/form-data">
+        
+        <!-- Firma del Responsable -->
+        <div style="margin-bottom:25px;">
+          <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">
+            Firma del Responsable de asignación
+            <span style="color:red;">*</span>
+          </label>
+          <div style="position:relative; border:2px dashed #ddd; border-radius:6px; padding:20px; text-align:center; background:#f9f9f9; transition:all 0.3s ease;" 
+               id="dropZoneResponsable"
+               ondrop="handleFileDrop(event, 'firma_responsable')" 
+               ondragover="handleDragOver(event, this)" 
+               ondragleave="handleDragLeave(event, this)">
+            <input type="file" id="firma_responsable" name="firma_responsable" accept=".pdf,.png,.jpg,.jpeg" 
+                   style="display:none;" onchange="actualizarNombreArchivo('firma_responsable', this)">
+            <button type="button" class="btn btn-secondary" style="margin-bottom:10px;" 
+                    onclick="document.getElementById('firma_responsable').click()">
+              Seleccionar archivo
+            </button>
+            <p style="margin:10px 0 0 0; font-size:0.9em; color:#666;">
+              o arrastra aquí
+            </p>
+            <p style="margin:5px 0 0 0; font-size:0.8em; color:#999;">
+              PDF, PNG o JPG (míx. 10MB)
+            </p>
+            <p id="nombreArchivo_firma_responsable" style="margin:10px 0 0 0; font-weight:600; color:#0066cc; display:none;"></p>
+          </div>
+        </div>
+        
+        <!-- Firma del Empleado -->
+        <div style="margin-bottom:25px;">
+          <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">
+            Firma del Empleado
+            <span style="color:red;">*</span>
+          </label>
+          <div style="position:relative; border:2px dashed #ddd; border-radius:6px; padding:20px; text-align:center; background:#f9f9f9; transition:all 0.3s ease;" 
+               id="dropZoneEmpleado"
+               ondrop="handleFileDrop(event, 'firma_empleado')" 
+               ondragover="handleDragOver(event, this)" 
+               ondragleave="handleDragLeave(event, this)">
+            <input type="file" id="firma_empleado" name="firma_empleado" accept=".pdf,.png,.jpg,.jpeg" 
+                   style="display:none;" onchange="actualizarNombreArchivo('firma_empleado', this)">
+            <button type="button" class="btn btn-secondary" style="margin-bottom:10px;" 
+                    onclick="document.getElementById('firma_empleado').click()">
+              Seleccionar archivo
+            </button>
+            <p style="margin:10px 0 0 0; font-size:0.9em; color:#666;">
+              o arrastra aquí
+            </p>
+            <p style="margin:5px 0 0 0; font-size:0.8em; color:#999;">
+              PDF, PNG o JPG (míx. 10MB)
+            </p>
+            <p id="nombreArchivo_firma_empleado" style="margin:10px 0 0 0; font-weight:600; color:#28a745; display:none;"></p>
+          </div>
+        </div>
+
+        <p style="padding:15px; background:#fff3cd; border-radius:6px; border-left:4px solid #ffc107; margin-bottom:20px; font-size:0.9em;">
+          ? Las firmas se guardarín automíticamente en la carpeta de documentos.
+        </p>
+      </form>
+    </div>
+    
+    <div style="display:flex; gap:12px; justify-content:flex-end; padding:20px; border-top:1px solid #eee;">
+      <button class="btn btn-secondary" onclick="closeModal('modalCargarFirmasManualmente')">Cancelar</button>
+      <button class="btn btn-primary" id="btnCargarFirmas" onclick="cargarFirmasManualmente()">Guardar Firmas</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 3: Revisar archivos de documentación -->
+<div id="modalRevisionArchivos" class="modal-overlay">
+  <div class="modal" style="max-width:700px;">
+    <div class="modal-header">
+      <h3>Revisar Archivos de documentación</h3>
+      <button class="modal-close" onclick="cerrarModalRevision()">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:25px;">
+      
+      <!-- Lista de archivos con checkboxes -->
+      <div id="listaArchivosRevision" style="margin-bottom:25px; border:1px solid #ddd; border-radius:6px; padding:15px; background:#f9f9f9;">
+        <!-- Se popula dinámamente -->
+      </div>
+
+      <!-- Input para confirmar -->
+      <div style="margin-bottom:20px;">
+        <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">
+          Confirmar revisión (escriba "CONFIRMAR" en mayúsculas)
+          <span style="color:red;">*</span>
+        </label>
+        <input type="text" id="inputConfirmarRevision" placeholder="CONFIRMAR" 
+               style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size:1em;">
+      </div>
+
+      <!-- Observaciones -->
+      <div style="margin-bottom:20px;">
+        <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">
+          Observaciones (opcional)
+        </label>
+        <textarea id="textareaObservaciones" placeholder="Notas sobre la revisión..." 
+                  style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size:0.9em; height:80px;"></textarea>
+      </div>
+
+      <!-- Aviso si hay sin revisar -->
+      <div id="avisoCheckboxesSinMarcar" style="padding:12px; background:#fff3cd; border-radius:4px; border-left:4px solid #ffc107; margin-bottom:15px; font-size:0.9em; display:none;">
+        Hay archivos sin marcar como revisados. ¿Desea continuar?
+      </div>
+    </div>
+    
+    <div style="display:flex; gap:12px; justify-content:flex-end; padding:20px; border-top:1px solid #eee;">
+      <button class="btn btn-secondary" onclick="cerrarModalRevision()">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarRevision" onclick="guardarRevisionArchivos()">Guardar Revisión</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 4: Confirmación Final -->
+<div id="modalConfirmacionFinal" class="modal-overlay">
+  <div class="modal" style="max-width:700px;">
+    <div class="modal-header">
+      <h3>Confirmación Final de documentación</h3>
+      <button class="modal-close" onclick="closeModal('modalConfirmacionFinal')">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:25px;">
+      
+      <!-- Archivos finales -->
+      <div style="margin-bottom:20px;">
+        <h4 style="margin-bottom:12px; color:#333;">Archivos documentación:</h4>
+        <div id="listaArchivosFinales" style="border:1px solid #ddd; border-radius:6px; padding:15px; background:#f9f9f9;">
+          <!-- Se popula dinámamente -->
+        </div>
+      </div>
+
+      <!-- Botón para ver archivos -->
+      <div style="margin-bottom:20px; text-align:center;">
+        <a id="enlaceVerArchivos" href="#" target="_blank" 
+           style="display:inline-block; padding:10px 20px; background:#0066cc; color:white; border-radius:4px; text-decoration:none; font-weight:600;">
+          Ver Archivos
+        </a>
+      </div>
+
+      <!-- Confirmación -->
+      <div style="padding:15px; background:#e8f5e9; border-radius:6px; border-left:4px solid #4caf50; margin-bottom:15px; font-size:0.9em;">
+        ? Todos los archivos han sido revisados y aprobados. Confirme para completar el proceso.
+      </div>
+    </div>
+    
+    <div style="display:flex; gap:12px; justify-content:flex-end; padding:20px; border-top:1px solid #eee;">
+      <button class="btn btn-secondary" onclick="closeModal('modalConfirmacionFinal')">Cancelar</button>
+      <button class="btn btn-success" id="btnConfirmarFinal" onclick="confirmarDocumentacionFinal()">? Visto Bueno</button>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts para manejo de documentación -->
+
+
+<!-- Auditoría de asignaciones eliminadas: modal eliminado por petición del usuario. -->
+
+<!-- Modal para Ingresar Identidad -->
+<div id="pasaporteModal" class="modal-overlay">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <h3>Identidad Requerida</h3>
+      <button class="modal-close" onclick="closeModal('pasaporteModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p id="pasaporteModalMessage">El empleado no tiene identidad registrada.</p>
+      <label for="pasaporteInput" style="display:block; margin-bottom:0.5rem; font-weight:600;">Ingrese el nímero de identidad:</label>
+      <input type="text" id="pasaporteInput" class="form-control" placeholder="XXXX-XXXX-XXXXX" maxlength="15" inputmode="numeric" />
+      <div id="pasaporteError" style="display:none; color:#b00020; font-weight:600; margin-top:0.5rem;"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('pasaporteModal')">Cancelar</button>
+      <button type="button" id="pasaporteGuardar" class="btn btn-primary">Guardar</button>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+  // Server-side data injected for asignaciones.js
+  window._currentUsername = '{{ current_user.username if current_user else "admin" }}';
+  window._empleadosOptions = [{% for emp in empleados_options %}{ "id": {{ emp.IdEmpleado }}, "name": {{ emp.NombreCompleto | tojson }} }{% if not loop.last %},{% endif %}{% endfor %}];
+</script>
+<script src="{{ url_for('static', filename='js/asignaciones.js') }}" defer></script>
+{% endblock %}
+

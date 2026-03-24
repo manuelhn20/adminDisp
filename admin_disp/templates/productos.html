@@ -1,0 +1,922 @@
+{% extends "base_kardex.html" %}
+
+{% block title %}Productos — KARDEX{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-material.css">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/kardex.css') }}">
+{% endblock %}
+
+{% block page_title %}Productos{% endblock %}
+
+{% block content %}
+<div class="kardex-toolbar">
+  <div class="kardex-toolbar__left">
+    <button class="btn btn-primary offset-btn" onclick="openModalCrearProducto()">
+      <span class="material-symbols-outlined">add_box</span>
+      Nuevo Producto
+    </button>
+    <button class="btn btn-secondary offset-btn" onclick="openModalGestionMarcas()" style="--offset-color:#2563eb;">
+      <span class="material-symbols-outlined">sell</span>
+      Marcas
+    </button>
+    <button class="btn btn-secondary offset-btn" onclick="openModalGestionAlmacenes()" style="--offset-color:#0e9d7f;">
+      <span class="material-symbols-outlined">warehouse</span>
+      Almacenes
+    </button>
+    <button class="btn btn-secondary offset-btn" onclick="openModalGestionPeriodos()" style="--offset-color:#7c3aed;">
+      <span class="material-symbols-outlined">calendar_month</span>
+      Períodos
+    </button>
+  </div>
+  <div class="kardex-toolbar__right">
+    <input type="text" id="quickFilter" class="kardex-search" placeholder="Buscar producto..." oninput="onQuickFilter(this.value)">
+    {% if periodo_activo %}
+      <span class="kardex-periodo-badge active">
+        <span class="material-symbols-outlined">calendar_month</span>
+        {{ periodo_activo.nombre }}
+      </span>
+    {% else %}
+      <span class="kardex-periodo-badge inactive">
+        <span class="material-symbols-outlined">warning</span>
+        Sin período activo
+      </span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="kardex-grid-wrap">
+  <div id="productosGrid" class="ag-theme-material kardex-grid"></div>
+</div>
+
+<div id="gridError" style="display:none;padding:40px;text-align:center;color:#ef4444;">
+  <span class="material-symbols-outlined" style="font-size:48px;display:block;margin-bottom:12px;">error_outline</span>
+  <strong id="gridErrorMsg">Error al cargar los datos.</strong>
+  <br><br>
+  <button class="kardex-btn kardex-btn--primary" onclick="loadProductos()">
+    <span class="material-symbols-outlined">refresh</span> Reintentar
+  </button>
+</div>
+
+<!-- Modal Crear/Editar Producto -->
+<div id="modalCrearProducto" class="kardex-modal-overlay">
+  <div class="kardex-modal">
+    <div class="kardex-modal__header">
+      <h3>Nuevo Producto</h3>
+      <button class="kardex-modal__close" onclick="closeModalCrearProducto()">&times;</button>
+    </div>
+    <div class="kardex-modal__body">
+      <div class="kardex-form-grid">
+        <div class="kardex-field">
+          <label>Nombre</label>
+          <input type="text" id="inpNombreProducto" placeholder="Nombre del producto">
+        </div>
+        <div class="kardex-field">
+          <label>Marca</label>
+          <select id="inpMarcaProducto">
+            <option value="">-- Seleccionar marca --</option>
+          </select>
+        </div>
+        <div class="kardex-field">
+          <label>Categoría</label>
+          <input type="text" id="inpCategoriaProducto" placeholder="Categoría">
+        </div>
+        <div class="kardex-field">
+          <label>Unidad de Medida (UM)</label>
+          <input type="text" id="inpUMProducto" placeholder="EA, KG, L, etc.">
+        </div>
+      </div>
+      <div id="errorCrearProducto" class="kardex-error" style="display:none;"></div>
+    </div>
+    <div class="kardex-modal__footer">
+      <button class="kardex-btn kardex-btn--ghost" onclick="closeModalCrearProducto()">Cancelar</button>
+      <button class="kardex-btn kardex-btn--primary" onclick="guardarProducto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar Marca -->
+<div id="modalMarcaForm" class="kardex-modal-overlay kardex-modal-overlay--top">
+  <div class="kardex-modal">
+    <div class="kardex-modal__header">
+      <h3 id="tituloModalMarca">Nueva Marca</h3>
+      <button class="kardex-modal__close" onclick="closeModalMarcaForm()">&times;</button>
+    </div>
+    <div class="kardex-modal__body">
+      <input type="hidden" id="marcaEditId">
+      <div class="kardex-form-grid">
+        <div class="kardex-field">
+          <label>Nombre</label>
+          <input type="text" id="inpNombreMarca" placeholder="Nombre de la marca">
+        </div>
+        <div class="kardex-field">
+          <label>Descripción</label>
+          <input type="text" id="inpDescripcionMarca" placeholder="Descripción adicional (opcional)">
+        </div>
+      </div>
+      <div id="errorMarcaForm" class="kardex-error" style="display:none;"></div>
+    </div>
+    <div class="kardex-modal__footer">
+      <button class="kardex-btn kardex-btn--ghost" onclick="closeModalMarcaForm()">Cancelar</button>
+      <button class="kardex-btn kardex-btn--primary" onclick="guardarMarca()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar Almacén -->
+<div id="modalAlmacenForm" class="kardex-modal-overlay kardex-modal-overlay--top">
+  <div class="kardex-modal">
+    <div class="kardex-modal__header">
+      <h3 id="tituloModalAlmacen">Nuevo Almacén</h3>
+      <button class="kardex-modal__close" onclick="closeModalAlmacenForm()">&times;</button>
+    </div>
+    <div class="kardex-modal__body">
+      <input type="hidden" id="almacenEditId">
+      <div class="kardex-form-grid">
+        <div class="kardex-field">
+          <label>idName</label>
+          <input type="text" id="inpIdNameAlmacen" placeholder="Código externo del almacén">
+        </div>
+        <div class="kardex-field">
+          <label>Descripción</label>
+          <input type="text" id="inpDescripcionAlmacen" placeholder="Nombre del almacén">
+        </div>
+        <div class="kardex-field">
+          <label>Compañía</label>
+          <input type="text" id="inpCompaniaAlmacen" placeholder="Compañía">
+        </div>
+        <div class="kardex-field">
+          <label>Tipo de Almacén</label>
+          <input type="text" id="inpTipoAlmacen" placeholder="Tipo (Bodega, Tienda, etc.)">
+        </div>
+      </div>
+      <div id="errorAlmacenForm" class="kardex-error" style="display:none;"></div>
+    </div>
+    <div class="kardex-modal__footer">
+      <button class="kardex-btn kardex-btn--ghost" onclick="closeModalAlmacenForm()">Cancelar</button>
+      <button class="kardex-btn kardex-btn--primary" onclick="guardarAlmacen()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar Período -->
+<div id="modalPeriodoForm" class="kardex-modal-overlay kardex-modal-overlay--top">
+  <div class="kardex-modal">
+    <div class="kardex-modal__header">
+      <h3 id="tituloModalPeriodo">Nuevo Período</h3>
+      <button class="kardex-modal__close" onclick="closeModalPeriodoForm()">&times;</button>
+    </div>
+    <div class="kardex-modal__body">
+      <input type="hidden" id="periodoEditId">
+      <div class="kardex-form-grid">
+        <div class="kardex-field">
+          <label>Período</label>
+          <input type="text" id="inpNombrePeriodo" placeholder="Enero 2026" readonly>
+        </div>
+        <div class="kardex-field">
+          <label>Mes</label>
+          <select id="inpMesPeriodo">
+            <option value="1">Enero</option><option value="2">Febrero</option>
+            <option value="3">Marzo</option><option value="4">Abril</option>
+            <option value="5">Mayo</option><option value="6">Junio</option>
+            <option value="7">Julio</option><option value="8">Agosto</option>
+            <option value="9">Septiembre</option><option value="10">Octubre</option>
+            <option value="11">Noviembre</option><option value="12">Diciembre</option>
+          </select>
+        </div>
+        <div class="kardex-field">
+          <label>Año</label>
+          <input type="number" id="inpAnoPeriodo" min="2020" max="2099" placeholder="2026">
+        </div>
+        <div class="kardex-field">
+          <label>Fecha inicio</label>
+          <input type="date" id="inpFechaInicioPeriodo">
+        </div>
+        <div class="kardex-field">
+          <label>Fecha fin</label>
+          <input type="date" id="inpFechaFinPeriodo">
+        </div>
+      </div>
+      <div id="errorPeriodoForm" class="kardex-error" style="display:none;"></div>
+    </div>
+    <div class="kardex-modal__footer">
+      <button class="kardex-btn kardex-btn--ghost" onclick="closeModalPeriodoForm()">Cancelar</button>
+      <button class="kardex-btn kardex-btn--primary" onclick="guardarPeriodo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Gestión de Marcas -->
+<div id="modalGestionMarcas" class="kardex-modal-overlay">
+  <div class="kardex-modal kardex-modal--xl">
+    <div class="kardex-modal__header">
+      <h3>Marcas</h3>
+      <button class="kardex-modal__close" onclick="closeModalGestionMarcas()">&times;</button>
+    </div>
+    <div class="kardex-modal__body">
+      <div class="kardex-manager-toolbar">
+        <button class="kardex-btn kardex-btn--primary" onclick="openModalMarcaFormCrear()">+ Nueva Marca</button>
+        <input type="text" class="kardex-search" placeholder="Buscar marca..." oninput="onQuickFilterMarcas(this.value)">
+      </div>
+      <div id="marcasGrid" class="ag-theme-material kardex-manager-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Gestión de Almacenes -->
+<div id="modalGestionAlmacenes" class="kardex-modal-overlay">
+  <div class="kardex-modal kardex-modal--xl">
+    <div class="kardex-modal__header">
+      <h3>Almacenes</h3>
+      <button class="kardex-modal__close" onclick="closeModalGestionAlmacenes()">&times;</button>
+    </div>
+    <div class="kardex-modal__body">
+      <div class="kardex-manager-toolbar">
+        <button class="kardex-btn kardex-btn--primary" onclick="openModalAlmacenFormCrear()">+ Nuevo Almacén</button>
+        <input type="text" class="kardex-search" placeholder="Buscar almacén..." oninput="onQuickFilterAlmacenes(this.value)">
+      </div>
+      <div id="almacenesManagerGrid" class="ag-theme-material kardex-manager-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Gestión de Períodos -->
+<div id="modalGestionPeriodos" class="kardex-modal-overlay">
+  <div class="kardex-modal kardex-modal--xl kardex-modal--periodos">
+    <div class="kardex-modal__header">
+      <h3>Períodos</h3>
+      <button class="kardex-modal__close" onclick="closeModalGestionPeriodos()">&times;</button>
+    </div>
+    <div class="kardex-modal__body">
+      <div class="kardex-manager-toolbar">
+        <button class="kardex-btn kardex-btn--primary" onclick="openModalPeriodoFormCrear()">+ Nuevo Período</button>
+        <input type="text" class="kardex-search" placeholder="Buscar período..." oninput="onQuickFilterPeriodos(this.value)">
+      </div>
+      <div id="periodosManagerGrid" class="ag-theme-material kardex-manager-grid"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Session update: 2026-03-24 14:39:20 - Rebuild schema support and extraction compatibility.
+let gridApi = null;
+let marcasGridApi = null;
+let almacenesGridApi = null;
+let periodosGridApi = null;
+
+const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+const colDefsProductos = [
+  { field: 'id', headerName: 'ID', width: 176, pinned: 'left', cellStyle: { fontFamily: 'monospace' } },
+  { field: 'itemName', headerName: 'Nombre', flex: 1.6, minWidth: 176 },
+  { field: 'brandNombre', headerName: 'Marca', flex: 0.8, minWidth: 120 },
+  { field: 'categoria', headerName: 'Categoría', flex: 1, minWidth: 130 },
+  { field: 'um', headerName: 'UM', width: 140, cellStyle: { textAlign: 'center' } },
+  {
+    field: 'status', headerName: 'Estado', width: 120,
+    cellRenderer: p => Number(p.value) === 1
+      ? '<span class="kardex-state-text kardex-state-text--active">Activo</span>'
+      : '<span class="kardex-state-text kardex-state-text--inactive">Inactivo</span>'
+  },
+  {
+    headerName: 'Acciones', field: 'acciones', width: 170, sortable: false, filter: false,
+    cellRenderer: p => {
+      const id = String(p.data.id).replace(/'/g, "\\'");
+      const estado = Number(p.data.status || 0);
+      if (estado === 1) {
+        return `<div class="kardex-actions-cell"><button class="kardex-btn-sm kardex-btn-sm--danger" onclick="toggleProductoEstado('${id}', 0)">Deshabilitar</button></div>`;
+      }
+      return `<div class="kardex-actions-cell"><button class="kardex-btn-sm kardex-btn-sm--primary" onclick="toggleProductoEstado('${id}', 1)">Reactivar</button></div>`;
+    }
+  },
+];
+
+const colDefsMarcas = [
+  { field: 'name', headerName: 'Nombre', flex: 0.8, minWidth: 160 },
+  { field: 'description', headerName: 'Descripción', flex: 1.1, minWidth: 200 },
+  {
+    field: 'status', headerName: 'Estado', width: 120,
+    cellRenderer: p => Number(p.value) === 1
+      ? '<span class="kardex-state-text kardex-state-text--active">Activa</span>'
+      : '<span class="kardex-state-text kardex-state-text--inactive">Inactiva</span>'
+  },
+  {
+    headerName: 'Acciones', field: 'acciones', width: 200, sortable: false, filter: false,
+    cellRenderer: p => {
+      const id = String(p.data.id).replace(/'/g, "\\'");
+      const name = String(p.data.name || '').replace(/'/g, "\\'");
+      const description = String(p.data.description || '').replace(/'/g, "\\'");
+      const estado = Number(p.data.status || 0);
+      const btnToggle = estado === 1
+        ? `<button class="kardex-btn-sm kardex-btn-sm--danger" onclick="toggleMarcaEstado('${id}', 0)">Eliminar</button>`
+        : `<button class="kardex-btn-sm kardex-btn-sm--primary" onclick="toggleMarcaEstado('${id}', 1)">Restaurar</button>`;
+      return `<div class="kardex-actions-cell"><button class="kardex-btn-sm kardex-btn-sm--warn" onclick="openModalMarcaFormEditar('${id}','${name}','${description}')">Editar</button>${btnToggle}</div>`;
+    }
+  }
+];
+
+const colDefsAlmacenes = [
+  { field: 'idName', headerName: 'Código', width: 180, cellStyle: { fontFamily: 'monospace' } },
+  { field: 'company', headerName: 'Compañía', flex: 1, minWidth: 220 },
+  {
+    field: 'status', headerName: 'Estado', width: 130,
+    cellRenderer: p => Number(p.value) === 1
+      ? '<span class="kardex-state-text kardex-state-text--active">Activo</span>'
+      : '<span class="kardex-state-text kardex-state-text--inactive">Inactivo</span>'
+  },
+  { field: 'description', headerName: 'Descripción', flex: 1.1, minWidth: 180 },
+  { field: 'type', headerName: 'Tipo', flex: 0.9, minWidth: 140 },
+  {
+    headerName: 'Acciones', field: 'acciones', width: 210, sortable: false, filter: false,
+    cellRenderer: p => {
+      const a = p.data;
+      const id = String(a.id).replace(/'/g, "\\'");
+      const idName = String(a.idName || '').replace(/'/g, "\\'");
+      const desc = String(a.description || '').replace(/'/g, "\\'");
+      const comp = String(a.company || '').replace(/'/g, "\\'");
+      const tipo = String(a.type || '').replace(/'/g, "\\'");
+      const status = Number(a.status || 0);
+      const btnToggle = status === 1
+        ? `<button class="kardex-btn-sm kardex-btn-sm--danger" onclick="toggleAlmacenEstado('${id}', 0)">Eliminar</button>`
+        : `<button class="kardex-btn-sm kardex-btn-sm--primary" onclick="toggleAlmacenEstado('${id}', 1)">Restaurar</button>`;
+      return `<div class="kardex-actions-cell"><button class="kardex-btn-sm kardex-btn-sm--warn" onclick="openModalAlmacenFormEditar('${id}','${idName}','${desc}','${comp}','${tipo}')">Editar</button>${btnToggle}</div>`;
+    }
+  }
+];
+
+const colDefsPeriodos = [
+  { field: 'nombre', headerName: 'Período', width: 140, suppressSizeToFit: true },
+  { field: 'fechaInicio', headerName: 'Fecha Inicio', width: 160, valueFormatter: p => p.value ? String(p.value).substring(0, 10) : '—' },
+  { field: 'fechaFin', headerName: 'Fecha Fin', width: 120, valueFormatter: p => p.value ? String(p.value).substring(0, 10) : '—' },
+  {
+    field: 'status', headerName: 'Estado', width: 100,
+    cellRenderer: p => {
+      const status = Number(p.value || 0);
+      if (status === 1) {
+        return '<span class="kardex-state-text kardex-state-text--active">Activo</span>';
+      }
+      if (status === 2) {
+        return '<span class="kardex-state-text kardex-state-text--inactive">Cerrado</span>';
+      }
+      return '<span class="kardex-state-text" style="color:#9ca3af;">Inactivo</span>';
+    }
+  },
+  {
+    headerName: 'Acciones', field: 'acciones', width: 150, minWidth: 140, sortable: false, filter: false, headerClass: 'ag-header-cell-centered',
+    cellRenderer: p => {
+      const per = p.data;
+      const id = Number(per.id);
+      const nombre = String(per.nombre || '').replace(/'/g, "\\'");
+      const fi = String(per.fechaInicio || '').substring(0, 10);
+      const ff = String(per.fechaFin || '').substring(0, 10);
+      const status = Number(per.status || 0);
+      let btnEstado = '';
+      if (status === 1) {
+        btnEstado = `<button class="kardex-btn-sm kardex-btn-sm--danger" onclick="togglePeriodoEstado(${id}, 2)">Deshabilitar</button>`;
+      } else if (status === 0) {
+        btnEstado = `<button class="kardex-btn-sm kardex-btn-sm--primary" onclick="activarPeriodo(${id})">Activar</button>`;
+      }
+      return `<div class="kardex-actions-cell" style="width:100%;justify-content:flex-end;"><button class="kardex-btn-sm kardex-btn-sm--warn" onclick="openModalPeriodoFormEditar(${id}, '${nombre}', '${fi}', '${ff}')">Editar</button>${btnEstado}</div>`;
+    }
+  }
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+  gridApi = agGrid.createGrid(document.getElementById('productosGrid'), {
+    columnDefs: colDefsProductos,
+    rowData: [],
+    defaultColDef: { sortable: true, filter: true, resizable: true },
+    pagination: true,
+    paginationPageSize: 50,
+    paginationPageSizeSelector: [25, 50, 100, 200],
+    animateRows: true,
+    suppressCellFocus: true,
+    overlayNoRowsTemplate: '<span style="padding:24px;color:#6b7280;">Sin datos. Usa Sync Productos en el menú lateral.</span>',
+  });
+
+  document.getElementById('inpMesPeriodo').addEventListener('change', actualizarRangoFechasPeriodo);
+  document.getElementById('inpAnoPeriodo').addEventListener('change', actualizarRangoFechasPeriodo);
+
+  document.addEventListener('keydown', handleEscToCloseModal);
+
+  loadProductos();
+});
+
+function handleEscToCloseModal(e) {
+  if (e.key !== 'Escape') return;
+  const active = Array.from(document.querySelectorAll('.kardex-modal-overlay.active'));
+  if (!active.length) return;
+  active[active.length - 1].classList.remove('active');
+}
+
+async function loadProductos(soloMs = false) {
+  document.getElementById('gridError').style.display = 'none';
+  document.getElementById('productosGrid').style.display = '';
+  try {
+    const url = '/kardex/api/productos' + (soloMs ? '?disponibles=1' : '');
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'Error del servidor');
+    gridApi.setGridOption('rowData', d.data);
+  } catch (e) {
+    console.error('[Productos]', e);
+    document.getElementById('productosGrid').style.display = 'none';
+    document.getElementById('gridError').style.display = 'block';
+    document.getElementById('gridErrorMsg').textContent = 'Error al cargar: ' + e.message;
+  }
+}
+
+function onQuickFilter(val) { if (gridApi) gridApi.setGridOption('quickFilterText', val); }
+
+function openModalCrearProducto() {
+  document.getElementById('errorCrearProducto').style.display = 'none';
+  document.getElementById('inpNombreProducto').value = '';
+  document.getElementById('inpCategoriaProducto').value = '';
+  document.getElementById('inpUMProducto').value = '';
+  cargarMarcasEnSelect();
+  document.getElementById('modalCrearProducto').classList.add('active');
+}
+
+function closeModalCrearProducto() {
+  document.getElementById('modalCrearProducto').classList.remove('active');
+}
+
+async function cargarMarcasEnSelect() {
+  try {
+    const r = await fetch('/kardex/api/marcas?incluirInactivas=0');
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error);
+    const sel = document.getElementById('inpMarcaProducto');
+    const actual = sel.value;
+    sel.innerHTML = '<option value="">-- Seleccionar marca --</option>';
+    d.data.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.name;
+      opt.textContent = m.name;
+      sel.appendChild(opt);
+    });
+    sel.value = actual;
+  } catch (e) {
+    console.error('Error cargando marcas en select:', e);
+  }
+}
+
+async function guardarProducto() {
+  const errDiv = document.getElementById('errorCrearProducto');
+  errDiv.style.display = 'none';
+  const nombre = document.getElementById('inpNombreProducto').value.trim();
+  const marca = document.getElementById('inpMarcaProducto').value;
+  const categoria = document.getElementById('inpCategoriaProducto').value.trim();
+  const um = document.getElementById('inpUMProducto').value.trim();
+
+  if (!nombre || !marca) {
+    errDiv.textContent = 'Nombre y Marca son obligatorios.';
+    errDiv.style.display = 'block';
+    return;
+  }
+
+  try {
+    const r = await fetch('/kardex/api/productos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemName: nombre, marca, categoria, um }),
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || d.message);
+    closeModalCrearProducto();
+    await loadProductos();
+  } catch (e) {
+    errDiv.textContent = 'Error: ' + e.message;
+    errDiv.style.display = 'block';
+  }
+}
+
+async function toggleProductoEstado(id, estado) {
+  const msg = estado === 0
+    ? '¿Deseas inactivar este producto?'
+    : '¿Deseas reactivar este producto?';
+  if (!confirm(msg)) return;
+
+  try {
+    const r = await fetch(`/kardex/api/productos/${id}/estado`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado }),
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'No se pudo actualizar estado de producto');
+    await loadProductos();
+  } catch (e) {
+    openGlobalMessageModal('error', 'Error al actualizar producto', e.message || 'Error desconocido');
+  }
+}
+
+function initMarcasGrid() {
+  if (marcasGridApi) return;
+  marcasGridApi = agGrid.createGrid(document.getElementById('marcasGrid'), {
+    columnDefs: colDefsMarcas,
+    rowData: [],
+    defaultColDef: { sortable: true, filter: true, resizable: true },
+    pagination: true,
+    paginationPageSize: 10,
+    paginationPageSizeSelector: [10, 25, 50],
+    animateRows: true,
+    suppressCellFocus: true,
+  });
+}
+
+async function loadMarcasGestion() {
+  try {
+    const r = await fetch('/kardex/api/marcas?incluirInactivas=1');
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'No se pudieron cargar marcas');
+    marcasGridApi.setGridOption('rowData', d.data);
+  } catch (e) {
+    console.error('[Marcas]', e);
+  }
+}
+
+function openModalGestionMarcas() {
+  initMarcasGrid();
+  document.getElementById('modalGestionMarcas').classList.add('active');
+  loadMarcasGestion();
+}
+
+function closeModalGestionMarcas() {
+  document.getElementById('modalGestionMarcas').classList.remove('active');
+}
+
+function onQuickFilterMarcas(v) { if (marcasGridApi) marcasGridApi.setGridOption('quickFilterText', v); }
+
+function openModalMarcaFormCrear() {
+  document.getElementById('marcaEditId').value = '';
+  document.getElementById('inpNombreMarca').value = '';
+  document.getElementById('inpDescripcionMarca').value = '';
+  document.getElementById('tituloModalMarca').textContent = 'Nueva Marca';
+  document.getElementById('errorMarcaForm').style.display = 'none';
+  document.getElementById('modalMarcaForm').classList.add('active');
+}
+
+function openModalMarcaFormEditar(id, name, description) {
+  document.getElementById('marcaEditId').value = id;
+  document.getElementById('inpNombreMarca').value = name || '';
+  document.getElementById('inpDescripcionMarca').value = description || '';
+  document.getElementById('tituloModalMarca').textContent = 'Editar Marca';
+  document.getElementById('errorMarcaForm').style.display = 'none';
+  document.getElementById('modalMarcaForm').classList.add('active');
+}
+
+function closeModalMarcaForm() {
+  document.getElementById('modalMarcaForm').classList.remove('active');
+}
+
+async function guardarMarca() {
+  const errDiv = document.getElementById('errorMarcaForm');
+  errDiv.style.display = 'none';
+
+  const id = document.getElementById('marcaEditId').value;
+  const nombre = document.getElementById('inpNombreMarca').value.trim();
+  const descripcion = document.getElementById('inpDescripcionMarca').value.trim();
+
+  if (!nombre) {
+    errDiv.textContent = 'El nombre de marca es obligatorio.';
+    errDiv.style.display = 'block';
+    return;
+  }
+
+  try {
+    const esEdicion = !!id;
+    const url = esEdicion ? `/kardex/api/marcas/${id}` : '/kardex/api/marcas';
+    const method = esEdicion ? 'PUT' : 'POST';
+    const body = JSON.stringify({ name: nombre, description: descripcion });
+
+    const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || d.message || 'No se pudo guardar la marca');
+
+    closeModalMarcaForm();
+    await Promise.all([loadMarcasGestion(), cargarMarcasEnSelect()]);
+  } catch (e) {
+    errDiv.textContent = 'Error: ' + e.message;
+    errDiv.style.display = 'block';
+  }
+}
+
+async function toggleMarcaEstado(id, estado) {
+  const msg = estado === 0
+    ? '¿Deseas inactivar esta marca?'
+    : '¿Deseas reactivar esta marca?';
+  if (!confirm(msg)) return;
+
+  try {
+    const r = await fetch(`/kardex/api/marcas/${id}/estado`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado }),
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'No se pudo actualizar estado');
+    await Promise.all([loadMarcasGestion(), cargarMarcasEnSelect()]);
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+function initAlmacenesGrid() {
+  if (almacenesGridApi) return;
+  almacenesGridApi = agGrid.createGrid(document.getElementById('almacenesManagerGrid'), {
+    columnDefs: colDefsAlmacenes,
+    rowData: [],
+    defaultColDef: { sortable: true, filter: true, resizable: true },
+    pagination: true,
+    paginationPageSize: 10,
+    paginationPageSizeSelector: [10, 25, 50],
+    animateRows: true,
+    suppressCellFocus: true,
+  });
+}
+
+async function loadAlmacenesGestion() {
+  try {
+    const r = await fetch('/kardex/api/almacenes?todos=1');
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'No se pudieron cargar almacenes');
+    almacenesGridApi.setGridOption('rowData', d.data);
+  } catch (e) {
+    console.error('[Almacenes]', e);
+  }
+}
+
+function openModalGestionAlmacenes() {
+  initAlmacenesGrid();
+  document.getElementById('modalGestionAlmacenes').classList.add('active');
+  loadAlmacenesGestion();
+}
+
+function closeModalGestionAlmacenes() {
+  document.getElementById('modalGestionAlmacenes').classList.remove('active');
+}
+
+function onQuickFilterAlmacenes(v) { if (almacenesGridApi) almacenesGridApi.setGridOption('quickFilterText', v); }
+
+function openModalAlmacenFormCrear() {
+  document.getElementById('almacenEditId').value = '';
+  document.getElementById('inpIdNameAlmacen').value = '';
+  document.getElementById('inpDescripcionAlmacen').value = '';
+  document.getElementById('inpCompaniaAlmacen').value = '';
+  document.getElementById('inpTipoAlmacen').value = '';
+  document.getElementById('tituloModalAlmacen').textContent = 'Nuevo Almacén';
+  document.getElementById('errorAlmacenForm').style.display = 'none';
+  document.getElementById('modalAlmacenForm').classList.add('active');
+}
+
+function openModalAlmacenFormEditar(id, idName, descripcion, company, tipoAlmacen) {
+  document.getElementById('almacenEditId').value = id;
+  document.getElementById('inpIdNameAlmacen').value = idName || '';
+  document.getElementById('inpDescripcionAlmacen').value = descripcion || '';
+  document.getElementById('inpCompaniaAlmacen').value = company || '';
+  document.getElementById('inpTipoAlmacen').value = tipoAlmacen || '';
+  document.getElementById('tituloModalAlmacen').textContent = 'Editar Almacén';
+  document.getElementById('errorAlmacenForm').style.display = 'none';
+  document.getElementById('modalAlmacenForm').classList.add('active');
+}
+
+function closeModalAlmacenForm() {
+  document.getElementById('modalAlmacenForm').classList.remove('active');
+}
+
+async function guardarAlmacen() {
+  const errDiv = document.getElementById('errorAlmacenForm');
+  errDiv.style.display = 'none';
+
+  const id = document.getElementById('almacenEditId').value;
+  const idName = document.getElementById('inpIdNameAlmacen').value.trim();
+  const descripcion = document.getElementById('inpDescripcionAlmacen').value.trim();
+  const company = document.getElementById('inpCompaniaAlmacen').value.trim();
+  const tipoAlmacen = document.getElementById('inpTipoAlmacen').value.trim();
+
+  if (!idName || !descripcion || !company) {
+    errDiv.textContent = 'idName, Descripción y Compañía son obligatorios.';
+    errDiv.style.display = 'block';
+    return;
+  }
+
+  try {
+    const esEdicion = !!id;
+    const url = esEdicion ? `/kardex/api/almacenes/${id}` : '/kardex/api/almacenes';
+    const method = esEdicion ? 'PUT' : 'POST';
+
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idName, descripcion, company, tipoAlmacen }),
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || d.message || 'No se pudo guardar el almacén');
+
+    closeModalAlmacenForm();
+    await loadAlmacenesGestion();
+  } catch (e) {
+    errDiv.textContent = 'Error: ' + e.message;
+    errDiv.style.display = 'block';
+  }
+}
+
+async function toggleAlmacenEstado(id, status) {
+  const msg = status === 0
+    ? '¿Deseas inactivar este almacén?'
+    : '¿Deseas reactivar este almacén?';
+  if (!confirm(msg)) return;
+
+  try {
+    const r = await fetch(`/kardex/api/almacenes/${id}/estado`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'No se pudo actualizar estado');
+    await loadAlmacenesGestion();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+function initPeriodosGrid() {
+  if (periodosGridApi) return;
+  periodosGridApi = agGrid.createGrid(document.getElementById('periodosManagerGrid'), {
+    columnDefs: colDefsPeriodos,
+    rowData: [],
+    defaultColDef: { sortable: true, filter: true, resizable: true },
+    pagination: true,
+    paginationPageSize: 10,
+    paginationPageSizeSelector: [10, 25, 50],
+    animateRows: true,
+    suppressCellFocus: true,
+    getRowStyle: p => p.data && Number(p.data.status) === 1 ? { background: 'rgba(14,157,127,0.08)' } : undefined,
+    onGridReady: p => setTimeout(() => p.api.sizeColumnsToFit(), 0),
+    onGridSizeChanged: p => p.api.sizeColumnsToFit(),
+  });
+}
+
+async function loadPeriodosGestion() {
+  try {
+    const r = await fetch('/kardex/api/periodos');
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'No se pudieron cargar períodos');
+    periodosGridApi.setGridOption('rowData', d.data);
+  } catch (e) {
+    console.error('[Periodos]', e);
+  }
+}
+
+function openModalGestionPeriodos() {
+  initPeriodosGrid();
+  document.getElementById('modalGestionPeriodos').classList.add('active');
+  setTimeout(() => {
+    if (periodosGridApi) periodosGridApi.sizeColumnsToFit();
+  }, 0);
+  loadPeriodosGestion();
+}
+
+function closeModalGestionPeriodos() {
+  document.getElementById('modalGestionPeriodos').classList.remove('active');
+}
+
+function onQuickFilterPeriodos(v) { if (periodosGridApi) periodosGridApi.setGridOption('quickFilterText', v); }
+
+function openModalPeriodoFormCrear() {
+  document.getElementById('periodoEditId').value = '';
+  document.getElementById('tituloModalPeriodo').textContent = 'Nuevo Período';
+  document.getElementById('errorPeriodoForm').style.display = 'none';
+  document.getElementById('inpAnoPeriodo').value = new Date().getFullYear();
+  document.getElementById('inpMesPeriodo').value = String(new Date().getMonth() + 1);
+  actualizarRangoFechasPeriodo();
+  document.getElementById('modalPeriodoForm').classList.add('active');
+}
+
+function openModalPeriodoFormEditar(id, nombre, fechaInicio, fechaFin) {
+  const [ano, mes] = nombre.split(' ').length >= 2
+    ? [Number(nombre.split(' ').slice(-1)[0]), Math.max(1, meses.findIndex(m => nombre.toLowerCase().includes(m.toLowerCase())) + 1)]
+    : [new Date(fechaInicio).getFullYear(), new Date(fechaInicio).getMonth() + 1];
+
+  document.getElementById('periodoEditId').value = id;
+  document.getElementById('tituloModalPeriodo').textContent = 'Editar Período';
+  document.getElementById('errorPeriodoForm').style.display = 'none';
+  document.getElementById('inpMesPeriodo').value = String(mes || 1);
+  document.getElementById('inpAnoPeriodo').value = String(ano || new Date().getFullYear());
+  actualizarRangoFechasPeriodo();
+  document.getElementById('inpFechaInicioPeriodo').value = fechaInicio || '';
+  document.getElementById('inpFechaFinPeriodo').value = fechaFin || '';
+  document.getElementById('inpNombrePeriodo').value = nombre || '';
+  document.getElementById('modalPeriodoForm').classList.add('active');
+}
+
+function closeModalPeriodoForm() {
+  document.getElementById('modalPeriodoForm').classList.remove('active');
+}
+
+function actualizarRangoFechasPeriodo() {
+  const mes = parseInt(document.getElementById('inpMesPeriodo').value, 10);
+  const ano = parseInt(document.getElementById('inpAnoPeriodo').value, 10);
+  if (!mes || !ano) return;
+
+  const nombre = `${meses[mes - 1]} ${ano}`;
+  document.getElementById('inpNombrePeriodo').value = nombre;
+
+  const fechaInicio = new Date(ano, mes - 1, 1);
+  const fechaFin = new Date(ano, mes, 0);
+  const inicioStr = fechaInicio.toISOString().split('T')[0];
+  const finStr = fechaFin.toISOString().split('T')[0];
+
+  const inpInicio = document.getElementById('inpFechaInicioPeriodo');
+  const inpFin = document.getElementById('inpFechaFinPeriodo');
+
+  inpInicio.setAttribute('min', inicioStr);
+  inpInicio.setAttribute('max', finStr);
+  inpFin.setAttribute('min', inicioStr);
+  inpFin.setAttribute('max', finStr);
+
+  if (!inpInicio.value) inpInicio.value = inicioStr;
+  if (!inpFin.value) inpFin.value = finStr;
+}
+
+async function guardarPeriodo() {
+  const errDiv = document.getElementById('errorPeriodoForm');
+  errDiv.style.display = 'none';
+
+  const id = document.getElementById('periodoEditId').value;
+  const body = {
+    nombre: document.getElementById('inpNombrePeriodo').value.trim(),
+    mes: document.getElementById('inpMesPeriodo').value,
+    ano: document.getElementById('inpAnoPeriodo').value,
+    fechaInicio: document.getElementById('inpFechaInicioPeriodo').value,
+    fechaFin: document.getElementById('inpFechaFinPeriodo').value,
+  };
+
+  if (!body.nombre || !body.fechaInicio || !body.fechaFin) {
+    errDiv.textContent = 'Todos los campos son obligatorios.';
+    errDiv.style.display = 'block';
+    return;
+  }
+
+  try {
+    const esEdicion = !!id;
+    const url = esEdicion ? `/kardex/api/periodos/${id}` : '/kardex/api/periodos';
+    const method = esEdicion ? 'PUT' : 'POST';
+
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'No se pudo guardar el período');
+
+    closeModalPeriodoForm();
+    await loadPeriodosGestion();
+  } catch (e) {
+    errDiv.textContent = 'Error: ' + e.message;
+    errDiv.style.display = 'block';
+    openGlobalMessageModal('error', 'Error al guardar período', e.message || 'Error desconocido');
+  }
+}
+
+async function activarPeriodo(id) {
+  try {
+    if (!confirm('¿Activar este período? El período activo anterior quedará inactivo.')) return;
+    const r = await fetch('/kardex/api/periodos/' + id + '/activar', { method: 'POST' });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'No se pudo activar período');
+    await loadPeriodosGestion();
+  } catch (e) {
+    openGlobalMessageModal('error', 'Error al activar período', e.message || 'Error desconocido');
+  }
+}
+
+async function togglePeriodoEstado(id, estado) {
+  const msg = estado === 2
+    ? '¿Deseas cerrar este período? No podrá ser reactivado.'
+    : (estado === 1 ? '¿Deseas activar este período?' : '¿Deseas marcar este período como inactivo?');
+  if (!confirm(msg)) return;
+
+  try {
+    const r = await fetch(`/kardex/api/periodos/${id}/estado`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado }),
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'No se pudo actualizar estado');
+    await loadPeriodosGestion();
+  } catch (e) {
+    openGlobalMessageModal('error', 'Error al actualizar período', e.message || 'Error desconocido');
+  }
+}
+</script>
+{% endblock %}

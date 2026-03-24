@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROIMA - Acceso Denegado</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .error-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 60px 40px;
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        .error-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        
+        .error-code {
+            font-size: 120px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+        
+        .error-title {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .error-message {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
+        .error-details {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin-bottom: 40px;
+            text-align: left;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .error-details strong {
+            color: #333;
+        }
+        
+        .error-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        
+        .btn-secondary:hover {
+            background: #f8f9ff;
+            transform: translateY(-2px);
+        }
+        
+        .logo {
+            max-height: 60px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 600px) {
+            .error-container {
+                padding: 40px 25px;
+            }
+            
+            .error-code {
+                font-size: 80px;
+            }
+            
+            .error-title {
+                font-size: 24px;
+            }
+            
+            .error-message {
+                font-size: 14px;
+            }
+            
+            .error-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='img/apple-touch-icon.png') }}" alt="Acceso Denegado" style="max-height: 80px; opacity: 0.9;">
+        </div>
+        
+        <div class="error-code">403</div>
+        
+        <h1 class="error-title">Acceso Denegado</h1>
+        
+        <p class="error-message">
+            No tienes permisos suficientes para acceder a este recurso.
+        </p>
+        
+        <div class="error-details">
+            <strong>¿Qué sucedió?</strong>
+            <p style="margin-top: 8px;">
+                Tu cuenta no tiene los roles necesarios para acceder a este sistema o módulo. 
+                Si crees que deberías tener acceso, contacta al administrador del sistema.
+            </p>
+        </div>
+        
+        <div class="error-actions">
+            <a href="{{ url_for('auth.menu') }}" class="btn btn-primary">Ir al Menú Principal</a>
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary">Cerrar Sesión</a>
+        </div>
+    </div>
+</body>
+</html>

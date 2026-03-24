@@ -1,0 +1,1314 @@
+{% extends 'base.html' %}
+{% block title %}PROIMA - Dispositivos{% endblock %}
+{% block page_title %}Dispositivos{% endblock %}
+{% block content %}
+
+<!-- Material Icons -->
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dispositivos.css') }}">
+<script src="{{ url_for('static', filename='js/dispositivos.js') }}" defer></script>
+
+<!-- Modal: Confirmar restauración de dispositivo -->
+<div id="modalConfirmRestore" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Confirmar Restauración</h3>
+      <button class="modal-close" onclick="closeModal('modalConfirmRestore')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Estás seguro que quieres restaurar este dispositivo?</p>
+      <p><span>Número de Serie:</span> <strong><span id="confirmRestoreSN"></span></strong></p>
+      <p><span>Marca:</span> <strong><span id="confirmRestoreMarca"></span></strong></p>
+      <p><span>Modelo:</span> <strong><span id="confirmRestoreModelo"></span></strong></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('modalConfirmRestore')">Cancelar</button>
+      <button id="btnConfirmRestore" class="btn btn-primary" onclick="confirmRestoreDevice()">Restaurar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar eliminación de dispositivo -->
+<div id="modalConfirmDelete" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Confirmar eliminación</h3>
+      <button class="modal-close" onclick="closeModal('modalConfirmDelete')">&times;</button>
+    </div>
+            <div class="modal-body">
+          <p>¿Confirma que desea eliminar este dispositivo?</p>
+          <p><span>Tipo:</span> <strong><span id="confirmDeleteTipo"></span></strong></p>
+          <p><span>Marca:</span> <strong><span id="confirmDeleteMarca"></span></strong></p>
+          <p><span>Modelo:</span> <strong><span id="confirmDeleteModelo"></span></strong></p>
+          <p><strong>Número de serie:</strong> <span id="confirmDeleteSN"></span></p>
+          <label>
+            <span class="label-title">Motivo de baja<span class="required">*</span></span>
+            <textarea id="confirmDeleteReason" rows="2" placeholder="Motivo de la baja" required></textarea>
+          </label>
+          <div id="confirmDeleteError" style="display:none; color:#b00020; margin-top:8px; font-weight:600; opacity:1; transition:opacity 1s ease-in-out;"></div>
+        </div>
+      <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('modalConfirmDelete')">Cancelar</button>
+      <button id="btnConfirmDelete" class="btn btn-danger" onclick="confirmDeleteDevice()" title="Eliminar dispositivo" style="width:110px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;">
+        Eliminar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Número de serie duplicado -->
+<div id="modalSerieDuplicada" class="modal-overlay">
+  <div class="modal">
+    <div style="text-align:center; padding:24px;">
+      <div style="font-size:48px; color:#ff5252; margin-bottom:16px;">✕</div>
+      <h3 style="margin:0 0 12px 0; color:var(--text-primary);">Número de serie duplicado</h3>
+      <p id="serieDuplicadaMessage" style="color:var(--text-gray); margin:0 0 20px 0; line-height:1.6;">Este número de serie ya existe. Por favor, verifica el dato ingresado.</p>
+    </div>
+    <div class="modal-footer" style="justify-content:center;">
+      <button class="btn btn-primary" onclick="closeModal('modalSerieDuplicada')">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Fecha futura no permitida -->
+<div id="modalFechaFutura" class="modal-overlay">
+  <div class="modal">
+    <div style="text-align:center; padding:24px;">
+      <div style="font-size:48px; color:#ff5252; margin-bottom:16px;">✕</div>
+      <h3 style="margin:0 0 12px 0; color:var(--text-primary);">Error</h3>
+      <p style="color:var(--text-gray); margin:0 0 20px 0; line-height:1.6;">No se permiten fechas futuras en el campo <strong>Fecha de obtención</strong>. Por favor selecciona una fecha igual o anterior a hoy.</p>
+    </div>
+    <div class="modal-footer" style="justify-content:center;">
+      <button class="btn btn-primary" onclick="closeModal('modalFechaFutura')">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de conflicto de IP -->
+<div id="modalIpConflict" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Conflicto de dirección IP</h3>
+      <button class="modal-close" onclick="closeModal('modalIpConflict')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p id="ipConflictMessage" style="margin-bottom:12px;"></p>
+      <p>¿Qué acción desea realizar?</p>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;">
+      <button type="button" class="btn btn-secondary" id="btnIpKeep">Mantener</button>
+      <button type="button" class="btn btn-danger" id="btnIpReplace">Reemplazar</button>
+    </div>
+  </div>
+</div>
+
+  <div class="button-group" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+  <div style="display:flex;gap:12px;">
+    <button class="btn btn-primary offset-btn" onclick="openNewDeviceModal()">Nuevo dispositivo</button>
+    <button class="btn btn-primary offset-btn" onclick="openGestionarMarcasModelosModal()">Gestionar marca y modelo</button>
+    <button class="btn btn-primary offset-btn" onclick="toggleEliminadosView()" id="btnVerEliminados">Ver eliminados</button>
+    <button class="btn btn-primary offset-btn" onclick="toggleCelularesView()" id="btnVerCelulares">Ver celulares</button>
+    <button class="btn btn-primary offset-btn" onclick="toggleEliminadosView()" id="btnVolverActivos" style="display:none;">
+      <img src="{{ url_for('static', filename='img/backw.png') }}" alt="Volver" style="height:16px; vertical-align:middle; margin-right:8px;">
+      <span style="position:relative; top:2px; display:inline-block;">Volver</span>
+    </button>
+    <button class="btn btn-primary offset-btn" onclick="toggleCelularesView()" id="btnVolverCelulares" style="display:none;">
+      <img src="{{ url_for('static', filename='img/backw.png') }}" alt="Volver" style="height:16px; vertical-align:middle; margin-right:8px;">
+      <span style="position:relative; top:2px; display:inline-block;">Volver</span>
+    </button>
+    <span id="devices-loading" class="htmx-indicator" style="color:var(--text-gray);font-size:14px;display:flex;align-items:center;gap:6px;">
+      <span class="spinner" style="display:inline-block;width:16px;height:16px;border:2px solid var(--text-gray);border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span>
+      Actualizando...
+    </span>
+    <!-- Test and preview buttons removed as requested -->
+    <!-- Preview PDF button removed because the preview page was deleted -->
+    <!-- Botón de eliminación de carpetas numeradas eliminado por solicitud -->
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <!-- Botón 'Leer impresoras' eliminado: ahora se utiliza el flujo de revisión programada/revisar -->
+    <input id="devicesPageSearch" class="global-table-search" placeholder="Buscar..." style="width:220px;" />
+  </div>
+</div>
+
+<div id="viewActivos">
+{% if devices %}
+  <table role="grid" id="devicesTable">
+    <thead>
+      <tr>
+        <th data-sortable="categoria">Tipo <img id="sortIndicator_categoria" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th>Identificador</th>
+        <th data-sortable="numero_serie">No de Serie <img id="sortIndicator_numero_serie" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="nombre_modelo">Modelo <img id="sortIndicator_nombre_modelo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="nombre_marca">Marca <img id="sortIndicator_nombre_marca" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="estado">Estado <img id="sortIndicator_estado" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="ip_asignada">Dirección IP <img id="sortIndicator_ip_asignada" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th id="thActions">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for d in devices %}
+      <tr data-device-id="{{ d.id_dispositivo }}">
+        <td>{{ d.categoria }}</td>
+        <td>{{ d.identificador or '' }}</td>
+        <td>
+          <code>{{ d.numero_serie }}</code>
+        </td>
+        <td>{{ d.nombre_modelo }}</td>
+        <td>{{ d.nombre_marca or '' }}</td>
+        <td>
+          {% set estado_val = d.estado|int if d.estado is defined else 0 %}
+          {% set estado_texto = 'Sin asignar' if estado_val == 0 else 'Asignado' if estado_val == 1 else 'En reparación' if estado_val == 2 else 'Eliminado' if estado_val == 3 else 'Uso general' if estado_val == 4 else 'Sin asignar' %}
+          {% set estado_color = 'danger' if estado_val == 0 else 'success' if estado_val == 1 else 'warning' if estado_val == 2 else 'secondary' if estado_val == 3 else 'primary' if estado_val == 4 else 'danger' %}
+          <span class="text-{{ estado_color }}">{{ estado_texto }}</span>
+        </td>
+        <td>{{ d.ip_asignada or '' }}</td>
+        <td class="table-actions">
+          <button class="btn btn-primary btn-small" title="Editar dispositivo" onclick="openEditDeviceModal({{ d.id_dispositivo }})" style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
+            <div style="width:42px; height:42px; border-radius:50%; background:#f59e0b; position:absolute;"></div>
+            <img src="/static/img/edd.png" alt="Editar" style="width:32px; height:32px; position:relative; z-index:1;">
+          </button>
+          <button class="btn btn-info btn-small" title="Ver historial de asignaciones" onclick="openDeviceHistoryModal({{ d.id_dispositivo }})" style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
+            <div style="width:42px; height:42px; border-radius:50%; background:#17a2b8; position:absolute;"></div>
+            <img src="/static/img/dh.png" alt="Historial" style="width:32px; height:32px; position:relative; z-index:1;">
+          </button>
+            <button class="btn btn-danger btn-small" title="Eliminar dispositivo" onclick="openDeleteDeviceModal({{ d.id_dispositivo }}, '{{ (d.numero_serie or '')|replace("'","\\'") }}', '{{ (d.nombre_marca or '')|replace("'","\\'") }}', '{{ (d.nombre_modelo or '')|replace("'","\\'") }}', '{{ (d.categoria or '')|replace("'","\\'") }}')" style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
+              <div style="width:42px; height:42px; border-radius:50%; background:#dc3545; position:absolute;"></div>
+              <img src="/static/img/dd.png" alt="Eliminar" style="width:28px; height:28px; position:relative; z-index:1;">
+            </button>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <article role="alert" class="empty-state">
+    No hay dispositivos registrados. Crea uno nuevo con el botón superior.
+  </article>
+{% endif %}
+</div>
+
+<div id="viewEliminados" style="display:none;">
+{% if devices_eliminados %}
+  <table role="grid" id="deletedDevicesTable">
+    <thead>
+      <tr>
+        <th data-sortable="categoria">Tipo <img id="sortIndicator_eliminados_categoria" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="numero_serie">No de Serie <img id="sortIndicator_eliminados_numero_serie" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="nombre_modelo">Modelo <img id="sortIndicator_eliminados_nombre_modelo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="nombre_marca">Marca <img id="sortIndicator_eliminados_nombre_marca" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="ip_asignada">Dirección IP <img id="sortIndicator_eliminados_ip_asignada" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th>Observaciones</th>
+        <th id="thActionsDeleted">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for d in devices_eliminados %}
+      <tr>
+        <td>{{ d.categoria }}</td>
+        <td><code>{{ d.numero_serie }}</code></td>
+        <td>{{ d.nombre_modelo }}</td>
+        <td>{{ d.nombre_marca or '' }}</td>
+        <td>{{ d.ip_asignada or '' }}</td>
+        <td>{{ d.observaciones or '-' }}</td>
+        <td class="table-actions">
+          <button class="btn btn-success btn-small" title="Restaurar dispositivo" onclick="openRestoreModal({{ d.id_dispositivo }}, '{{ (d.numero_serie or '')|replace("'","\\'") }}', '{{ (d.nombre_marca or '')|replace("'","\\'") }}', '{{ (d.nombre_modelo or '')|replace("'","\\'") }}')"
+            style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
+            <div style="width:42px; height:42px; border-radius:50%; background:#28a745; position:absolute;"></div>
+            <img src="/static/img/res.png" alt="Restaurar" style="width:32px; height:32px; position:relative; z-index:1; filter:brightness(0) invert(1);">
+          </button>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <article role="alert" class="empty-state">
+    No hay dispositivos eliminados.
+  </article>
+{% endif %}
+</div>
+
+<div id="viewCelulares" style="display:none;">
+{% if devices_celulares %}
+  <table role="grid" id="celularesTable">
+    <thead>
+      <tr>
+        <th data-sortable="identificador">Identificador <img id="sortIndicator_celulares_identificador" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="imei">IMEI <img id="sortIndicator_celulares_imei" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="nombre_modelo">Modelo <img id="sortIndicator_celulares_nombre_modelo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="nombre_marca">Marca <img id="sortIndicator_celulares_nombre_marca" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="estado">Estado <img id="sortIndicator_celulares_estado" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="nombre_completo">Nombre <img id="sortIndicator_celulares_nombre_completo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="numero_linea">Número de Línea <img id="sortIndicator_celulares_numero_linea" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th id="thActionsCelulares">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for d in devices_celulares %}
+      <tr>
+        <td><a href="javascript:void(0)" class="device-link" onclick="showDeviceDetails({{ d.id_dispositivo }})" style="color:#007bff; text-decoration:none; cursor:pointer; font-weight:500;">{{ d.identificador or '-' }}</a></td>
+        <td><code>{{ d.imei or '-' }}</code></td>
+        <td>{{ d.nombre_modelo }}</td>
+        <td>{{ d.nombre_marca or '' }}</td>
+        <td>
+          {% set estado_val = d.estado|int if d.estado is defined else 0 %}
+          {% set estado_texto = 'Sin asignar' if estado_val == 0 else 'Asignado' if estado_val == 1 else 'En reparación' if estado_val == 2 else 'Eliminado' if estado_val == 3 else 'Uso general' if estado_val == 4 else 'Sin asignar' %}
+          {% set estado_color = 'danger' if estado_val == 0 else 'success' if estado_val == 1 else 'warning' if estado_val == 2 else 'secondary' if estado_val == 3 else 'primary' if estado_val == 4 else 'danger' %}
+          <span class="text-{{ estado_color }}">{{ estado_texto }}</span>
+        </td>
+        <td>
+          {% if d.fk_id_empleado %}
+            <a href="javascript:void(0)" class="empleado-link" onclick="showEmpleadoDetails({{ d.fk_id_empleado }})">{{ d.nombre_completo or '-' }}</a>
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td>
+          {% if d.numero_sin_codigo %}
+            +({{ d.codigo_pais }}) {{ d.numero_sin_codigo[:4] }}-{{ d.numero_sin_codigo[4:] }}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td class="table-actions">
+          <button class="btn btn-primary btn-small" title="Editar dispositivo" onclick="openEditDeviceModal({{ d.id_dispositivo }})" style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
+            <div style="width:42px; height:42px; border-radius:50%; background:#f59e0b; position:absolute;"></div>
+            <img src="/static/img/edd.png" alt="Editar" style="width:32px; height:32px; position:relative; z-index:1;">
+          </button>
+          <button class="btn btn-info btn-small" title="Ver historial de asignaciones" onclick="openDeviceHistoryModal({{ d.id_dispositivo }})" style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
+            <div style="width:42px; height:42px; border-radius:50%; background:#17a2b8; position:absolute;"></div>
+            <img src="/static/img/dh.png" alt="Historial" style="width:32px; height:32px; position:relative; z-index:1;">
+          </button>
+            <button class="btn btn-danger btn-small" title="Eliminar dispositivo" onclick="openDeleteDeviceModal({{ d.id_dispositivo }}, '{{ (d.numero_serie or '')|replace("'","\\'") }}', '{{ (d.nombre_marca or '')|replace("'","\\'") }}', '{{ (d.nombre_modelo or '')|replace("'","\\'") }}', '{{ (d.categoria or '')|replace("'","\\'") }}')" style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
+              <div style="width:42px; height:42px; border-radius:50%; background:#dc3545; position:absolute;"></div>
+              <img src="/static/img/dd.png" alt="Eliminar" style="width:28px; height:28px; position:relative; z-index:1;">
+            </button>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <article role="alert" class="empty-state">
+    No hay celulares registrados.
+  </article>
+{% endif %}
+</div>
+
+<!-- MODAL: Nuevo Dispositivo -->
+<!-- MODAL: Datos del empleado -->
+<div id="modalEmpleadoDetails" class="modal-overlay">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <h3>Datos del Empleado</h3>
+      <button class="modal-close" onclick="closeModal('modalEmpleadoDetails')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="empleadoDetailsContent" style="display:flex; flex-direction:column; gap:12px;">
+        <div style="text-align:center; padding:20px;">
+          <span class="spinner" style="display:inline-block;width:24px;height:24px;border:3px solid var(--text-gray);border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span>
+          <p style="margin-top:12px; color:var(--text-gray);">Cargando datos...</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalEmpleadoDetails')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Detalles del Dispositivo (Celular) -->
+<div id="modalDeviceDetails" class="modal-overlay">
+  <div class="modal" style="max-width:600px; width:95%; max-height:90vh; overflow-y:auto;">
+    <div class="modal-header">
+      <h3>Detalles del Dispositivo</h3>
+      <button class="modal-close" onclick="closeModal('modalDeviceDetails')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="deviceDetailsContent" style="display:flex; flex-direction:column; gap:16px;">
+        <div style="text-align:center; padding:20px;">
+          <span class="spinner" style="display:inline-block;width:24px;height:24px;border:3px solid var(--text-gray);border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span>
+          <p style="margin-top:12px; color:var(--text-gray);">Cargando datos...</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalDeviceDetails')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Previsualización de documentos (demo embebida) -->
+<div id="modalDocsPreview" class="modal-overlay">
+  <div class="modal" style="max-width:1100px; width:95%;">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <div>
+        <h3>Revisa los documentos</h3>
+        <div style="color:var(--text-gray); font-size:0.95rem; margin-top:6px; max-width:760px;">Lee detenidamente los documentos antes de marcar que has leído todos los archivos correspondientes. Al confirmar, aceptas los términos y condiciones relacionados al manejo y recepción de estos documentos y declaras que los archivos han sido revisados.</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="modal-close" onclick="closeModal('modalDocsPreview')" aria-label="Cerrar" style="display:inline-flex;align-items:center;justify-content:center;border-radius:6px;padding:6px 8px;background:transparent;border:0;color:var(--text-primary);">
+          <i class="material-icons" style="font-size:20px;line-height:1;">close</i>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body">
+
+      <div id="docsPreviewGrid" aria-live="polite">
+        <div class="loading">Cargando documentos...</div>
+      </div>
+
+      <div class="docs-preview-footer">
+        <div style="font-size:0.95rem; color:var(--text-gray); max-width:840px; text-align:center;">Puedes abrir cada documento haciendo click sobre su tarjeta. Marca cada documento como revisado usando el checkbox debajo de cada tarjeta. Todos los check deben estar seleccionados y aceptar los términos para habilitar la confirmación.</div>
+        <div class="docs-preview-terms">
+          <input type="checkbox" id="chkAcceptTerms" />
+          <label for="chkAcceptTerms">He leído los términos y condiciones y confirmo que revisé los documentos indicados.</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeModal('modalDocsPreview')">Cerrar</button>
+      <button id="btnConfirmDocs" class="btn btn-primary" disabled>Confirmar lectura</button>
+    </div>
+  </div>
+</div>
+<div id="modalNewDevice" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div>
+          <h3>Nuevo dispositivo</h3>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="modal-close" onclick="closeModal('modalNewDevice')">&times;</button>
+        </div>
+      </div>
+    <div class="modal-body">
+      <form id="formNewDevice" method="post" action="/devices/new" onsubmit="return false;">
+        <fieldset>
+          <legend>Marca y Modelo</legend>
+          <label>
+            <span class="label-title">Tipo de dispositivo<span class="required">*</span></span>
+            <select id="selectTipoNew" name="categoria" required>
+              <option value="">-- Seleccionar --</option>
+              <optgroup label="Dispositivos">
+                <option value="Laptop">Laptop</option>
+                <option value="PC">PC / Ordenador sobremesa</option>
+                <option value="Celular">Celular</option>
+                <option value="Tablet">Tablet</option>
+              </optgroup>
+              <optgroup label="Infraestructura de Red">
+                <option value="Router">Router</option>
+                <option value="Router AP">Router AP</option>
+                <option value="Switch">Switch</option>
+              </optgroup>
+              <optgroup label="Periféricos">
+                <option value="Monitor">Monitor</option>
+                <option value="Impresora">Impresora</option>
+                <option value="UPS">UPS</option>
+                <option value="Telefono VoIP">Teléfono VoIP</option>
+                <option value="Teclado">Teclado</option>
+                <option value="Mouse">Mouse</option>
+                <option value="Auriculares">Auriculares</option>
+                <option value="Adaptador">Adaptador</option>
+              </optgroup>
+            </select>
+          </label>
+          <label>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="label-title">Marca<span class="required">*</span></span>
+              <button type="button" class="btn btn-primary btn-small btn-quick" onclick="openModal('modalNewMarcaQuick')" style="padding:2px 6px; font-size:0.9rem;" title="Agregar nueva marca">+</button>
+            </div>
+            <div style="margin-top:0;">
+              <select id="selectMarcaNew" name="fk_id_marca" required style="width:100%;">
+                <option value="">-- Seleccionar marca --</option>
+                {% for marca in marcas_options %}
+                  <option value="{{ marca.id_marca }}">{{ marca.nombre_marca }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </label>
+          <label>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="label-title">Modelo<span class="required">*</span></span>
+              <button type="button" class="btn btn-primary btn-small btn-quick" onclick="openModalNewModeloWithMarca()" style="padding:2px 6px; font-size:0.9rem;" title="Agregar nuevo modelo">+</button>
+            </div>
+            <div style="margin-top:0;">
+              <select id="selectModeloNew" name="fk_id_modelo" required style="width:100%;">
+                <option value="">-- Seleccionar modelo --</option>
+                {% for modelo in modelos_options %}
+                  <option value="{{ modelo.id_modelo }}" data-tipo="{{ modelo.categoria }}" data-fk-marca="{{ modelo.fk_id_marca if modelo.fk_id_marca is defined else '' }}">{{ modelo.nombre_modelo }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </label>
+        </fieldset>
+        <fieldset id="fieldsetDispositivoInfo">
+          <legend>Información del dispositivo</legend>
+          <label>
+            <span class="label-title">Número de serie<span class="required">*</span></span>
+            <input type="text" name="numero_serie" id="newDeviceSerial" required placeholder="Ingrese el número de serie del dispositivo" oninput="this.value = this.value.toUpperCase()">
+          </label>
+          <label>
+            <span class="label-title">Empresa<span class="required">*</span></span>
+            <div class="empresa-radio-container">
+              <label class="empresa-radio-option">
+                <input type="radio" name="empresa" value="PROIMA" id="radioEmpresaPROIMA" checked required>
+                <span>PROIMA</span>
+              </label>
+              <label class="empresa-radio-option">
+                <input type="radio" name="empresa" value="ELMIGO" id="radioEmpresaELMIGO" required>
+                <span>ELMIGO</span>
+              </label>
+            </div>
+          </label>
+          <label>
+            <span class="label-title">Identificador<span class="required">*</span></span>
+            <input type="text" name="identificador" id="newIdentificador" required placeholder="PRO/ELM-XXX-00000" readonly style="background-color:#f5f5f5;">
+          </label>
+          <label id="labelNewImei">
+            IMEI
+            <input type="text" name="imei" placeholder="Código IMEI del dispositivo móvil">
+          </label>
+          <label id="labelNewImei2Checkbox" class="checkbox-label" style="display:block; width:100%; text-align:left;">
+            <div style="display:flex; justify-content:flex-start; align-items:center; gap:0.5rem; width:100%;">
+              <input type="checkbox" id="checkImei2" onchange="toggleImei2Field()" style="margin:0; width:16px; height:16px; vertical-align:middle; flex:0 0 auto;">
+              <span style="vertical-align:middle; flex:1;">El dispositivo tiene 2 IMEI</span>
+            </div>
+          </label>
+          <label id="labelNewImei2" style="display:none;">
+            IMEI 2
+            <input type="text" name="imei2" id="inputImei2" placeholder="Código del segundo IMEI">
+          </label>
+          <label id="labelNewMac" style="display:none;">
+            Dirección MAC
+            <input type="text" name="direccion_mac" placeholder="Dirección física de red (MAC)">
+          </label>
+          <label id="labelNewIp" style="display:none;">
+            Dirección IP
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="text" name="ip_asignada" placeholder="Dirección IP de la red" value="192.168.0.0" style="flex:1;">
+              <label class="checkbox-label" style="margin:0; display:flex; align-items:center; gap:6px; white-space:nowrap;">
+                <input type="checkbox" id="checkIpNA" style="margin:0; width:16px; height:16px;"> Dejar N/A
+              </label>
+            </div>
+            <div class="field-error" id="newIpError" style="display:none;color:#b00020;font-size:0.9rem;margin-top:4px;"></div>
+          </label>
+          <!-- Campos UPS: salidas y capacidad -->
+          <div id="upsFieldsNewDevice" style="display:none;">
+            <label>
+              <span class="label-title">Salidas<span class="required">*</span></span>
+              <select name="salidas" id="salidasNewDevice">
+                <option value="">-- Seleccionar --</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+              </select>
+            </label>
+            <label>
+              <span class="label-title">Capacidad (en VA y W)<span class="required">*</span></span>
+              <div style="display:flex;gap:0.5rem;align-items:center;">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" name="capacidad_va" id="capacidadVANewDevice" placeholder="VA" maxlength="5" style="flex:1;width:auto;">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" name="capacidad_w" id="capacidadWNewDevice" placeholder="W" maxlength="4" style="flex:1;width:auto;">
+              </div>
+              <div style="font-size:0.85rem;color:var(--text-gray);margin-top:0.25rem;">Ejemplo: 1500 VA, 900 W</div>
+            </label>
+          </div>
+          <label id="labelNewTintaTracking" class="checkbox-label" style="display:block; width:100%; text-align:left; margin-top:0.35rem; display:none;">
+            <div style="display:flex; justify-content:flex-start; align-items:center; gap:0.5rem; width:100%;">
+              <input type="checkbox" id="checkTintaTracking" name="tinta_seguimiento" value="1" onchange="toggleTintaTrackingField()" style="margin:0; width:16px; height:16px; vertical-align:middle; flex:0 0 auto;">
+              <span style="vertical-align:middle; flex:1;">Agregar seguimiento sobre niveles de tinta</span>
+            </div>
+          </label>
+          <div id="containerTintaDetalle" style="display:none; margin-top:0.35rem;">
+            <input type="text" id="inputTintaDetalle" name="tinta_seguimiento_detalle" placeholder="Ingrese Area o Departamento y la Empresa" style="width:100%; padding:8px; border-radius:6px;" />
+          </div>
+          
+          <label id="labelNewColor">
+            Color
+            <select name="color">
+              <option value="">-- Seleccionar color --</option>
+              <option value="Negro">Negro</option>
+              <option value="Gris">Gris</option>
+              <option value="Blanco">Blanco</option>
+              <option value="Plata">Plata</option>
+              <option value="Verde">Verde</option>
+              <option value="Dorado">Dorado</option>
+              <option value="Azul">Azul</option>
+            </select>
+          </label>
+          <label id="labelNewTamano">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="label-title">Tamaño</span>
+              <button type="button" class="btn btn-primary btn-small btn-quick" onclick="openModal('modalNewTamanoQuick')" style="padding:2px 6px; font-size:0.9rem;" title="Agregar nuevo tamaño">+</button>
+            </div>
+            <div style="margin-top:0;">
+              <select name="tamano" id="newDeviceTamano" style="width:100%;">
+                <option value="">-- Seleccionar tamaño --</option>
+                <option value='4.7"'>4.7"</option>
+                <option value='5.5"'>5.5"</option>
+                <option value='6.1"'>6.1"</option>
+                <option value='6.7"'>6.7"</option>
+                <option value='13"'>13"</option>
+                <option value='14"'>14"</option>
+                <option value='15.6"'>15.6"</option>
+                <option value='16"'>16"</option>
+                <option value='21"'>21"</option>
+                <option value='24"'>24"</option>
+                <option value='27"'>27"</option>
+                <option value='32"'>32"</option>
+                <option value='43"'>43"</option>
+                <option value='50"'>50"</option>
+              </select>
+            </div>
+          </label>
+          <label id="labelNewCargador" class="checkbox-label" style="display:block; width:100%; text-align:left;">
+            <div style="display:flex; justify-content:flex-start; align-items:center; gap:0.5rem; width:100%;">
+              <input type="checkbox" name="cargador" style="margin:0; width:16px; height:16px; vertical-align:middle; flex:0 0 auto;">
+              <span style="vertical-align:middle; flex:1;">Cargador o Adaptador AC</span>
+            </div>
+          </label>
+          <label id="labelNewObservaciones">
+            Observaciones
+            <textarea name="observaciones" rows="2" placeholder="Observaciones o notas adicionales del dispositivo"></textarea>
+          </label>
+          <label id="labelNewExtension" style="display:none;">
+            <span class="label-title">Extensión VoIP</span>
+            <input type="text" name="extension" placeholder="Número de extensión">
+          </label>
+          <label id="labelNewFechaObt">
+            <span class="label-title">Fecha de obtención</span>
+            <input type="date" id="newDeviceFechaObtencion" name="fecha_obt" placeholder="Fecha de obtención del dispositivo" required>
+          </label>
+          <label>
+            <span class="label-title">Estado<span class="required">*</span></span>
+            <select id="newDeviceEstado" name="estado" required>
+              <option value="0">Sin asignar</option>
+              <option value="2">En reparación</option>
+              <option value="4" style="display:none;" id="newEstadoUsoGeneral">Uso general</option>
+            </select>
+          </label>
+        </fieldset>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeModal('modalNewDevice')">Cancelar</button>
+      <button type="button" id="btnSaveNewDevice" class="btn btn-primary">Guardar dispositivo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Sugerencias de dispositivos -->
+<div id="modalDeviceSuggestions" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Dispositivos similares encontrados</h3>
+      <button class="modal-close" onclick="closeModal('modalDeviceSuggestions')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom: 1rem; color: var(--text-gray);">Seleccione un dispositivo para autocompletar características:</p>
+      <div id="suggestionCardsContainer" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <!-- Cards will be inserted here -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('modalDeviceSuggestions')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Editar Dispositivo -->
+<div id="modalEditDevice" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <div>
+        <h3 style="margin:0;">Editar dispositivo</h3>
+        <div id="editDeviceHeaderLabel" style="font-size:0.9rem; color:var(--text-gray); margin-top:4px;"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button type="button" id="btnComponents" class="btn btn-secondary" onclick="openComponentsFromEdit()" style="display:none;">Componentes</button>
+        <button class="modal-close" onclick="closeModal('modalEditDevice')">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <form id="formEditDevice" onsubmit="return false;">
+        <input type="hidden" id="editDeviceId">
+        <fieldset>
+          <legend>Marca y Modelo</legend>
+          <label>
+            <span class="label-title">Marca</span>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <select id="editSelectMarca" name="fk_id_marca" style="flex:1;">
+                <option value="">-- Seleccionar marca --</option>
+                {% for marca in marcas_options %}
+                  <option value="{{ marca.id_marca }}">{{ marca.nombre_marca }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </label>
+          <label>
+            <span class="label-title">Modelo</span>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <select id="editSelectModelo" name="fk_id_modelo" style="flex:1;">
+                <option value="">-- Seleccionar modelo --</option>
+                {% for modelo in modelos_options %}
+                  <option value="{{ modelo.id_modelo }}" data-tipo="{{ modelo.categoria }}" data-fk-marca="{{ modelo.fk_id_marca if modelo.fk_id_marca is defined else '' }}">{{ modelo.nombre_modelo }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </label>
+          <label>
+            <span class="label-title">Tipo de dispositivo</span>
+            <select id="editDeviceTipo" name="categoria">
+              <option value="">-- Seleccionar --</option>
+              <optgroup label="Dispositivos">
+                <option value="Laptop">Laptop</option>
+                <option value="Celular">Celular</option>
+                <option value="Tablet">Tablet</option>
+              </optgroup>
+              <optgroup label="Infraestructura de Red">
+                <option value="Router">Router</option>
+                <option value="Router AP">Router AP</option>
+                <option value="Switch">Switch</option>
+              </optgroup>
+              <optgroup label="Periféricos">
+                <option value="Monitor">Monitor</option>
+                <option value="Impresora">Impresora</option>
+                <option value="UPS">UPS</option>
+                <option value="Telefono VoIP">Teléfono VoIP</option>
+                <option value="Teclado">Teclado</option>
+                <option value="Mouse">Mouse</option>
+                <option value="Auriculares">Auriculares</option>
+                <option value="Adaptador">Adaptador</option>
+              </optgroup>
+            </select>
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>Información</legend>
+          <label>
+            Número de serie
+            <input type="text" id="editDeviceSerial" name="numero_serie" class="form-input" oninput="this.value = this.value.toUpperCase()" />
+          </label>
+          <label>
+            Identificador
+            <input type="text" id="editDeviceIdentificador" name="identificador" class="form-input">
+          </label>
+          <label id="labelEditImei">
+            IMEI
+            <input type="text" id="editDeviceImei" name="imei">
+          </label>
+          <label id="labelEditImei2Checkbox" class="checkbox-label" style="display:block; width:100%; text-align:left;">
+            <div style="display:flex; justify-content:flex-start; align-items:center; gap:0.5rem; width:100%;">
+              <input type="checkbox" id="checkEditImei2" onchange="toggleEditImei2Field()" style="margin:0; width:16px; height:16px; vertical-align:middle; flex:0 0 auto;">
+              <span style="vertical-align:middle; flex:1;">El dispositivo tiene 2 IMEI</span>
+            </div>
+          </label>
+          <label id="labelEditImei2" style="display:none;">
+            IMEI 2
+            <input type="text" id="editDeviceImei2" name="imei2">
+          </label>
+          <label id="labelEditMac" style="display:none;">
+            Dirección MAC
+            <input type="text" id="editDeviceMac" name="direccion_mac">
+          </label>
+          <label id="labelEditIp" style="display:none;">
+            Dirección IP
+            <input type="text" id="editDeviceIp" name="ip_asignada">
+            <div class="field-error" id="editIpError" style="display:none;color:#b00020;font-size:0.9rem;margin-top:4px;"></div>
+          </label>
+          <!-- Campos UPS: salidas y capacidad -->
+          <div id="upsFieldsEditDevice" style="display:none;">
+            <label>
+              <span class="label-title">Salidas</span>
+              <select name="salidas" id="salidasEditDevice">
+                <option value="">-- Seleccionar --</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+              </select>
+            </label>
+            <label>
+              <span class="label-title">Capacidad (en VA y W)</span>
+              <div style="display:flex;gap:0.5rem;align-items:center;">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" name="capacidad_va" id="capacidadVAEditDevice" placeholder="VA" maxlength="5" style="flex:1;width:auto;">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" name="capacidad_w" id="capacidadWEditDevice" placeholder="W" maxlength="4" style="flex:1;width:auto;">
+              </div>
+              <div style="font-size:0.85rem;color:var(--text-gray);margin-top:0.25rem;">Ejemplo: 1500 VA, 900 W</div>
+            </label>
+          </div>
+          <label id="labelEditObservaciones">
+            Observaciones
+            <textarea id="editDeviceObservaciones" name="observaciones" rows="2" placeholder="Observaciones o notas adicionales del dispositivo"></textarea>
+          </label>
+          <label id="labelEditExtension" style="display:none;">
+            <span class="label-title">Extensión VoIP</span>
+            <input type="text" id="editDeviceExtension" name="extension" placeholder="Número de extensión">
+          </label>
+          <label id="labelEditFechaObt">
+            <span class="label-title">Fecha de obtención</span>
+            <input type="date" id="editDeviceFechaObtencion" name="fecha_obt" placeholder="Fecha de obtención del dispositivo">
+          </label>
+          <label id="labelEditColor">
+            Color
+            <select id="editDeviceColor" name="color">
+              <option value="">-- Seleccionar color --</option>
+              <option value="Negro">Negro</option>
+              <option value="Gris">Gris</option>
+              <option value="Blanco">Blanco</option>
+              <option value="Plata">Plata</option>
+              <option value="Verde">Verde</option>
+              <option value="Dorado">Dorado</option>
+              <option value="Azul">Azul</option>
+            </select>
+          </label>
+          <label id="labelEditTamano">
+            Tamaño
+            <select id="editDeviceTamano" name="tamano">
+              <option value="">-- Seleccionar tamaño --</option>
+              <option value='4.7"'>4.7"</option>
+              <option value='5.5"'>5.5"</option>
+              <option value='6.1"'>6.1"</option>
+              <option value='6.7"'>6.7"</option>
+              <option value='13"'>13"</option>
+              <option value='14"'>14"</option>
+              <option value='15.6"'>15.6"</option>
+              <option value='16"'>16"</option>
+              <option value='21"'>21"</option>
+              <option value='24"'>24"</option>
+              <option value='27"'>27"</option>
+              <option value='32"'>32"</option>
+              <option value='43"'>43"</option>
+              <option value='50"'>50"</option>
+            </select>
+          </label>
+          <label id="labelEditDeviceCargador" class="checkbox-label" style="display:block; width:100%; text-align:left;">
+            <div style="display:flex; justify-content:flex-start; align-items:center; gap:0.5rem; width:100%;">
+              <input type="checkbox" id="editDeviceCargador" name="cargador" style="margin:0; width:16px; height:16px; vertical-align:middle; flex:0 0 auto;">
+              <span style="vertical-align:middle; flex:1;">Cargador o Adaptador AC</span>
+            </div>
+          </label>
+          <label id="labelEditDeviceEstado" style="display:none;">
+            <span class="label-title">Estado</span>
+            <select id="editDeviceEstado" name="estado">
+              <option value="">-- Seleccionar --</option>
+              <option value="0">Sin asignar</option>
+              <option value="1">Asignado</option>
+              <option value="2">En reparación</option>
+              <option value="4">Uso general</option>
+            </select>
+          </label>
+        </fieldset>
+        <fieldset id="fieldsetAsignacion" style="display:none;">
+          <legend>Asignación Actual</legend>
+          <label id="labelAsignacionInfo" style="display:flex; flex-direction:column; gap:8px;">
+            <div>
+              <strong>Propietario:</strong> <span id="infoAsignadoPersona" style="color:var(--text-primary); font-weight:600;">-</span>
+            </div>
+            <div>
+              <strong>Desde:</strong> <span id="infoAsignadoDesde" style="color:var(--text-primary); font-weight:600;">-</span>
+            </div>
+          </label>
+          <button type="button" id="btnFinalizeAsignacion" class="btn btn-warning" style="display:none; margin-top:12px; width:100%;" onclick="finalizarAsignacionClick()">Finalizar asignación</button>
+
+          <!-- Inline confirmation UI: escribe CONFIRMAR -->
+          <div id="inlineFinalizeContainer" style="display:none; margin-top:10px;">
+            <div style="margin-bottom:6px;">
+              <span class="label-title">Confirmación — escribe <span class="no-break">'CONFIRMAR'</span></span>
+            </div>
+            <div>
+              <input type="text" id="editAsignacionConfirm" placeholder="Escribe CONFIRMAR para aplicar" autocomplete="off" style="width:100%; padding:10px; border-radius:6px;" />
+            </div>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <button id="btnConfirmFinalizeInline" class="btn btn-primary" disabled onclick="confirmFinalizeAsignacionInline()">Confirmar</button>
+              <button class="btn btn-danger" onclick="cancelFinalizeAsignacionInline()">Cancelar</button>
+            </div>
+            <div id="inlineFinalizeAsignacionError" style="display:none; color:#b00020; font-weight:600; margin-top:6px;"></div>
+          </div>
+        </fieldset>
+        <div id="editDeviceError" style="display:none; color:#b00020; font-weight:600; margin-top:0.5rem;"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeModal('modalEditDevice')">Cancelar</button>
+      <button type="button" id="btnSaveEditDevice" class="btn btn-primary">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Historial de asignaciones del dispositivo -->
+<div id="modalDeviceHistory" class="modal-overlay">
+  <div class="modal" style="max-width:800px;">
+    <div class="modal-header">
+      <h3>Historial de asignaciones</h3>
+      <button class="modal-close" onclick="closeModal('modalDeviceHistory')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="deviceHistoryContent">
+        <table role="grid" id="deviceHistoryTable">
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Fecha Inicio</th>
+              <th>Fecha Fin</th>
+            </tr>
+          </thead>
+          <tbody id="deviceHistoryTbody">
+            <tr><td colspan="3" style="text-align:center; padding:12px;">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalDeviceHistory')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar finalización de asignación (desde Editar Dispositivo) -->
+<div id="modalFinalizeAsignacion" class="modal-overlay">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <h3>Confirmar finalización de asignación</h3>
+      <button class="modal-close" onclick="closeModal('modalFinalizeAsignacion')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Estás seguro que quieres finalizar la asignación del <strong id="finalizeDeviceLabel">dispositivo</strong> de <strong id="finalizeAsignadoPersona">Empleado</strong>?</p>
+      <p style="font-size:0.95rem; color:var(--text-gray);">Escribe <strong>CONFIRMAR</strong> para realizar el proceso.</p>
+      <div style="margin-top:8px;">
+        <input id="confirmFinalizeInput" type="text" placeholder="Escribe CONFIRMAR para continuar" style="width:100%; padding:10px; border-radius:6px;" />
+      </div>
+      <div id="finalizeAsignacionError" style="display:none; color:#b00020; margin-top:8px; font-weight:600;"></div>
+    </div>
+    <div class="modal-footer" style="display:flex; gap:8px; justify-content:flex-end;">
+      <button type="button" id="btnCancelFinalizeAsignacion" class="btn btn-secondary">Cancelar</button>
+      <button type="button" id="btnConfirmFinalizeAsignacion" class="btn btn-primary" disabled>Confirmar finalización</button>
+    </div>
+  </div>
+</div>
+
+  
+
+<!-- Modal para crear marca rápidamente desde dispositivos -->
+<div id="modalNewMarcaQuick" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nueva marca</h3>
+      <button class="modal-close" onclick="closeModal('modalNewMarcaQuick')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formNewMarcaQuickDevice" onsubmit="return false;">
+        <label>
+          <span class="label-title">Nombre de la marca<span class="required">*</span></span>
+          <input type="text" id="inputNewMarcaQuick" required placeholder="Ingrese el nombre de la marca fabricante">
+        </label>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeModal('modalNewMarcaQuick')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="createNewMarcaFromDevice()">Guardar marca</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para crear modelo rápidamente desde dispositivos -->
+<div id="modalNewModeloQuick" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nuevo modelo</h3>
+      <button class="modal-close" onclick="closeModal('modalNewModeloQuick')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formNewModeloQuickDevice" onsubmit="return false;">
+        <label>
+          <span class="label-title">Nombre del modelo<span class="required">*</span></span>
+          <input type="text" id="inputNewModeloQuickNombre" required placeholder="Ingrese el nombre o código del modelo">
+        </label>
+            <label style="margin-top:0.75rem; display:block;">
+              <span class="label-title">Marca<span class="required">*</span></span>
+              <select id="selectMarcaNewModelo" style="font-size:0.95rem; width:100%; margin-top:6px;">
+                            <option value="">-- Selecciona marca --</option>
+                            {% for marca in marcas_options %}
+                              <option value="{{ marca.id_marca }}">{{ marca.nombre_marca }}</option>
+                            {% endfor %}
+                          </select>
+            </label>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeModal('modalNewModeloQuick')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="createNewModeloFromDevice()">Guardar modelo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para crear tamaño rápidamente desde dispositivos -->
+<div id="modalNewTamanoQuick" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nuevo tamaño</h3>
+      <button class="modal-close" onclick="closeModal('modalNewTamanoQuick')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formNewTamanoQuick" onsubmit="return false;">
+        <label>
+          <span class="label-title">Tamaño en pulgadas<span class="required">*</span></span>
+          <input type="text" id="inputNewTamanoQuick" required placeholder='Ingresa los digitos del tamaño' maxlength="4" oninput="onTamanoInput(this)">
+        </label>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeModal('modalNewTamanoQuick')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="addNewTamanoToSelect()">Agregar tamaño</button>
+    </div>
+  </div>
+</div>
+
+    <!-- Modal: Finalizar asignación (desde editar dispositivo) -->
+    <div id="modalFinalizeAsignacion" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Finalizar asignación</h3>
+          <button class="modal-close" onclick="closeModal('modalFinalizeAsignacion')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Se finalizará la asignación del siguiente dispositivo:</p>
+          <div style="margin:8px 0;">
+            <strong>Dispositivo:</strong> <span id="finalizeDeviceLabel">-</span>
+          </div>
+          <div style="margin:6px 0;">
+            <strong>Persona asignada:</strong> <span id="finalizeAsignadoPersona">-</span>
+          </div>
+          <div style="margin:6px 0;">
+            <strong>Desde:</strong> <span id="finalizeAsignadoDesde">-</span>
+          </div>
+          <div id="finalizeAsignacionError" style="display:none; color:#b00020; font-weight:600; margin-top:0.5rem;"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-cancel" onclick="closeModal('modalFinalizeAsignacion')">Cancelar</button>
+          <button type="button" id="btnConfirmFinalizeAsignacion" class="btn btn-danger" onclick="confirmFinalizeAsignacion()">Confirmar finalización</button>
+        </div>
+      </div>
+    </div>
+</div>
+
+    <!-- MODAL: Confirmar agregar componente duplicado en celular -->
+    <div id="modalConfirmAddComponente" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Confirmar</h3>
+          <button class="modal-close" onclick="closeModal('modalConfirmAddComponente')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p style="margin-bottom: 1rem;">Este tipo de componente ya existe en este celular. ¿Estás seguro de que deseas agregar otro registro?</p>
+          <p style="margin-bottom: 0.5rem; font-weight: 600;">Escribe <strong>CONFIRMAR</strong> para proceder:</p>
+          <input type="text" id="confirmAddComponenteInput" placeholder="Escribe CONFIRMAR" style="width: 100%; padding: 8px; box-sizing: border-box;">
+          <div id="confirmAddComponenteError" style="color: #d32f2f; margin-top: 0.5rem; display: none; font-size: 0.9rem;"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-cancel" onclick="closeModal('modalConfirmAddComponente')">Cancelar</button>
+          <button class="btn btn-primary" id="confirmAddComponenteBtn" onclick="proceedAddComponente()" disabled>Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Editar Componente -->
+    <div id="modalEditComponente" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Editar componente</h3>
+          <button class="modal-close" onclick="closeModal('modalEditComponente')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="formEditComponente" onsubmit="return false;">
+            <input type="hidden" id="editComponenteId">
+            <input type="hidden" id="editCompTipo" name="tipo_componente">
+            <fieldset>
+              <legend>Editar componente</legend>
+              <label id="labelEditMarca">
+                <span class="label-title">Marca <button type="button" class="btn btn-primary btn-small btn-quick" style="margin-left:6px; padding:2px 6px; font-size:0.9rem;" onclick="openModal('modalNewMarcaQuick')" title="Agregar nueva marca">+</button></span>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <select id="editCompMarca" name="fk_id_marca" style="flex:1;">
+                    <option value="">-- Seleccionar marca --</option>
+                    {% for marca in marcas_options %}
+                      <option value="{{ marca.id_marca }}">{{ marca.nombre_marca }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </label>
+              <label id="labelEditModelo" style="display:none; margin-top: 0.7rem;">
+                <span class="label-title">Modelo <button type="button" class="btn btn-primary btn-small btn-quick" style="margin-left:6px; padding:2px 6px; font-size:0.9rem;" onclick="openNewModeloQuickFromComponents()" title="Agregar nuevo modelo">+</button></span>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <select id="editCompModelo" name="fk_id_modelo" style="flex:1; width:100%;">
+                    <option value="">-- Seleccionar modelo --</option>
+                  </select>
+                </div>
+              </label>
+              <label id="labelEditSistemaOperativo" style="display:none;">
+                <span class="label-title">Sistema Operativo</span>
+                <select id="editCompSistemaOperativo" name="sistema_operativo">
+                  <option value="">-- Seleccionar --</option>
+                  <option value="Windows 10">Windows 10</option>
+                  <option value="Windows 10 Pro">Windows 10 Pro</option>
+                  <option value="Windows 11">Windows 11</option>
+                  <option value="Windows 11 Pro">Windows 11 Pro</option>
+                  <option value="Windows 11 LSTC IoT">Windows 11 LSTC IoT</option>
+                </select>
+              </label>
+              <!-- Tipo removed from edit modal intentionally -->
+              <label id="labelEditCompSerial" style="display:none;">
+                <span class="label-title">Número de serie</span>
+                <input type="text" id="editCompNumeroSerie" name="numero_serie" placeholder="Ingresa el número de serie del componente" oninput="this.value = this.value.toUpperCase()">
+              </label>
+              <label id="labelEditCapacidad" style="display:none;">
+                <span class="label-title">Capacidad (GB)</span>
+                <select id="editCompCapacidad" name="capacidad">
+                  <option value="">-- Seleccionar --</option>
+                </select>
+              </label>
+              <label id="labelEditFrecuencia">
+                <span class="label-title">Frecuencia</span>
+                <select id="editCompFrecuencia" name="frecuencia">
+                  <option value="">-- Seleccionar --</option>
+                </select>
+                <input id="editCompFrecuenciaInput" type="text" placeholder="X.XX" maxlength="4" oninput="onFrecuenciaInput(this)" style="display:none;" />
+              </label>
+              <label id="labelEditTipoMemoria">
+                <span class="label-title">Tipo de memoria</span>
+                <select id="editCompTipoMemoria" name="tipo_memoria">
+                  <option value="">-- Seleccionar --</option>
+                </select>
+              </label>
+              <label id="labelEditTipoModulo">
+                <span class="label-title">Tipo de módulo</span>
+                <select id="editCompTipoModulo" name="tipo_modulo">
+                  <option value="">-- Seleccionar --</option>
+                  <option value="DIMM">DIMM</option>
+                  <option value="SODIMM">SODIMM</option>
+                  <option value="M.2">M.2</option>
+                  <option value="PCIe">PCIe</option>
+                </select>
+              </label>
+              <label id="labelEditTipoDisco" style="display:none;">
+                <span class="label-title">Tipo de disco</span>
+                <select id="editCompTipoDisco" name="tipo_disco">
+                  <option value="">-- Seleccionar --</option>
+                  <option value="HDD">HDD</option>
+                  <option value="SSD SATA">SSD SATA</option>
+                  <option value="SSD NVMe">SSD NVMe</option>
+                </select>
+              </label>
+            </fieldset>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-cancel" onclick="closeModal('modalEditComponente')">Cancelar</button>
+          <button class="btn btn-primary" id="btnSaveComponente" onclick="submitEditComponente()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Gestionar Componentes del dispositivo -->
+    <div id="modalComponents" class="modal-overlay">
+      <div class="modal" style="max-width:1100px; width:calc(100% - 60px);">
+        <div class="modal-header">
+          <h3>Componentes del dispositivo</h3>
+          <button class="modal-close" onclick="closeModal('modalComponents')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
+            <strong>Dispositivo:</strong> <span id="compDeviceLabel">-</span>
+          </div>
+          <table style="width:100%; margin-bottom:12px;" id="componentsTable">
+            <thead>
+              <!-- header built dynamically based on device type -->
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <form id="formNewComponente" onsubmit="return false;">
+            <fieldset>
+              <legend>Agregar componente</legend>
+                <label>
+                  <span class="label-title">Marca <button type="button" class="btn btn-primary btn-small btn-quick" style="margin-left:6px; padding:2px 6px; font-size:0.9rem;" onclick="openModal('modalNewMarcaQuick')" title="Agregar nueva marca">+</button></span>
+                  <div style="display:flex; gap:0.5rem; align-items:center;">
+                    <select id="compMarca" name="fk_id_marca" style="flex:1;">
+                      <option value="">-- Seleccionar marca --</option>
+                      {% for marca in marcas_options %}
+                        <option value="{{ marca.id_marca }}">{{ marca.nombre_marca }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </label>
+                <label id="labelCompModelo" style="display:none; margin-top:0;">
+                  <span class="label-title">Modelo <button type="button" class="btn btn-primary btn-small btn-quick" style="margin-left:6px; padding:2px 6px; font-size:0.9rem;" onclick="openNewModeloQuickFromComponents()" title="Agregar nuevo modelo">+</button></span>
+                  <select id="compModelo" name="fk_id_modelo" style="width:100%;">
+                    <option value="">-- Seleccionar modelo --</option>
+                  </select>
+                </label>
+                <label>
+                  <span class="label-title">Tipo<span class="required">*</span></span>
+                    <select id="compTipo" name="tipo_componente" required>
+                      <option value="">-- Seleccionar --</option>
+                      <option value="CPU">CPU</option>
+                      <option value="RAM">RAM</option>
+                      <option value="DISCO">DISCO</option>
+                    </select>
+                </label>
+                <label id="labelCompSerial" style="display:none;">
+                  <span class="label-title">Número de serie</span>
+                <input type="text" id="compNumeroSerie" name="numero_serie" placeholder="Ingresa el número de serie del componente" oninput="this.value = this.value.toUpperCase()">
+                </label>
+                <label id="labelCapacidad" style="display:none;">
+                  <span class="label-title">Capacidad (GB)</span>
+                  <select id="compCapacidad" name="capacidad">
+                    <option value="">-- Seleccionar --</option>
+                  </select>
+                </label>
+                <label id="labelFrecuencia">
+                  <span class="label-title">Frecuencia</span>
+                  <select id="compFrecuencia" name="frecuencia">
+                    <option value="">-- Seleccionar --</option>
+                  </select>
+                  <input id="compFrecuenciaInput" type="text" placeholder="X.XX" maxlength="4" oninput="onFrecuenciaInput(this)" style="display:none;" />
+                </label>
+                <label id="labelTipoMemoria">
+                  <span class="label-title">Tipo de memoria</span>
+                  <select id="compTipoMemoria" name="tipo_memoria">
+                    <option value="">-- Seleccionar --</option>
+                  </select>
+                </label>
+                <label id="labelTipoModulo">
+                  <span class="label-title">Tipo de módulo</span>
+                  <select id="compTipoModulo" name="tipo_modulo">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="DIMM">DIMM</option>
+                    <option value="SODIMM">SODIMM</option>
+                    <option value="M.2">M.2</option>
+                    <option value="PCIe">PCIe</option>
+                  </select>
+                </label>
+                <label id="labelTipoDisco" style="display:none;">
+                  <span class="label-title">Tipo de disco</span>
+                  <select id="compTipoDisco" name="tipo_disco">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="HDD">HDD</option>
+                    <option value="SSD SATA">SSD SATA</option>
+                    <option value="SSD NVMe">SSD NVMe</option>
+                  </select>
+                </label>
+            </fieldset>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-cancel" onclick="closeModal('modalComponents')">Cerrar</button>
+          <button class="btn btn-primary" id="btnAddComponente" onclick="submitNewComponente()">Agregar componente</button>
+        </div>
+      </div>
+    </div>
+
+    
+
+<!-- MODAL: Gestionar Marcas y Modelos -->
+<div id="modalGestionarMarcasModelos" class="modal-overlay">
+  <div class="modal" style="max-width: 420px;">
+    <div class="modal-header">
+      <h3 style="margin: 0; font-size: 1.1rem;">Gestionar Marcas y Modelos</h3>
+      <button class="modal-close" onclick="closeModal('modalGestionarMarcasModelos')">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 1rem;">
+      <!-- SECCIÓN MARCAS -->
+      <div style="margin-bottom: 1.5rem;">
+        <h4 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; border-bottom: 2px solid #2196F3; padding-bottom: 0.35rem; color: #2196F3;">
+          Marcas
+          <button type="button" class="btn btn-primary btn-small btn-quick" onclick="openModal('modalNewMarcaQuick')" style="margin-left:8px; padding:2px 6px; font-size:0.9rem; vertical-align:middle;" title="Agregar nueva marca">+</button>
+        </h4>
+        <label style="margin-bottom: 0.5rem;">
+          <span class="label-title" style="font-size: 0.85rem;">Selecciona una marca</span>
+          <select id="selectMarcaGestion" onchange="mostrarBotonesMarca()" style="font-size: 0.9rem;">
+            <option value="">-- Cargando marcas --</option>
+          </select>
+        </label>
+        <div id="botonesGestionMarcas" style="margin-top: 1rem; display: none; gap: 10px; justify-content: center; display: flex;">
+          <button class="btn btn-primary" onclick="editarMarcaModal()" title="Editar marca" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;"><img src="/static/img/edi.png" alt="Editar" style="width:28px;height:28px;"></button>
+          <button class="btn btn-danger" onclick="eliminarMarcaModal()" title="Eliminar marca" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;"><img src="/static/img/del.png" alt="Eliminar" style="width:28px;height:28px;"></button>
+        </div>
+      </div>
+      
+      <!-- SECCIÓN MODELOS -->
+      <div>
+        <h4 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; border-bottom: 2px solid #9C27B0; padding-bottom: 0.35rem; color: #9C27B0;">
+          Modelos
+              <button type="button" class="btn btn-primary btn-small btn-quick" onclick="openNewModeloQuickWithBrand()" style="margin-left:8px; padding:2px 6px; font-size:0.9rem; vertical-align:middle;" title="Agregar nuevo modelo">+</button>
+        </h4>
+        <label style="margin-bottom: 0.5rem;">
+          <span class="label-title" style="font-size: 0.85rem;">Selecciona un modelo</span>
+          <select id="selectModeloGestion" onchange="mostrarBotonesModelo()" style="font-size: 0.9rem;">
+            <option value="">-- Cargando modelos --</option>
+          </select>
+        </label>
+        <div id="botonesGestionModelos" style="margin-top: 1rem; display: none; gap: 10px; justify-content: center; display: flex;">
+          <button class="btn btn-primary" onclick="editarModeloModal()" title="Editar modelo" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;"><img src="/static/img/edi.png" alt="Editar" style="width:28px;height:28px;"></button>
+          <button class="btn btn-danger" onclick="eliminarModeloModal()" title="Eliminar modelo" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;"><img src="/static/img/del.png" alt="Eliminar" style="width:28px;height:28px;"></button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding: 1rem; gap: 10px; justify-content: center;">
+      <button class="btn btn-cancel" onclick="closeModal('modalGestionarMarcasModelos')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Editar Marca -->
+<div id="modalEditMarcaInline" class="modal-overlay">
+  <div class="modal" style="max-width: 380px;">
+    <div class="modal-header" style="padding: 0.75rem 1rem;">
+      <h3 style="margin: 0; font-size: 1rem;">Editar Marca</h3>
+      <button class="modal-close" onclick="closeModal('modalEditMarcaInline')">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 1rem;">
+      <label style="margin-bottom: 0;">
+        <span class="label-title" style="font-size: 0.9rem;">Nombre de la marca<span class="required">*</span></span>
+        <input type="text" id="editMarcaNombreInline" required style="font-size: 0.9rem;">
+      </label>
+    </div>
+    <div class="modal-footer" style="padding: 1rem; gap: 10px; justify-content: center;">
+      <button class="btn btn-cancel" onclick="closeModal('modalEditMarcaInline')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarMarcaEditada()">Guardar</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL: Editar Modelo Inline -->
+<div id="modalEditModeloInline" class="modal-overlay">
+  <div class="modal" style="max-width: 380px;">
+    <div class="modal-header" style="padding: 0.75rem 1rem;">
+      <h3 style="margin: 0; font-size: 1rem;">Editar Modelo</h3>
+      <button class="modal-close" onclick="closeModal('modalEditModeloInline')">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 1rem;">
+      <label style="margin-bottom: 0.65rem;">
+        <span class="label-title" style="font-size: 0.9rem;">Nombre del modelo<span class="required">*</span></span>
+        <input type="text" id="editModeloNombreInline" required style="font-size: 0.9rem;">
+      </label>
+      <label style="margin-bottom: 0;">
+        <span class="label-title" style="font-size: 0.9rem;">Marca<span class="required">*</span></span>
+        <select id="editModeloMarcaInline" required style="font-size: 0.9rem;"></select>
+      </label>
+    </div>
+    <div class="modal-footer" style="padding: 1rem; gap: 10px; justify-content: center;">
+      <button class="btn btn-cancel" onclick="closeModal('modalEditModeloInline')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarModeloEditado()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

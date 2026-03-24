@@ -1,0 +1,455 @@
+/* ============================================================
+   kardex.css — Estilos del módulo KARDEX
+   Sigue las mismas variables CSS de base.html / cxc.css
+   ============================================================ */
+
+/* ── Toolbar ──────────────────────────────────────────────── */
+.kardex-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 1.25rem;
+}
+
+.kardex-toolbar__left,
+.kardex-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.kardex-toolbar__left .offset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kardex-toolbar__left .offset-btn .material-symbols-outlined {
+  font-size: 18px;
+  color: #fff;
+}
+
+.kardex-toolbar__left .btn-primary.offset-btn {
+  background: linear-gradient(135deg, #06b6d4 0%, #0e9d7f 100%);
+  border-color: transparent;
+}
+
+.kardex-toolbar__left .btn-secondary.offset-btn {
+  background: linear-gradient(135deg, #0d5a4f 0%, #0b7c6c 100%);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.kardex-toolbar__left .btn-secondary.offset-btn:hover,
+.kardex-toolbar__left .btn-primary.offset-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+/* ── Período badge ────────────────────────────────────────── */
+.kardex-periodo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.kardex-periodo-badge .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.kardex-periodo-badge.active {
+  background: rgba(14, 157, 127, 0.12);
+  color: #0e9d7f;
+  border: 1px solid rgba(14, 157, 127, 0.3);
+}
+
+.kardex-periodo-badge.inactive {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+body.dark-mode .kardex-periodo-badge.active {
+  background: rgba(14, 157, 127, 0.2);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+body.dark-mode .kardex-periodo-badge.inactive {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+/* ── Search input ─────────────────────────────────────────── */
+.kardex-search {
+  width: 240px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--table-border, #e5e7eb);
+  background: var(--input-bg, #fff);
+  color: var(--body-text, #1f2a37);
+  font-size: 13px;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.kardex-search:focus {
+  outline: none;
+  border-color: #0e9d7f;
+  box-shadow: 0 0 0 3px rgba(14, 157, 127, 0.15);
+}
+
+/* ── Toggle label ─────────────────────────────────────────── */
+.kardex-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--body-text, #1f2a37);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ── Status chip ──────────────────────────────────────────── */
+.kardex-status-chip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--body-bg-light, #f3f4f6);
+  color: var(--body-text, #1f2a37);
+  border: 1px solid var(--table-border, #e5e7eb);
+  white-space: nowrap;
+}
+
+body.dark-mode .kardex-status-chip {
+  background: #1a1a1a;
+  border-color: #2a2a2a;
+  color: #e5e7eb;
+}
+
+/* ── Grid container ───────────────────────────────────────── */
+.kardex-grid-wrap {
+  width: 100%;
+  flex: 1;
+}
+
+.kardex-grid {
+  width: 100%;
+  height: calc(100vh - 240px);
+  min-height: 400px;
+}
+
+.ag-theme-material .ag-header-cell-text,
+.ag-theme-material .ag-cell,
+.ag-theme-material .ag-paging-panel,
+.ag-theme-material .ag-floating-filter,
+.ag-theme-material .ag-input-field-input {
+  font-size: var(--kardex-grid-font-size, 13px);
+}
+
+/* ── Badges en celdas ─────────────────────────────────────── */
+.kardex-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.kardex-badge.ok {
+  background: rgba(14, 157, 127, 0.12);
+  color: #0e9d7f;
+}
+
+.kardex-badge.off {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+.kardex-state-text {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.kardex-state-text--active { color: #22c55e; }
+.kardex-state-text--inactive { color: #ef4444; }
+
+body.dark-mode .kardex-state-text--active { color: #39ff14; }
+body.dark-mode .kardex-state-text--inactive { color: #ff5d5d; }
+
+body.dark-mode .kardex-badge.ok  { background: rgba(52,211,153,0.15); color: #34d399; }
+body.dark-mode .kardex-badge.off { background: rgba(107,114,128,0.15); color: #9ca3af; }
+
+/* ── Botones ──────────────────────────────────────────────── */
+.kardex-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.1s;
+  font-family: inherit;
+}
+
+.kardex-btn .material-symbols-outlined { font-size: 18px; }
+
+.kardex-btn--primary {
+  background: #0e9d7f;
+  color: #fff;
+}
+.kardex-btn--primary:hover { background: #0b7c6c; transform: translateY(-1px); }
+
+.kardex-btn--ghost {
+  background: var(--button-hover, #f3f4f6);
+  color: var(--body-text, #1f2a37);
+  border: 1px solid var(--table-border, #e5e7eb);
+}
+.kardex-btn--ghost:hover { background: var(--border-color); }
+
+body.dark-mode .kardex-btn--ghost {
+  background: #1a1a1a;
+  color: #e5e7eb;
+  border-color: #2a2a2a;
+}
+
+.kardex-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.kardex-btn-sm--danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+.kardex-btn-sm--danger:hover { background: rgba(239, 68, 68, 0.2); }
+
+/* ── Modal ────────────────────────────────────────────────── */
+.kardex-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+.kardex-modal-overlay.kardex-modal-overlay--top {
+  z-index: 2600;
+}
+
+.kardex-modal-overlay.active {
+  display: flex;
+}
+
+.kardex-modal {
+  background: var(--modal-bg, #fff);
+  color: var(--modal-text, #1f2a37);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  width: min(520px, 95vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.kardex-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--table-border, #e5e7eb);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.kardex-modal__close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: var(--body-text);
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.kardex-modal__body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.kardex-modal__footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--table-border, #e5e7eb);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ── Form grid ────────────────────────────────────────────── */
+.kardex-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.kardex-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.kardex-field:first-child {
+  grid-column: 1 / -1;
+}
+
+#modalMarcaForm .kardex-field {
+  grid-column: 1 / -1;
+}
+
+.kardex-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--body-text);
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kardex-field input,
+.kardex-field select {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--table-border, #e5e7eb);
+  background: var(--input-bg, #fff);
+  color: var(--body-text, #1f2a37);
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.12s;
+}
+
+.kardex-field input:focus,
+.kardex-field select:focus {
+  outline: none;
+  border-color: #0e9d7f;
+  box-shadow: 0 0 0 3px rgba(14, 157, 127, 0.15);
+}
+
+/* ── Error ────────────────────────────────────────────────── */
+.kardex-error {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* ── AG Grid — dark mode ──────────────────────────────────── */
+body.dark-mode .ag-theme-material {
+  --ag-background-color: #0f0f0f;
+  --ag-header-background-color: #1a1a1a;
+  --ag-odd-row-background-color: #111;
+  --ag-row-hover-color: rgba(14, 157, 127, 0.08);
+  --ag-selected-row-background-color: rgba(14, 157, 127, 0.12);
+  --ag-foreground-color: #e5e7eb;
+  --ag-secondary-foreground-color: #9ca3af;
+  --ag-border-color: #2a2a2a;
+  --ag-input-focus-border-color: #0e9d7f;
+}
+
+/* ── Catalog modal manager ────────────────────────────────── */
+.kardex-modal.kardex-modal--xl {
+  width: min(1250px, 98vw);
+  max-height: 92vh;
+}
+
+.kardex-modal.kardex-modal--periodos {
+  width: min(882px, 95vw);
+}
+
+.kardex-modal:has(#marcasGrid) {
+  width: min(950px, 98vw);
+}
+
+.kardex-manager-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.kardex-manager-grid {
+  width: 100%;
+  height: min(55vh, 520px);
+  min-height: 320px;
+}
+
+.kardex-btn-sm--primary {
+  background: rgba(14, 157, 127, 0.15);
+  color: #0b7c6c;
+}
+
+.kardex-btn-sm--primary:hover {
+  background: rgba(14, 157, 127, 0.22);
+}
+
+.kardex-btn-sm--warn {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.kardex-btn-sm--warn:hover {
+  background: rgba(245, 158, 11, 0.22);
+}
+
+body.dark-mode .kardex-btn-sm--primary {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+body.dark-mode .kardex-btn-sm--warn {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.kardex-actions-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Center header for Acciones column */
+.ag-header-cell-centered {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.ag-header-cell-centered .ag-header-cell-text {
+  text-align: center !important;
+}

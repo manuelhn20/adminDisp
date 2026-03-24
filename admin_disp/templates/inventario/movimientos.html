@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Movimientos - Inventario{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-material.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/inventario.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 20px;">Gestión de Movimientos</h1>
+
+<!-- Panel de Controles -->
+<div class="button-group" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;">
+    <div style="display:flex;gap:12px;align-items:center;">
+        <button class="btn btn-primary offset-btn" onclick="openModalCrear()">
+            <span style="margin-right:8px;">+</span> Nuevo Movimiento
+        </button>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <label style="margin:0;white-space:nowrap;">Filtrar por Tipo:</label>
+            <select class="form-select" id="filterTipo" onchange="loadMovimientos()" style="width:150px;max-width:none;">
+                <option value="">Todos</option>
+                <option value="entrada">Entrada</option>
+                <option value="salida">Salida</option>
+                <option value="ajuste">Ajuste</option>
+            </select>
+        </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+        <input id="movimientosPageSearch" class="global-table-search" placeholder="Buscar movimiento..." style="width:220px;" />
+    </div>
+</div>
+
+<!-- Tabla de Movimientos -->
+<div id="movimientosGrid" style="height: 600px;" class="ag-theme-material"></div>
+
+<!-- Modal crear movimiento -->
+<div class="modal fade" id="modalMovimiento" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nuevo Movimiento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formMovimiento" onsubmit="guardarMovimiento(event)">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Producto *</label>
+                            <select class="form-select" id="movimientoProducto" required>
+                                <option value="">Seleccionar producto...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Stock Actual</label>
+                            <div id="stockActual" class="alert alert-info" style="padding: 0.5rem;">
+                                -
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Tipo de Movimiento *</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="movimientoTipo" id="tipoEntrada" value="entrada" required>
+                                    <label class="form-check-label" for="tipoEntrada">Entrada</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="movimientoTipo" id="tipoSalida" value="salida">
+                                    <label class="form-check-label" for="tipoSalida">Salida</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="movimientoTipo" id="tipoAjuste" value="ajuste">
+                                    <label class="form-check-label" for="tipoAjuste">Ajuste</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Cantidad *</label>
+                            <input type="number" class="form-control" id="movimientoCantidad" step="1" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Referencia</label>
+                            <input type="text" class="form-control" id="movimientoReferencia" placeholder="Ej: Factura #123">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Observación</label>
+                            <input type="text" class="form-control" id="movimientoObservacion">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/inventario/movimientos.js') }}"></script>
+{% endblock %}

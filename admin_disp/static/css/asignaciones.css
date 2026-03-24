@@ -1,0 +1,196 @@
+/* asignaciones.css - extracted from asignaciones.html */
+
+.sort-icon {
+    height:18px;
+    width:18px;
+    vertical-align:middle;
+    margin-left:8px;
+    transition: transform .15s ease, opacity .15s ease;
+    opacity: 0;
+    visibility: hidden;
+    transform: rotate(0deg);
+  }
+  .sort-icon.active { opacity:1; visibility:visible; }
+  
+  /* Cursor pointer para headers ordenables */
+  th[data-sortable] {
+    cursor: pointer;
+    user-select: none;
+  }
+  th[data-sortable]:hover {
+    background-color: rgba(0,0,0,0.05);
+  }
+  body.dark-mode th[data-sortable]:hover {
+    background-color: rgba(255,255,255,0.05);
+  }
+  
+  /* HTMX Loading Indicator */
+  .htmx-indicator {
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+  }
+  .htmx-request .htmx-indicator,
+  .htmx-request.htmx-indicator {
+    opacity: 1;
+  }
+  
+  /* Animación del spinner de loading */
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* ====================================================================
+     Estilos Radio Buttons Observaciones (horizontal, radio a la izquierda)
+     ==================================================================== */
+  .obs-group {
+    margin-bottom: 24px;
+  }
+
+  .obs-group-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #10b981;
+    margin: 0 0 12px 0;
+  }
+
+  body:not(.dark-mode) .obs-group-title {
+    color: #059669;
+  }
+
+  .obs-options {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .obs-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 8px;
+    white-space: nowrap;
+    padding-bottom: 2px; /* reduce bottom spacing */
+  }
+
+  .obs-options input[type="radio"] {
+    margin: 0;
+    /* keep native size, just set accent color */
+    accent-color: #10b981;
+  }
+
+  body:not(.dark-mode) .obs-options input[type="radio"] {
+    accent-color: #059669;
+  }
+
+  /* Labels next to radios: remove extra bottom margin and center vertically */
+  .obs-option label {
+    margin: 0;
+    padding: 4px 8px;
+    line-height: 1.15;
+    display: inline-block;
+    vertical-align: middle;
+    text-align: left;
+  }
+
+  /* Reduce spacing between group title and options */
+  .obs-group-title { margin-bottom: 8px; }
+
+  @media (prefers-reduced-motion) {
+    input:where(.chip[type="checkbox"]),
+    input:where(.chip[type="checkbox"])::before,
+    input:where(.chip[type="checkbox"])::after {
+      transition: none !important;
+    }
+  }
+
+/* ====================================================================== */
+
+/* Docs modal: stepper, cards grid and checkbox styles (styled like seleccionartipodocumentacion) */
+.docs-stepper { padding: 12px 20px 0 20px; }
+.docs-stepper .stepper { display:flex; align-items:center; gap:12px; }
+.docs-stepper .step { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#1f2937; color:#9ca3af; border:2px solid #374151; font-weight:700; }
+.docs-stepper .step.completed { background:#10b981; color:#fff; border-color:#10b981; box-shadow:0 2px 6px rgba(16,185,129,0.12); }
+.docs-stepper .connector { height:4px; flex:1; background:#374151; border-radius:4px; }
+.docs-stepper .connector.active { background:#10b981; }
+
+.pdf-cards-container { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:18px; padding:20px 20px 2px 20px; justify-items: center; justify-content: center; }
+.pdf-card { margin: 0 auto; }
+.modal .modal-body { max-height: calc(100vh - 180px); overflow-y: auto; }
+
+/* Ajustes específicos para tablets en modo horizontal */
+@media screen and (max-height: 1300px) and (orientation: landscape) {
+  .modal .modal-body { max-height: calc(100vh - 140px); }
+  .pdf-cards-container { padding: 12px 12px 2px 12px; gap: 12px; }
+  .modal-docs-actions { padding: 10px 20px; margin-top: 2px; }
+}
+
+.modal-docs-actions { padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 2px; }
+.docs-accept-label { display:flex; align-items:center; gap:12px; cursor:pointer; }
+.docs-accept-label > div { display:flex; flex-direction:column; justify-content:center; }
+.docs-accept-text { color: #ffffff; font-size:0.95rem; line-height:1.2; font-weight:700; margin:0; }
+.docs-accept-helper { color: #9ca3af; margin-top:6px; font-size:0.9rem; }
+.btn[disabled] { opacity: 0.6; pointer-events: none; }
+
+/* Center header title only for modalDocumentosOneDrive */
+#modalDocumentosOneDrive .modal-header { justify-content: center; position: relative; }
+#modalDocumentosOneDrive .modal-header h3 { position: absolute; left: 50%; transform: translateX(-50%); margin: 0; text-align: center; }
+#modalDocumentosOneDrive .modal-close { position: absolute; right: 12px; top: 12px; }
+
+/* ====================================================================== */
+
+/* Scoped styles for docs preview (Asignaciones) */
+        #docsPreviewGrid{
+          display:grid;
+          grid-template-columns:repeat(auto-fit,minmax(180px,220px));
+          gap:22px;
+          justify-content:center;
+          align-items:start;
+        }
+        .docs-card{
+          background:#f0f0f0;
+          border-radius:10px;
+          width:220px;
+          min-width:180px;
+          height:220px;
+          box-sizing:border-box;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          justify-content:center;
+          position:relative;
+          padding:16px 12px;
+          box-shadow:0 8px 20px rgba(0,0,0,0.08);
+          cursor:pointer;
+          transition: transform .12s ease, box-shadow .12s ease;
+        }
+        .docs-card:hover{ transform: translateY(-4px); box-shadow:0 12px 30px rgba(0,0,0,0.12); }
+        .docs-card .badge{ display:flex; align-items:center; justify-content:center; margin-bottom:6px; }
+        .docs-card .label{ font-weight:600; color:#333; text-align:center; font-size:0.92rem; padding:0 6px; }
+        .docs-card .chkwrap{ position:absolute; right:12px; bottom:12px; display:flex; align-items:center; gap:8px; }
+        #docsPreviewGrid .loading{ grid-column:1/-1; text-align:center; }
+        #docsPreviewError{ display:none; grid-column:1/-1; }
+
+/* ====================================================================== */
+
+/* Estilos para tabla de Transferir Dispositivos - Centrado de celdas */
+.table-container table tbody tr td {
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px 4px;
+}
+
+.table-container table tbody tr td:first-child {
+  text-align: center;
+}
+
+.table-container table thead tr th {
+  text-align: center;
+  padding: 8px 4px;
+}
+
+/* ====================================================================== */
+
+html,body{height:100%;margin:0}

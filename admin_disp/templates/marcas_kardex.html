@@ -1,0 +1,62 @@
+{% extends "kardex/base_kardex.html" %}
+
+{% block title %}Marcas — KARDEX{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-material.css">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/kardex.css') }}">
+{% endblock %}
+
+{% block page_title %}Marcas{% endblock %}
+
+{% block content %}
+<div class="kardex-toolbar">
+  <div class="kardex-toolbar__left">
+    <button class="btn btn-primary offset-btn" onclick="loadMarcas()">
+      + Sincronizar Marcas
+    </button>
+  </div>
+  <div class="kardex-toolbar__right">
+    <input type="text" id="quickFilter" class="kardex-search"
+           placeholder="Buscar marca..."
+           oninput="if(gridApi) gridApi.setGridOption('quickFilterText', this.value)">
+  </div>
+</div>
+<div class="kardex-grid-wrap">
+  <div id="marcasGrid" class="ag-theme-material kardex-grid"></div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let gridApi = null;
+document.addEventListener('DOMContentLoaded', async () => {
+  gridApi = agGrid.createGrid(document.getElementById('marcasGrid'), {
+    columnDefs: [
+      { field: 'id',          headerName: 'ID',          width: 200,
+        cellStyle: { fontFamily: 'monospace', fontSize: '12px' } },
+      { field: 'descripcion', headerName: 'Descripción', flex: 1, minWidth: 200 },
+      { field: 'syncedAt',    headerName: 'Último sync', width: 170,
+        valueFormatter: p => p.value ? new Date(p.value).toLocaleString('es-HN') : '—' },
+    ],
+    rowData: [],
+    defaultColDef: { sortable: true, filter: true, resizable: true },
+    pagination: true, paginationPageSize: 50,
+    animateRows: true, suppressCellFocus: true,
+    overlayNoRowsTemplate:
+      '<span style="padding:24px;color:#6b7280;">Sin datos. Usa Sync Productos en el menú lateral.</span>',
+  });
+  try {
+    const r = await fetch('/kardex/api/marcas');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error);
+    gridApi.setGridOption('rowData', d.data);
+  } catch(e) {
+    console.error('[Marcas]', e);
+  }
+});
+</script>
+{% endblock %}

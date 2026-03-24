@@ -1,0 +1,288 @@
+# admin_disp/cxc/db.py
+"""
+Acceso a la base de datos CxC (SQL Server).
+La configuracion se lee desde current_app.config.
+"""
+import pyodbc
+import logging
+from flask import current_app
+
+log = logging.getLogger('admin_disp.cxc.db')
+
+
+def _cfg(key):
+    return current_app.config.get(key)
+
+
+def get_connection():
+    driver   = _cfg('DB_DRIVER') or 'SQL Server'
+    server   = _cfg('DB_SERVER')
+    database = 'cxc'
+    user     = _cfg('DB_USER')
+    password = _cfg('DB_PASSWORD')
+    trusted  = _cfg('DB_TRUSTED')
+
+    if trusted:
+        conn_str = (
+            f"DRIVER={{{driver}}};"
+            f"SERVER={server};"
+            f"DATABASE={database};"
+            "Trusted_Connection=yes;"
+        )
+    else:
+        conn_str = (
+            f"DRIVER={{{driver}}};"
+            f"SERVER={server};"
+            f"DATABASE={database};"
+            f"UID={user};"
+            f"PWD={password};"
+            "Trusted_Connection=no;"
+            "TrustServerCertificate=yes;"
+        )
+    return pyodbc.connect(conn_str)
+
+
+def ensure_sync_config():
+    """Crea la tabla sync_config si no existe y asegura el registro id=1."""
+    conn = get_connection()
+    try:
+        c = conn.cursor()
+        c.execute("""
+            IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name='sync_config')
+            CREATE TABLE sync_config (
+                id        INT PRIMARY KEY DEFAULT 1,
+                last_sync DATETIME2 NULL
+            )
+        """)
+        c.execute("""
+            IF NOT EXISTS (SELECT 1 FROM sync_config WHERE id=1)
+            INSERT INTO sync_config (id, last_sync) VALUES (1, NULL)
+        """)
+        conn.commit()
+        log.debug("sync_config verificada/creada.")
+    except Exception as e:
+        log.error("Error en ensure_sync_config: %s", e)
+        raise
+    finally:
+        conn.close()
+
+
+def get_last_sync_dt():
+    conn = get_connection()
+    try:
+        c = conn.cursor()
+        c.execute("SELECT last_sync FROM sync_config WHERE id=1")
+        row = c.fetchone()
+        return row[0] if row and row[0] else None
+    finally:
+        conn.close()
+
+
+def update_last_sync_dt(dt):
+    conn = get_connection()
+    try:
+        c = conn.cursor()
+        c.execute("UPDATE sync_config SET last_sync=? WHERE id=1", (dt,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+# ─── cobro ────────────────────────────────────────────────────────────────────
+
+def get_existing_sp_ids():
+    """Retorna el set de sp_item_id ya existentes en la tabla cobro."""
+    conn = get_connection()
+    try:
+        c = conn.cursor()
+        c.execute("SELECT sp_item_id FROM cobro")
+        return {row[0] for row in c.fetchall()}
+    finally:
+        conn.close()
+
+
+def bulk_insert_cobros(rows):
+    """
+    Inserta filas nuevas en cobro.
+    Usa INSERT … WHERE NOT EXISTS para protección contra duplicados.
+    Retorna cantidad de filas insertadas.
+    """
+    if not rows:
+        return 0
+
+    conn = get_connection()
+    try:
+        c = conn.cursor()
+        sql = """
+            INSERT INTO cobro (
+                sp_item_id, Codigo_Cliente, Nombre_Cliente, Banco, Metodo_Pago,
+                No_Factura, Valor_Pagado, No_Recibo, Creado, Ejecutivo,
+                Ejecutivo_Email, Sucursal, Fecha_Cheque, Comentario_Adicional,
+                Liquidado, Liquidado_Por, Fecha_Liquidado, tiene_comprobante
+            )
+            SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
+            WHERE NOT EXISTS (
+                SELECT 1 FROM cobro WHERE sp_item_id = ?
+            )
+        """
+        params = [
+            (
+                r["sp_item_id"], r["Codigo_Cliente"], r["Nombre_Cliente"],
+                r["Banco"], r["Metodo_Pago"], r["No_Factura"], r["Valor_Pagado"],
+                r["No_Recibo"], r["Creado"], r["Ejecutivo"], r["Ejecutivo_Email"],
+                r["Sucursal"], r["Fecha_Cheque"], r["Comentario_Adicional"],
+                r["Liquidado"], r["Liquidado_Por"], r["Fecha_Liquidado"],
+                r["tiene_comprobante"],
+                r["sp_item_id"],   # para el WHERE NOT EXISTS
+            )
+            for r in rows
+        ]
+        c.executemany(sql, params)
+        inserted = c.rowcount
+        conn.commit()
+        return inserted
+    finally:
+        conn.close()
+
+
+def update_liquidado_sql(item_ids, liquidado_por, fecha_liquidado_iso):
+    """Refleja la liquidación en SQL después de actualizarlo en SharePoint."""
+    if not item_ids:
+        return
+    conn = get_connection()
+    try:
+        c = conn.cursor()
+        placeholders = ",".join("?" for _ in item_ids)
+        c.execute(
+            f"UPDATE cobro SET Liquidado='Si', Liquidado_Por=?, Fecha_Liquidado=? "
+            f"WHERE sp_item_id IN ({placeholders})",
+            [liquidado_por, fecha_liquidado_iso] + list(item_ids),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_cobros_paginated(start, length, filters):
+    """
+    Paginación server-side con soporte de sort dinámico.
+    Retorna (rows, total_sin_filtros, total_con_filtros).
+    """
+    # Columnas permitidas para ORDER BY (whitelist de seguridad)
+    SORTABLE = {
+        "Codigo_Cliente", "Nombre_Cliente", "Banco", "Metodo_Pago",
+        "No_Factura", "Valor_Pagado", "No_Recibo", "Creado",
+        "Ejecutivo", "Sucursal", "Liquidado", "Fecha_Liquidado",
+    }
+    raw_col  = (filters.get("sort_col") or "Creado").strip()
+    sort_col = raw_col if raw_col in SORTABLE else "Creado"
+    sort_dir = "DESC" if (filters.get("sort_dir") or "DESC").upper() == "DESC" else "ASC"
+
+    conn = get_connection()
+    try:
+        c = conn.cursor()
+
+        where  = ["1=1"]
+        params = []
+
+
+        if filters.get("sucursal"):
+            where.append("Sucursal=?")
+            params.append(filters["sucursal"])
+
+        if filters.get("ejecutivo"):
+            where.append("Ejecutivo=?")
+            params.append(filters["ejecutivo"])
+
+        if filters.get("cliente"):
+            where.append("(Codigo_Cliente LIKE ? OR Nombre_Cliente LIKE ?)")
+            v = f"%{filters['cliente']}%"
+            params += [v, v]
+
+        if filters.get("recibo"):
+            where.append("No_Recibo LIKE ?")
+            params.append(f"%{filters['recibo']}%")
+
+        if filters.get("fecha_ini"):
+            where.append("LEFT(Creado,10) >= ?")
+            params.append(filters["fecha_ini"])
+
+        if filters.get("fecha_fin"):
+            where.append("LEFT(Creado,10) <= ?")
+            params.append(filters["fecha_fin"])
+
+        wc = " AND ".join(where)
+
+        # Total sin filtros
+        c.execute("SELECT COUNT(*) FROM cobro")
+        total = c.fetchone()[0]
+
+        # Total con filtros
+        c.execute(f"SELECT COUNT(*) FROM cobro WHERE {wc}", params)
+        filtered = c.fetchone()[0]
+
+        # Página de datos con sort dinámico
+        c.execute(
+            f"""
+            SELECT sp_item_id, Codigo_Cliente, Nombre_Cliente, Banco, Metodo_Pago,
+                   No_Factura, Valor_Pagado, No_Recibo, Creado, Ejecutivo,
+                   Sucursal, Fecha_Cheque, Comentario_Adicional,
+                   Liquidado, Liquidado_Por, Fecha_Liquidado, tiene_comprobante
+            FROM cobro
+            WHERE {wc}
+            ORDER BY {sort_col} {sort_dir}
+            OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+            """,
+            params + [start, length],
+        )
+        cols = [d[0] for d in c.description]
+        rows = [dict(zip(cols, row)) for row in c.fetchall()]
+        return rows, total, filtered
+    finally:
+        conn.close()
+
+
+def get_cobros_by_ids(item_ids):
+    """
+    Retorna las filas completas de cobro para una lista de sp_item_id.
+    Usado por el endpoint de impresión de reporte.
+    """
+    if not item_ids:
+        return []
+    conn = get_connection()
+    try:
+        c = conn.cursor()
+        placeholders = ",".join("?" for _ in item_ids)
+        c.execute(
+            f"""
+            SELECT sp_item_id, Codigo_Cliente, Nombre_Cliente, Banco, Metodo_Pago,
+                   No_Factura, Valor_Pagado, No_Recibo, Creado, Ejecutivo,
+                   Sucursal, Fecha_Cheque, Comentario_Adicional,
+                   Liquidado, Liquidado_Por, Fecha_Liquidado, tiene_comprobante
+            FROM cobro
+            WHERE sp_item_id IN ({placeholders})
+            ORDER BY Creado DESC
+            """,
+            item_ids,
+        )
+        cols = [d[0] for d in c.description]
+        return [dict(zip(cols, row)) for row in c.fetchall()]
+    finally:
+        conn.close()
+
+
+def get_distinct_values(column):
+    """Retorna valores distintos de Sucursal o Ejecutivo para los filtros."""
+    allowed = {"Sucursal", "Ejecutivo"}
+    if column not in allowed:
+        return []
+    conn = get_connection()
+    try:
+        c = conn.cursor()
+        c.execute(
+            f"SELECT DISTINCT {column} FROM cobro "
+            f"WHERE {column} IS NOT NULL AND {column}<>'' ORDER BY {column}"
+        )
+        return [row[0] for row in c.fetchall()]
+    finally:
+        conn.close()

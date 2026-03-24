@@ -1,0 +1,3120 @@
+﻿<!doctype html>
+<html lang="es" id="rootHtml" color-scheme="light dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}PROIMA - Administración de Dispositivos{% endblock %}</title>
+  <style>
+    /* Splash screen para evitar FOUC (Flash of Unstyled Content) */
+    #appSplash {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      transition: opacity 0.3s ease-out;
+    }
+    html[data-dark-mode="true"] #appSplash {
+      background: #000000;
+    }
+    #appSplash.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #appSplash .splash-logo {
+      width: 120px;
+      height: 120px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; transform: scale(0.95); }
+      50% { opacity: 1; transform: scale(1.05); }
+    }
+  </style>
+  {# Cache-bust para forzar recarga del CSS en clientes cuando hacemos cambios visuales #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ config.get('STATIC_VERSION', '2') }}">
+  <!-- Material Symbols Font -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <!-- Favicons: use the images under `static/img/` (existing files include favicon.ico, favicon-16x16.png, favicon-32x32.png, apple-touch-icon.png) -->
+  <link id="faviconIco" rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2" type="image/x-icon">
+  <link id="faviconShortcut" rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2" type="image/x-icon">
+  <link id="favicon32" rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}?v=2">
+  <link id="favicon16" rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16x16.png') }}?v=2">
+  <link id="faviconApple" rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}?v=2">
+  <script>
+    // Global favicon + title friendly visibility handler (no ZZZ). Applies site-wide.
+    (function () {
+      try {
+        const originalTitle = document.title || 'PROIMA';
+        // Prefer 32px or ico as active, and 16px as inactive (falls back to active when missing)
+        const activeEl = document.getElementById('favicon32') || document.getElementById('faviconIco');
+        const inactiveEl = document.getElementById('favicon16') || activeEl;
+        const activeHref = activeEl ? activeEl.href : '';
+        const inactiveHref = inactiveEl ? inactiveEl.href : activeHref;
+        const hiddenTitle = 'PROIMA - Te esperamos';
+
+        function setFavicon(href) {
+          ['faviconIco','faviconShortcut','favicon32','favicon16','faviconApple'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            try { el.href = href; } catch(e) {}
+          });
+        }
+
+        document.addEventListener('visibilitychange', function () {
+          const hidden = document.hidden;
+          try { setFavicon(hidden ? inactiveHref : activeHref); } catch(e){}
+          try { document.title = hidden ? hiddenTitle : originalTitle; } catch(e) {}
+        });
+      } catch (e) { console.warn('favicon visibility handler failed', e); }
+    })();
+  </script>
+  <script>
+    // Aplicar dark mode INMEDIATAMENTE para evitar flash de contenido
+    // Este script se ejecuta ANTES de que el navegador pinte la página
+    (function() {
+      // Leer preferencia guardada o usar modo claro por defecto
+      let isDarkMode = false;
+      try {
+        const saved = localStorage.getItem('appTheme');
+        if (saved !== null) {
+          isDarkMode = saved === 'dark';
+        }
+      } catch(e) {}
+      
+      const html = document.documentElement;
+      
+      if (isDarkMode) {
+        html.setAttribute('data-dark-mode', 'true');
+        html.style.colorScheme = 'dark';
+      } else {
+        html.removeAttribute('data-dark-mode');
+        html.style.colorScheme = 'light';
+      }
+      
+      // Aplicar tema al splash screen inmediatamente
+      try {
+        const splash = document.getElementById('appSplash');
+        if (splash) {
+          if (isDarkMode) {
+            splash.style.background = '#000000';
+          } else {
+            splash.style.background = '#ffffff';
+          }
+        }
+      } catch(e) {}
+      
+      // Aplicar al body cuando esté disponible
+      if (document.body) {
+        if (isDarkMode) {
+          document.body.classList.add('dark-mode');
+        } else {
+          document.body.classList.remove('dark-mode');
+        }
+      } else {
+        document.addEventListener('DOMContentLoaded', function() {
+          if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+          } else {
+            document.body.classList.remove('dark-mode');
+          }
+        });
+      }
+    })();
+  </script>
+  <!-- Global loading modal (used when generating documents / scanning printers) -->
+  <style>
+    #globalLoadingModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:3000; align-items:center; justify-content:center; }
+    /* Smaller, semi-transparent loading box adapted for light/dark themes */
+    #globalLoadingModal { background: rgba(0,0,0,0.45); }
+    #globalLoadingModal .loading-box { background: rgba(255,255,255,0.88); color: #111; padding: 12px 14px; border-radius:8px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); display:flex; gap:12px; align-items:center; min-width:260px; max-width:520px; flex-direction:column; justify-content:center; text-align:center; backdrop-filter: blur(4px); }
+    #globalLoadingModal.dark .loading-box { background: rgba(20,20,20,0.72); color: #e5e7eb; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+    /* Visual composition: rotating ring + centered favicon */
+    #globalLoadingModal .loading-box { position: relative; }
+    #globalLoadingModal .loading-box .loading-visual { position: relative; width: 220px; max-width:78vw; height: auto; display:block; margin: 0 auto; }
+    #globalLoadingModal .loading-box img.loading-ring { width: 220px; max-width:78vw; height: auto; display:block; }
+    #globalLoadingModal .loading-box img.loading-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 100px; height: 100px; max-width:24vw; border-radius:50%; }
+
+    @keyframes loadingSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    #globalLoadingModal .loading-box img.loading-ring { animation: loadingSpin 1.6s linear infinite; }
+
+    @keyframes centerPulse { 0% { transform: translate(-50%,-50%) scale(1); } 50% { transform: translate(-50%,-50%) scale(0.98); } 100% { transform: translate(-50%,-50%) scale(1); } }
+    #globalLoadingModal .loading-box img.loading-center { animation: centerPulse 2.4s ease-in-out infinite; }
+    #globalLoadingModal .loading-text { font-size:18px; font-weight:700; margin-top:6px; }
+    #globalLoadingModal .loading-subtext { font-size:13px; color:rgba(0,0,0,0.6); margin-top:6px; }
+    #globalLoadingModal.dark .loading-subtext { color: rgba(255,255,255,0.7); }
+  </style>
+
+  <style>
+    /* Ensure regular modals sit below the global loading overlay */
+    .modal-overlay { z-index: 2000; }
+  </style>
+
+  <div id="globalLoadingModal" aria-hidden="true">
+    <div class="loading-box" role="status" aria-live="polite">
+      <div class="loading-visual" aria-hidden="true">
+        <img class="loading-ring" src="{{ url_for('static', filename='img/cg.png') }}" alt="" />
+        <img class="loading-center" src="{{ url_for('static', filename='img/favicon.png') }}" alt="" />
+      </div>
+      <div class="loading-text">Por favor espera — no recargues la página.</div>
+      <div class="loading-subtext">No tomará más de 1 minuto aproximadamente.</div>
+    </div>
+  </div>
+
+  <script>
+    // Show global loading modal. Accepts a string or an object { title, subtext }.
+    window.showLoading = function(message) {
+      try {
+        const m = document.getElementById('globalLoadingModal');
+        if (!m) return;
+        // Close any open modals so loading overlay is the only visible overlay
+        try {
+          const stack = Array.isArray(window.__modalStack) ? window.__modalStack.slice() : [];
+          for (let i = stack.length - 1; i >= 0; i--) {
+            try { closeModal(stack[i]); } catch(e) {}
+          }
+        } catch(e) {}
+
+        // Compute a z-index above the modal stack base so it always appears on top
+        try {
+          const base = (window.__modalZBase && Number.isFinite(window.__modalZBase)) ? Number(window.__modalZBase) : 12000;
+          const topZ = base + 2000; // safely above any modal opened via openModal()
+          m.style.zIndex = String(topZ);
+          const inner = m.querySelector('.loading-box');
+          if (inner) inner.style.zIndex = String(topZ + 1);
+        } catch(e) {}
+
+        // Apply dark class when the page is in dark mode
+        try {
+          const isDark = document.body.classList.contains('dark-mode');
+          if (isDark) m.classList.add('dark'); else m.classList.remove('dark');
+        } catch(e) {}
+
+        const txt = m.querySelector('.loading-text');
+        const sub = m.querySelector('.loading-subtext');
+        // Allow message to be a string or { title, subtext }
+        if (typeof message === 'string' || typeof message === 'number') {
+          if (txt) txt.textContent = String(message) || 'Por favor espera — no recargues la página.';
+          if (sub) sub.textContent = 'No tomará más de 1 minuto aproximadamente.';
+        } else if (message && typeof message === 'object') {
+          if (txt) txt.textContent = message.title || 'Por favor espera — no recargues la página.';
+          if (sub) sub.textContent = message.subtext || 'No tomará más de 1 minuto aproximadamente.';
+        } else {
+          if (txt) txt.textContent = 'Por favor espera — no recargues la página.';
+          if (sub) sub.textContent = 'No tomará más de 1 minuto aproximadamente.';
+        }
+
+        m.style.display = 'flex';
+        m.setAttribute('aria-hidden','false');
+        // Prevent page scrolling / interaction while loading
+        try { document.body.style.overflow = 'hidden'; } catch(e) {}
+      } catch(e) { console.warn('showLoading error', e); }
+    };
+
+    window.hideLoading = function() {
+      try {
+        const m = document.getElementById('globalLoadingModal');
+        if (!m) return;
+        m.style.display = 'none';
+        m.setAttribute('aria-hidden','true');
+        try { m.style.zIndex = ''; } catch(e) {}
+        try { const inner = m.querySelector('.loading-box'); if (inner) inner.style.zIndex = ''; } catch(e) {}
+        // Restore body scroll when loading finishes
+        try { document.body.style.overflow = 'auto'; } catch(e) {}
+        try { m.classList.remove('dark'); } catch(e) {}
+      } catch(e) { console.warn('hideLoading error', e); }
+    };
+  </script>
+  <style>
+    /* Aplicar dark mode de forma inmediata sin esperar CSS externo */
+    html[data-dark-mode="true"] {
+      background-color: #000000 !important;
+      color: #e5e7eb !important;
+    }
+    
+    html[data-dark-mode="true"] body {
+      background-color: #000000 !important;
+      color: #e5e7eb !important;
+    }
+    
+    html[data-dark-mode="true"] main {
+      background: linear-gradient(180deg, #000000 0%, #0a0a0a 100%) !important;
+      color: #e5e7eb !important;
+    }
+    
+    /* MODO CLARO - Estilos explícitos */
+    html:not([data-dark-mode="true"]) {
+      background-color: #ffffff !important;
+      color: #1a1a1a !important;
+    }
+    
+    html:not([data-dark-mode="true"]) body {
+      background-color: #ffffff !important;
+      color: #1a1a1a !important;
+    }
+    
+    html:not([data-dark-mode="true"]) main {
+      background: #ffffff !important;
+      color: #1a1a1a !important;
+    }
+    
+    /* Elementos críticos en dark mode */
+    html[data-dark-mode="true"] input,
+    html[data-dark-mode="true"] textarea,
+    html[data-dark-mode="true"] select {
+      background-color: #1a1a1a !important;
+      color: #e5e7eb !important;
+      border-color: #ffffff !important;
+    }
+    
+    /* Inputs dentro de modales en dark mode */
+    html[data-dark-mode="true"] .modal input,
+    html[data-dark-mode="true"] .modal textarea,
+    html[data-dark-mode="true"] .modal select {
+      background-color: #1a1a1a !important;
+      color: #e5e7eb !important;
+      border-color: #ffffff !important;
+    }
+    
+    /* Modales y overlays */
+    html[data-dark-mode="true"] .modal {
+      background-color: #0f0f0f !important;
+      color: #e5e7eb !important;
+    }
+    
+    html[data-dark-mode="true"] .modal-overlay {
+      background-color: rgba(255, 255, 255, 0.4) !important;
+    }
+    
+    html[data-dark-mode="true"] .modal-header {
+      background-color: #1a1a1a !important;
+      border-color: #2a2a2a !important;
+      color: #ffffff !important;
+    }
+    
+    html[data-dark-mode="true"] .modal-body {
+      background-color: #0f0f0f !important;
+      color: #e5e7eb !important;
+    }
+    
+    html[data-dark-mode="true"] .modal-footer {
+      background-color: #1a1a1a !important;
+      border-color: #2a2a2a !important;
+    }
+    
+    /* Tablas */
+    html[data-dark-mode="true"] table {
+      background-color: #1a1a1a !important;
+      color: #e5e7eb !important;
+      border-color: #2a2a2a !important;
+    }
+    
+    html[data-dark-mode="true"] thead,
+    html[data-dark-mode="true"] th {
+      background-color: #2a2a2a !important;
+      color: #ffffff !important;
+    }
+    
+    html[data-dark-mode="true"] tbody tr {
+      background-color: #1a1a1a !important;
+      border-color: #2a2a2a !important;
+      color: #e5e7eb !important;
+    }
+
+    /* Center all headers and data cells in any table inside the printer history modal */
+    #modalPrinterHistory table thead th,
+    #modalPrinterHistory table tbody td {
+      text-align: center !important;
+      vertical-align: middle !important;
+    }
+    /* Keep last column (Hojas x copias) from wrapping */
+    #modalPrinterHistory table thead th:last-child,
+    #modalPrinterHistory table tbody td:last-child {
+      white-space: nowrap;
+    }
+    
+    /* Headers y containers */
+    html[data-dark-mode="true"] .main-header {
+      background-color: rgba(45, 45, 45, 0.85) !important;
+      color: #e5e7eb !important;
+      border-color: #2a2a2a !important;
+    }
+    
+    html[data-dark-mode="true"] .main-header h1 {
+      color: #ffffff !important;
+    }
+    
+    /* Sidebar */
+    html[data-dark-mode="true"] .sidebar {
+      background: linear-gradient(180deg, #0a3d35 0%, #0d5a4f 45%, #082b22 100%) !important;
+    }
+    
+    /* Sidebar en modo claro */
+    html:not([data-dark-mode="true"]) .sidebar {
+      background: linear-gradient(180deg, #0b7c6c 0%, #0d9680 45%, #0a6656 100%) !important;
+    }
+    
+    /* Botones */
+    html[data-dark-mode="true"] .btn {
+      color: #ffffff !important;
+    }
+    
+    /* MODO CLARO - Inputs, modales y tablas */
+    html:not([data-dark-mode="true"]) input,
+    html:not([data-dark-mode="true"]) textarea,
+    html:not([data-dark-mode="true"]) select {
+      background-color: #f5f5f5 !important;
+      color: #1a1a1a !important;
+      border-color: #d0d0d0 !important;
+    }
+    
+    html:not([data-dark-mode="true"]) .modal {
+      background-color: #ffffff !important;
+      color: #1a1a1a !important;
+    }
+    
+    html:not([data-dark-mode="true"]) .modal-header {
+      color: #1a1a1a !important;
+    }
+    
+    html:not([data-dark-mode="true"]) .modal-body {
+      background-color: #ffffff !important;
+      color: #1a1a1a !important;
+    }
+    
+    html:not([data-dark-mode="true"]) table {
+      background-color: #ffffff !important;
+      color: #1a1a1a !important;
+    }
+    
+    html:not([data-dark-mode="true"]) thead,
+    html:not([data-dark-mode="true"]) th {
+      color: #1a1a1a !important;
+    }
+    
+    html:not([data-dark-mode="true"]) tbody tr {
+      color: #1a1a1a !important;
+    }
+  </style>
+  <script>
+    // Default development logs flag (can be overridden per-page)
+    window.__DEV_LOGS = window.__DEV_LOGS || false;
+  </script>
+  <script>
+    // Shared table search utilities (available to all pages)
+    function escapeForRegexGlobal(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+    // Strip diacritics for searching (e.g., á -> a, í -> i)
+    function stripDiacritics(s) {
+      try { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch(e) { return String(s); }
+    }
+
+    // Wrap matches in element using accent-insensitive matching based on query string
+    function wrapMatchesInElementGlobal(container, query, className) {
+      try {
+        const q = stripDiacritics(String(query || ''));
+        if (!q) return;
+        const re = new RegExp(escapeForRegexGlobal(q), 'ig');
+        const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+        const textNodes = [];
+        while (walker.nextNode()) textNodes.push(walker.currentNode);
+        textNodes.forEach(textNode => {
+          const parent = textNode.parentNode;
+          const text = textNode.nodeValue;
+          if (!text) return;
+          // build base text (diacritics removed) and index mapping to original positions
+          const indexMap = [];
+          const baseChars = [];
+          for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            const base = stripDiacritics(ch);
+            baseChars.push(base);
+            indexMap.push(i);
+          }
+          const baseText = baseChars.join('');
+          re.lastIndex = 0;
+          if (!re.test(baseText)) return;
+          re.lastIndex = 0;
+          const frag = document.createDocumentFragment();
+          let lastOrig = 0; let m;
+          while ((m = re.exec(baseText)) !== null) {
+            const startBase = m.index;
+            const endBase = re.lastIndex;
+            const origStart = indexMap[startBase];
+            const origEnd = (endBase - 1 >= 0) ? (indexMap[endBase - 1] + 1) : origStart;
+            if (origStart > lastOrig) frag.appendChild(document.createTextNode(text.slice(lastOrig, origStart)));
+            const mark = document.createElement('mark');
+            mark.className = className;
+            mark.textContent = text.slice(origStart, origEnd);
+            frag.appendChild(mark);
+            lastOrig = origEnd;
+            if (re.lastIndex === m.index) re.lastIndex++;
+          }
+          if (lastOrig < text.length) frag.appendChild(document.createTextNode(text.slice(lastOrig)));
+          parent.replaceChild(frag, textNode);
+        });
+      } catch (e) { /* ignore */ }
+    }
+
+    function applyGlobalTableSearchFilter(query) {
+      try {
+        const q = (typeof query !== 'undefined') ? String(query || '').trim() : '';
+        const qLower = q.toLowerCase();
+        const tables = Array.from(document.querySelectorAll('.main-content table'));
+        if (!tables.length) return;
+        if (!q) {
+          tables.forEach(table => {
+            const rows = Array.from(table.querySelectorAll('tbody tr'));
+            rows.forEach(r => {
+              r.style.display = '';
+              const cells = Array.from(r.querySelectorAll('td'));
+              cells.forEach(td => { if (td.dataset.originalHtml !== undefined) td.innerHTML = td.dataset.originalHtml; });
+            });
+          });
+          return;
+        }
+        // use accent-insensitive matching via stripDiacritics
+        const qNorm = stripDiacritics(q).toLowerCase();
+        tables.forEach(table => {
+          const rows = Array.from(table.querySelectorAll('tbody tr'));
+          rows.forEach(r => {
+            let matched = false;
+            const cells = Array.from(r.querySelectorAll('td'));
+            // search across all cells except those with class table-actions
+            cells.forEach(td => {
+              if (td.classList && td.classList.contains('table-actions')) return;
+              if (td.dataset.originalHtml === undefined) td.dataset.originalHtml = td.innerHTML;
+              td.innerHTML = td.dataset.originalHtml;
+              const cellNorm = stripDiacritics((td.textContent || '')).toLowerCase();
+              if (cellNorm.indexOf(qNorm) !== -1) {
+                matched = true;
+                wrapMatchesInElementGlobal(td, q, 'search-highlight');
+              }
+            });
+            r.style.display = matched ? '' : 'none';
+          });
+        });
+      } catch (e) { /* ignore */ }
+    }
+
+    // Apply search filter scoped to a specific container (element or selector)
+    function applyTableSearchFilter(query, container) {
+      try {
+        const q = (typeof query !== 'undefined') ? String(query || '').trim() : '';
+        const containerElem = (typeof container === 'string') ? document.querySelector(container) : container;
+        if (!containerElem) return;
+        if (!q) {
+          const tables = (containerElem.nodeName === 'TABLE') ? [containerElem] : Array.from(containerElem.querySelectorAll('table'));
+          tables.forEach(table => {
+            const rows = Array.from(table.querySelectorAll('tbody tr'));
+            rows.forEach(r => {
+              r.style.display = '';
+              const cells = Array.from(r.querySelectorAll('td'));
+              cells.forEach(td => { if (td.dataset.originalHtml !== undefined) td.innerHTML = td.dataset.originalHtml; });
+            });
+          });
+          return;
+        }
+        const qNorm = stripDiacritics(q).toLowerCase();
+        const tables = (containerElem.nodeName === 'TABLE') ? [containerElem] : Array.from(containerElem.querySelectorAll('table'));
+        tables.forEach(table => {
+          const rows = Array.from(table.querySelectorAll('tbody tr'));
+          rows.forEach(r => {
+            let matched = false;
+            const cells = Array.from(r.querySelectorAll('td'));
+            cells.forEach(td => {
+              if (td.classList && td.classList.contains('table-actions')) return;
+              if (td.dataset.originalHtml === undefined) td.dataset.originalHtml = td.innerHTML;
+              td.innerHTML = td.dataset.originalHtml;
+              const cellNorm = stripDiacritics((td.textContent || '')).toLowerCase();
+              if (cellNorm.indexOf(qNorm) !== -1) {
+                matched = true;
+                wrapMatchesInElementGlobal(td, q, 'search-highlight');
+              }
+            });
+            r.style.display = matched ? '' : 'none';
+          });
+        });
+      } catch (e) { /* ignore */ }
+    }
+
+    // Expose a helper to clear search; no automatic binding to a global input.
+    window.clearGlobalTableSearch = function() {
+      try { applyGlobalTableSearchFilter(''); } catch(e) {}
+    };
+
+    // Nueva implementación de ordenamiento de tablas - Simplificada y robusta
+    window.initTableSorting = function(tableOrSelector, options) {
+      try {
+        const table = (typeof tableOrSelector === 'string') ? document.querySelector(tableOrSelector) : tableOrSelector;
+        if (!table) return;
+        
+        options = options || {};
+        const iconPrefix = options.iconPrefix || 'sortIndicator_';
+        const clientSide = (typeof options.clientSide === 'boolean') ? options.clientSide : true;
+        
+        const tbody = table.querySelector('tbody');
+        if (!tbody) return;
+        
+        // Guardar el orden original de las filas
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.forEach((row, idx) => {
+          if (!row.dataset.originalIndex) {
+            row.dataset.originalIndex = idx.toString();
+          }
+        });
+        
+        // Obtener todos los headers ordenables
+        const headers = Array.from(table.querySelectorAll('thead th[data-sortable]'));
+        
+        headers.forEach((th, colIndex) => {
+          const field = th.getAttribute('data-sortable');
+          if (!field) return;
+          
+          th.style.cursor = 'pointer';
+          
+          // Si es server-side, solo marcar pero no agregar handler
+          if (!clientSide) {
+            th._sortingBound = true;
+            return;
+          }
+          
+          if (th._sortingBound) return;
+          
+          th.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Determinar dirección de ordenamiento
+            const currentDir = table.dataset.sortDir || 'asc';
+            const currentField = table.dataset.sortField || '';
+            
+            let newDir = 'asc';
+            if (currentField === field) {
+              newDir = currentDir === 'asc' ? 'desc' : 'asc';
+            }
+            
+            table.dataset.sortField = field;
+            table.dataset.sortDir = newDir;
+            
+            // Obtener el índice real de la columna en el DOM
+            const allHeaders = Array.from(table.querySelectorAll('thead th'));
+            const realColIndex = allHeaders.indexOf(th);
+            
+            // Obtener todas las filas actuales
+            const currentRows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Ordenar las filas
+            currentRows.sort((rowA, rowB) => {
+              const cellA = rowA.cells[realColIndex];
+              const cellB = rowB.cells[realColIndex];
+              
+              if (!cellA || !cellB) return 0;
+              
+              let valA = cellA.textContent.trim();
+              let valB = cellB.textContent.trim();
+              
+              // Detectar si es una fecha
+              const isDate = field.indexOf('fecha') === 0 || field.includes('date');
+              
+              let comparison = 0;
+              if (isDate) {
+                const dateA = new Date(valA);
+                const dateB = new Date(valB);
+                comparison = dateA - dateB;
+              } else {
+                // Intentar comparación numérica primero
+                const numA = parseFloat(valA.replace(/[^0-9.-]/g, ''));
+                const numB = parseFloat(valB.replace(/[^0-9.-]/g, ''));
+                
+                if (!isNaN(numA) && !isNaN(numB)) {
+                  comparison = numA - numB;
+                } else {
+                  // Comparación alfabética
+                  comparison = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+                }
+              }
+              
+              return newDir === 'asc' ? comparison : -comparison;
+            });
+            
+            // Limpiar tbody y agregar filas en orden nuevo
+            while (tbody.firstChild) {
+              tbody.removeChild(tbody.firstChild);
+            }
+            currentRows.forEach(row => tbody.appendChild(row));
+            
+            // Actualizar iconos
+            table.querySelectorAll('.sort-icon').forEach(icon => {
+              icon.classList.remove('active');
+              icon.style.transform = 'rotate(0deg)';
+            });
+            
+            const iconId = iconPrefix + field;
+            const icon = document.getElementById(iconId);
+            if (icon) {
+              icon.classList.add('active');
+              icon.style.transform = newDir === 'asc' ? 'rotate(0deg)' : 'rotate(180deg)';
+            }
+          });
+          
+          th._sortingBound = true;
+        });
+        
+        // Método para limpiar ordenamiento
+        table.clearSorting = function() {
+          try {
+            delete table.dataset.sortField;
+            delete table.dataset.sortDir;
+            
+            table.querySelectorAll('.sort-icon').forEach(icon => {
+              icon.classList.remove('active');
+              icon.style.transform = 'rotate(0deg)';
+            });
+            
+            const allRows = Array.from(tbody.querySelectorAll('tr'));
+            allRows.sort((a, b) => {
+              const idxA = parseInt(a.dataset.originalIndex || '0');
+              const idxB = parseInt(b.dataset.originalIndex || '0');
+              return idxA - idxB;
+            });
+            
+            while (tbody.firstChild) {
+              tbody.removeChild(tbody.firstChild);
+            }
+            allRows.forEach(row => tbody.appendChild(row));
+          } catch (e) {
+            console.error('Error clearing sort:', e);
+          }
+        };
+        
+      } catch (e) {
+        console.error('initTableSorting error:', e);
+      }
+    };
+  </script>
+  <style>
+    :root {
+      --sidebar-width: 260px;
+      --content-offset: 24px; /* extra spacing between sidebar and main content */
+      --sidebar-bg: linear-gradient(180deg, #0b7c6c 0%, #0e9d7f 45%, #0b845e 100%);
+      --main-bg: linear-gradient(180deg, #f7f8fb 0%, #eef2f7 100%);
+      --accent: #f9f871;
+      --sidebar-hover: #11826C;
+      --sidebar-active: #14917A;
+      --sidebar-sep: rgba(255,255,255,0.12);
+      --sidebar-text-primary: #FFFFFF;
+      --sidebar-text-secondary: #D6ECE7;
+      --body-text: #1f2a37;
+      --body-bg-light: #ffffff;
+      --border-color: rgba(0, 0, 0, 0.06);
+      --input-bg: #ffffff;
+      --input-text: #1f2a37;
+      --modal-bg: #ffffff;
+      --modal-text: #1f2a37;
+      --table-border: #e5e7eb;
+      --button-hover: #f3f4f6;
+    }
+
+    body.dark-mode {
+      --sidebar-bg: linear-gradient(180deg, #0a3d35 0%, #0d5a4f 45%, #082b22 100%);
+      --main-bg: linear-gradient(180deg, #000000 0%, #0a0a0a 100%);
+      --body-text: #e5e7eb;
+      --body-bg-light: #1a1a1a;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --input-bg: #1a1a1a;
+      --input-text: #e5e7eb;
+      --modal-bg: #0f0f0f;
+      --modal-text: #e5e7eb;
+      --table-border: #2a2a2a;
+      --button-hover: #2a2a2a;
+    }
+          padding: 2.5rem;
+    * {
+      box-sizing: border-box;
+    }
+
+    /* Ocultar scrollbar en listas de avisos */
+    #sidebarNotifList::-webkit-scrollbar,
+    #sidebarPrinterList::-webkit-scrollbar {
+      display: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      min-height: 100vh;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--main-bg);
+      color: var(--body-text);
+      overflow-x: hidden;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    
+    /* ========================================
+       SIDEBAR - Preview Style
+       ======================================== */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 85px;
+      display: flex;
+      overflow-x: hidden;
+      flex-direction: column;
+      background: linear-gradient(180deg, #0b7c6c 0%, #0d9680 45%, #0a6656 100%); /* verde principal en modo claro */
+      padding: 25px 20px;
+      transition: all 0.4s ease;
+      z-index: 1000;
+    }
+
+    .sidebar:hover {
+      width: 260px;
+    }
+
+    /* Header: Logo + Bell */
+    .sidebar-header-preview {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .sidebar-header-preview > div:first-child {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-logo-img {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .sidebar-title {
+      color: #fff;
+      font-size: 1.25rem;
+      font-weight: 600;
+      white-space: nowrap;
+      margin: 0;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .sidebar:hover .sidebar-title {
+      opacity: 1;
+    }
+
+    /* Menu Links */
+    .sidebar-links {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      flex: 1 1 auto;
+      overflow-y: auto;
+      scrollbar-width: none;
+      padding-bottom: 140px; /* espacio para user-account */
+    }
+
+    .sidebar-links::-webkit-scrollbar {
+      display: none;
+    }
+
+    .sidebar-links h4 {
+      color: #fff;
+      font-weight: 500;
+      white-space: nowrap;
+      margin: 10px 0;
+      position: relative;
+    }
+
+    .sidebar-links h4 span {
+      opacity: 0;
+    }
+
+    .sidebar:hover .sidebar-links h4 span {
+      opacity: 1;
+    }
+
+    .sidebar-links .menu-separator {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 100%;
+      height: 1px;
+      transform: scaleX(1) translateY(-50%);
+      background: #16a34a; /* separador verde */
+      transform-origin: right;
+      transition-delay: 0.2s;
+    }
+
+    .sidebar:hover .sidebar-links .menu-separator {
+      transition-delay: 0s;
+      transform: scaleX(0);
+    }
+
+    .sidebar-links li {
+      list-style: none;
+    }
+
+    .sidebar-links li a {
+      display: flex;
+      align-items: center;
+      gap: 0 20px;
+      color: #fff;
+      font-weight: 500;
+      white-space: nowrap;
+      padding: 15px 10px;
+      text-decoration: none;
+      transition: 0.2s ease;
+    }
+
+    .sidebar-links li a .menu-icon {
+      width: 30px;
+      height: 30px;
+      object-fit: contain;
+      object-position: center;
+      filter: brightness(0) invert(1);
+      -webkit-filter: brightness(0) invert(1);
+      display: inline-block;
+      vertical-align: middle;
+      flex-shrink: 0;
+      margin: 0;
+      padding: 0;
+    }
+
+    .sidebar-links li a .menu-icon-asig {
+      width: 33px;
+      height: 33px;
+      margin-left: -2px;
+    }
+
+    .sidebar-links li a .menu-icon-devices {
+      width: 33px;
+      height: 33px;
+    }
+
+    .sidebar-links li a .menu-icon-plan {
+      width: 30px;
+      height: 30px;
+    }
+
+    .sidebar-links li a .menu-icon-reclamos {
+      width: 30px;
+      height: 30px;
+      margin-left: -4px;
+    }
+
+    /* Reclamos: mismo tamaño que el resto */
+    .sidebar-links li a .menu-icon:not(.menu-icon-asig):not(.menu-icon-devices):not(.menu-icon-plan) {
+      width: 30px;
+      height: 30px;
+    }
+
+    /* Material Symbols - alinear con iconos de imagen */
+    .sidebar-links li a .material-symbols-outlined {
+      font-size: 24px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sidebar-links li a:hover {
+      color: #161a2d;
+      background: #fff;
+      border-radius: 4px;
+    }
+
+    .sidebar-links li a:hover .menu-icon {
+      filter: none;
+      -webkit-filter: none;
+    }
+
+    /* User Account Card (bottom) */
+    .user-account {
+      margin-top: auto;
+      padding: 12px 12px;
+      margin-left: 0;
+      box-sizing: border-box;
+      position: relative;
+      z-index: 0;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      color: #161a2d;
+    }
+
+    .user-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.26);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: 600;
+      flex-shrink: 0;
+      border: 2px solid #fff;
+    }
+
+    .user-profile h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .user-profile span {
+      font-size: 0.775rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .user-detail {
+      margin-left: 12px;
+      white-space: nowrap;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .sidebar:hover .user-detail {
+      opacity: 1;
+    }
+
+    .sidebar:hover .user-account {
+      background: #fff;
+      border-radius: 6px;
+      padding-left: 10px;
+      padding-right: 10px;
+      position: relative;
+      z-index: 0;
+    }
+
+    body.dark-mode .sidebar:hover .user-account {
+      background: #000000;
+    }
+
+    body.dark-mode .user-profile h3 {
+      color: #ffffff;
+    }
+
+    body.dark-mode .user-profile span {
+      color: #e5e7eb;
+    }
+
+    #sidebarNotifContainer {
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    #sidebarNotifContainer:hover {
+      filter: brightness(1.1);
+    }
+
+    #sidebarNotifBadge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #dc2626;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.7rem;
+      padding: 3px 6px;
+      border-radius: 999px;
+      display: none;
+      min-width: 20px;
+      text-align: center;
+      opacity: 1 !important; /* Siempre visible */
+      z-index: 1001;
+    }
+
+
+
+    main {
+      margin-left: 85px;
+      flex: 1;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      transition: margin-left 0.35s ease;
+      min-width: 0;
+      background: var(--main-bg);
+    }
+
+    .main-header {
+      background: rgba(255, 255, 255, 0.85);
+      padding: 20px 30px;
+      padding-left: 80px;
+      border-bottom: 1px solid var(--border-color);
+      text-align: left;
+      position: relative;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+      margin-bottom: 1px;
+      transition: background 0.3s ease;
+    }
+
+    body.dark-mode .main-header {
+      background: rgba(45, 45, 45, 0.85);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .main-header h1 {
+      margin: 0;
+      font-size: 32px;
+      color: var(--body-text);
+      font-weight: 600;
+    }
+
+    .power-logout {
+      position: absolute;
+      left: 8px; /* move a bit more to the left */
+      bottom: 12px;
+      width: 48px; /* slightly larger */
+      height: 48px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #ff3b30; /* red background */
+      border: none;
+      cursor: pointer;
+      transition: background 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+      box-shadow: 0 10px 30px rgba(255, 59, 48, 0.14);
+    }
+
+    .power-logout:hover {
+      background: #e2332a;
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 14px 36px rgba(226, 51, 42, 0.18);
+    }
+
+    .power-logout svg {
+      width: 22px;
+      height: 22px;
+      stroke: white;
+      stroke-width: 1.9;
+      fill: none;
+    }
+
+    /* content spacing restored */
+    .main-content {
+      flex: 1;
+      padding: 2.5rem;
+      background: transparent;
+      width: 100%;
+      min-height: calc(100vh - 100px);
+    }
+
+    .alerts-container {
+      margin-bottom: 20px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 20px;
+      justify-content: flex-start;
+      margin-bottom: 2rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .global-table-search {
+      width:260px;
+      padding:8px 12px;
+      border-radius:10px;
+      border:1px solid #e2e8f0;
+      box-shadow: 0 2px 6px rgba(16,24,40,0.04);
+      transition: box-shadow .12s ease, border-color .12s ease;
+      background: #fff;
+    }
+    .global-table-search:focus { outline: none; box-shadow: 0 6px 18px rgba(16,124,190,0.12); border-color: #1890ff; }
+    .search-highlight { background-color: #fff59d; padding:0 3px; border-radius:3px; }
+
+    /* ========================================
+       DARK MODE STYLES
+       ======================================== */
+    body.dark-mode .global-table-search {
+      background: var(--input-bg);
+      border-color: var(--border-color);
+      color: var(--input-text);
+    }
+
+    body.dark-mode .global-table-search:focus {
+      border-color: #0e9d7f;
+      box-shadow: 0 6px 18px rgba(14, 157, 127, 0.2);
+    }
+
+    body.dark-mode .search-highlight {
+      background-color: #ff8c00;
+      padding: 0 3px;
+      border-radius: 3px;
+      color: #ffffff;
+      font-weight: 600;
+    }
+  </style>
+  <style>
+    /* ========================================
+       HEADER USER DROPDOWN
+       ======================================== */
+    .hdr-user-dropdown { position: relative; }
+    .hdr-user-toggle {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+      font-size: 13px; font-weight: 700; border-radius: 12px;
+      border: 1px solid rgba(34,197,94,.35); background: white; color: #333;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    }
+    body.dark-mode .hdr-user-toggle {
+      background: #1e293b; color: #e2e8f0; border-color: rgba(34,197,94,.5);
+    }
+    .hdr-user-toggle:hover { background: #f5f5f5 !important; box-shadow: none !important; transform: none !important; }
+    body.dark-mode .hdr-user-toggle:hover { background: #334155 !important; }
+    .hdr-user-name { color: inherit; font-weight: 700; font-size: 13px; }
+    .hdr-user-arrow { font-size: 18px !important; color: #999; transition: transform 0.2s; }
+    .hdr-user-arrow.open { transform: rotate(180deg); }
+    .hdr-user-items {
+      display: none; position: absolute; right: 0; top: calc(100% + 6px);
+      min-width: 200px; background: white; border: 1px solid #ddd;
+      border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.15);
+      overflow: hidden; z-index: 1100; padding: 4px;
+    }
+    body.dark-mode .hdr-user-items {
+      background: #1e293b; border-color: #334155; box-shadow: 0 4px 20px rgba(0,0,0,.3);
+    }
+    .hdr-user-items.visible { display: flex; flex-direction: column; }
+    .hdr-user-item {
+      display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+      border-radius: 8px; border: none; background: transparent; color: #333;
+      font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer;
+      font-family: inherit; transition: background 0.12s; width: 100%; box-sizing: border-box;
+    }
+    body.dark-mode .hdr-user-item { color: #e2e8f0; }
+    .hdr-user-item:hover { background: #f0f0f0 !important; box-shadow: none !important; transform: none !important; }
+    body.dark-mode .hdr-user-item:hover { background: #334155 !important; }
+    .hdr-user-item-icon { color: #22c55e; font-size: 18px !important; }
+    .hdr-user-item-text { display: flex; flex-direction: column; gap: 1px; }
+    .hdr-user-item-label { font-size: 13px; font-weight: 600; }
+    .hdr-user-item-sub { font-size: 11px; font-weight: 500; color: #999; }
+    body.dark-mode .hdr-user-item-sub { color: #94a3b8; }
+    .hdr-user-divider { height: 1px; background: #e0e0e0; margin: 4px 2px; }
+    body.dark-mode .hdr-user-divider { background: #334155; }
+    .hdr-user-item-danger { color: #ef4444 !important; }
+    body.dark-mode .hdr-user-item-danger { color: #f87171 !important; }
+    .hdr-user-item-danger:hover { background: #fee2e2 !important; }
+    body.dark-mode .hdr-user-item-danger:hover { background: #7f1d1d !important; }
+    .hdr-user-item-danger-icon { color: #ef4444 !important; font-size: 18px !important; }
+    body.dark-mode .hdr-user-item-danger-icon { color: #f87171 !important; }
+    @media (max-width: 480px) {
+      .hdr-user-name { display: none; }
+      .hdr-user-items { min-width: 160px; right: -10px; }
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <!-- Splash Screen / Loading inicial para evitar FOUC -->
+  <div id="appSplash">
+    <img class="splash-logo" src="{{ url_for('static', filename='img/favicon.png') }}" alt="Cargando...">
+  </div>
+
+  {% if session.user_id %}
+    <aside class="sidebar" id="sidebar">
+      <!-- Header: Logo + PROIMA title -->
+      <div class="sidebar-header-preview">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <img src="{{ url_for('static', filename='img/favicon.png') }}" alt="logo" class="sidebar-logo-img" />
+          <h2 class="sidebar-title">PROIMA</h2>
+        </div>
+      </div>
+
+      <!-- Menu Links (from preview structure) -->
+      <ul class="sidebar-links">
+        <h4>
+          <span>Menú Principal</span>
+          <div class="menu-separator"></div>
+        </h4>
+        <li>
+          <a href="/devices/ui">
+            <img src="{{ url_for('static', filename='img/devices.svg') }}" alt="icon" class="menu-icon menu-icon-devices">Dispositivos
+          </a>
+        </li>
+        <li>
+          <a href="/devices/asignaciones">
+            <img src="{{ url_for('static', filename='img/asig.svg') }}" alt="icon" class="menu-icon menu-icon-asig">Asignaciones
+          </a>
+        </li>
+        <li>
+          <a href="/devices/reclamos">
+            <img src="{{ url_for('static', filename='img/claim.svg') }}" alt="icon" class="menu-icon menu-icon-reclamos">Reclamos
+          </a>
+        </li>
+        <li>
+          <a href="/devices/planes">
+            <img src="{{ url_for('static', filename='img/plan.svg') }}" alt="icon" class="menu-icon menu-icon-plan">Planes
+          </a>
+        </li>
+        <h4>
+          <span>Accesos directos</span>
+          <div class="menu-separator"></div>
+        </h4>
+        <li>
+          <a href="#" onclick="if(window.location.pathname.includes('/devices/ui')){ openNewDeviceModal(); } else { localStorage.setItem('openNewDeviceModal', 'true'); window.location.href='/devices/ui'; }">
+            <span class="material-symbols-outlined">connect_without_contact</span>Nuevo dispositivo
+          </a>
+        </li>
+        <li>
+          <a href="#" onclick="if(window.location.pathname.includes('/devices/asignaciones')){ openNewAsignacionModal(); } else { localStorage.setItem('openNewAsignacionModal', 'true'); window.location.href='/devices/asignaciones'; }">
+            <span class="material-symbols-outlined">person_add</span>Nueva asignación
+          </a>
+        </li>
+        <!-- 'Dispositivo con plan' removed from sidebar as requested -->
+      </ul>
+
+
+
+      <!-- User Account Card (bottom) -->
+      <div class="user-account">
+        <div class="user-profile">
+          <!-- Notification bell -->
+          <div id="sidebarNotifContainer" style="position: relative; display: flex; align-items: center; justify-content: center; width: 42px; height: 42px;">
+            <img id="sidebarNotifBell" src="{{ url_for('static', filename='img/bell.png') }}" alt="notificaciones" style="width: 24px; height: 24px; cursor: pointer;">
+            <span id="sidebarNotifBadge" style="position: absolute; top: -6px; right: -6px; background: #dc2626; color: #fff; font-weight: 700; font-size: 0.7rem; padding: 3px 6px; border-radius: 999px; display: none; min-width: 20px; text-align: center;">0</span>
+          </div>
+          <div class="user-detail">
+            <h3>{{ (session.get('empleado_nombre') or session.get('username', 'Usuario'))|replace('.', ' ')|title }}</h3>
+            <span>
+              {% if session.get('is_super_admin') %}
+                SuperAdmin
+              {% else %}
+                {% set rol_disp = session.get('sistemas_roles', {}).get('dispositivos') %}
+                {{ 'Administrador' if rol_disp == 'admin' else ('Operador' if rol_disp == 'operador' else ('Auditor' if rol_disp == 'auditor' else 'Usuario')) }}
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notification panel (dropdown under bell) with tabs -->
+      <div id="sidebarNotifPanel" style="display: none; position: fixed; bottom: 120px; left: 95px; width: 360px; background: #fff; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); overflow: hidden; z-index: 10000; color: #1f2a37;">
+        
+        <!-- Tab buttons -->
+        <div style="display: flex; border-bottom: 2px solid #f0f0f0;">
+          <button id="tabBtnPlanes" class="notif-tab-btn active" onclick="switchNotifTab('planes')" style="flex: 1; padding: 12px; background: none; border: none; cursor: pointer; font-weight: 600; color: #0b6fb2; border-bottom: 2px solid #0b6fb2; transition: all 0.2s;">Planes</button>
+          <button id="tabBtnImpresoras" class="notif-tab-btn" onclick="switchNotifTab('impresoras')" style="flex: 1; padding: 12px; background: none; border: none; cursor: pointer; font-weight: 600; color: #999; transition: all 0.2s;">Impresoras</button>
+        </div>
+
+        <!-- Tab: Planes (default) -->
+        <div id="tabContentPlanes" class="notif-tab-content" style="display: block;">
+          <div style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-weight: 700; font-size: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <div>Planes por vencer</div>
+            <div style="flex: 0 0 auto;">
+              <button id="btnIrARenovar" onclick="location.href='/devices/planes'" style="background: #0b6fb2; color: #fff; border: none; padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; cursor: pointer;">Ir a renovar</button>
+            </div>
+          </div>
+          <div id="sidebarNotifList" style="max-height: 380px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
+            <!-- Items inserted here -->
+          </div>
+          <div style="padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f0f0f0; font-size: 0.9rem; color: #666;">
+            <div id="sidebarNotifPanelDate">-</div>
+            <button id="btnResetNotifPanel" onclick="resetNotifPanelPosition()" title="Resetear posición" style="background: none; border: none; cursor: pointer; padding: 4px 6px; display: flex; align-items: center; justify-content: center; color: #0b6fb2; font-size: 1.3rem; transition: transform 0.6s ease-in-out;">
+              <span class="material-symbols-outlined" style="font-size: 1.3rem;">refresh</span>
+            </button>
+            <div id="sidebarNotifPanelAgo" style="background: #eef6ff; color: #0b6fb2; padding: 6px 10px; border-radius: 16px; font-size: 0.85rem;">-</div>
+          </div>
+        </div>
+
+        <!-- Tab: Impresoras -->
+        <div id="tabContentImpresoras" class="notif-tab-content" style="display: none;">
+          <div style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-weight: 700; font-size: 1rem; display: flex; align-items: center; justify-content: space-between;">
+            <div>Niveles de tinta</div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="display: inline-flex; align-items: center; gap: 6px; font-weight: 400; font-size: 0.85rem;">
+                <input type="checkbox" id="chkShowAllPrinters" onchange="toggleShowAllPrinters()" style="cursor: pointer; margin: 0; padding: 0; vertical-align: middle;">
+                <span id="spanShowAllPrinters" onclick="(function(){const c=document.getElementById('chkShowAllPrinters'); if(c){ c.checked = !c.checked; toggleShowAllPrinters(); }})()" style="cursor: pointer; font-weight: 400; vertical-align: middle; margin-left: 6px;">Todas</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="btnRevisarImpresoras" onclick="openConfirmScanModal()" style="background: #0b6fb2; color: #fff; border: none; padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; cursor: pointer;">Revisar</button>
+              </div>
+            </div>
+          </div>
+          <div id="sidebarPrinterList" style="max-height: 380px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
+            <div style="padding: 12px; text-align: center; color: #999; font-size: 0.9rem;">Cargando...</div>
+          </div>
+          <div style="padding: 10px 12px; border-top: 1px solid #f0f0f0; font-size: 0.9rem; color: #666;">
+            <div id="sidebarPrinterPanelDate">-</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  {% endif %}
+
+    <main>
+    <header class="main-header">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <h1 style="margin:0;">{% block page_title %}{% endblock %}</h1>
+        </div>
+            <!-- per-page search inputs moved to each page template (devices, asignaciones, reclamos, planes, deleted devices) -->
+        <div style="display:flex; align-items:center; gap:10px;">
+          {% if session.user_id %}
+          <!-- Header User Dropdown -->
+          <div class="hdr-user-dropdown" id="hdrUserMenu">
+            <button id="hdrUserToggle" type="button" class="hdr-user-toggle">
+              <span class="material-symbols-outlined" style="font-size:22px; color:#22c55e; flex-shrink:0;">account_circle</span>
+              <span class="hdr-user-name">{{ (session.get('empleado_nombre') or session.get('username', 'Usuario'))|replace('.', ' ')|title }}</span>
+              <span id="hdrUserArrow" class="material-symbols-outlined hdr-user-arrow">expand_more</span>
+            </button>
+            <div id="hdrUserDropdown" class="hdr-user-items">
+              <button id="hdrBtnTheme" type="button" class="hdr-user-item" onclick="toggleDarkMode();">
+                <span id="hdrThemeIcon" class="material-symbols-outlined hdr-user-item-icon">light_mode</span>
+                <div class="hdr-user-item-text">
+                  <span class="hdr-user-item-label">Tema</span>
+                  <span id="hdrThemeModeLabel" class="hdr-user-item-sub">Claro</span>
+                </div>
+              </button>
+              <div class="hdr-user-divider"></div>
+              <a href="/auth/menu" class="hdr-user-item">
+                <span class="material-symbols-outlined hdr-user-item-icon">home</span>
+                <span>Menú principal</span>
+              </a>
+              <div class="hdr-user-divider"></div>
+              <a href="/auth/logout" class="hdr-user-item hdr-user-item-danger">
+                <span class="material-symbols-outlined hdr-user-item-danger-icon">logout</span>
+                <span>Cerrar sesión</span>
+              </a>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </header>
+    
+    <div class="main-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="alerts-container">
+            {% for cat, msg in messages %}
+              <article role="alert" class="alert alert-{% if cat == 'success' %}success{% elif cat == 'error' %}error{% elif cat == 'warning' %}warning{% else %}info{% endif %}">
+                {{ msg }}
+              </article>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script>
+    // Ensure loader helpers exist so other templates can call them safely.
+    if (typeof window.showTableLoader !== 'function') {
+      window.showTableLoader = function(container) { /* no-op until loader implemented */ };
+    }
+    if (typeof window.hideTableLoader !== 'function') {
+      window.hideTableLoader = function(container) { /* no-op until loader implemented */ };
+    }
+
+    // ============================================
+    // NOTIFICATION TABS MANAGEMENT
+    // ============================================
+    function switchNotifTab(tab) {
+      // Hide all tabs
+      document.getElementById('tabContentPlanes').style.display = 'none';
+      document.getElementById('tabContentImpresoras').style.display = 'none';
+      
+      // Deactivate all tabs
+      document.getElementById('tabBtnPlanes').style.borderBottom = 'none';
+      document.getElementById('tabBtnPlanes').style.color = '#999';
+      document.getElementById('tabBtnImpresoras').style.borderBottom = 'none';
+      document.getElementById('tabBtnImpresoras').style.color = '#999';
+      
+      // Show selected tab
+      if (tab === 'planes') {
+        document.getElementById('tabContentPlanes').style.display = 'block';
+        document.getElementById('tabBtnPlanes').style.borderBottom = '2px solid #0b6fb2';
+        document.getElementById('tabBtnPlanes').style.color = '#0b6fb2';
+      } else if (tab === 'impresoras') {
+        document.getElementById('tabContentImpresoras').style.display = 'block';
+        document.getElementById('tabBtnImpresoras').style.borderBottom = '2px solid #0b6fb2';
+        document.getElementById('tabBtnImpresoras').style.color = '#0b6fb2';
+      }
+    }
+
+    function resetNotifPanelPosition() {
+      try {
+        const sn = document.getElementById('sidebarNotifList');
+        const sp = document.getElementById('sidebarPrinterList');
+        const panel = document.getElementById('sidebarNotifPanel');
+        if (sn) sn.scrollTop = 0;
+        if (sp) sp.scrollTop = 0;
+        // Restore panel position if we captured it on load
+        try {
+          if (panel && typeof window.__initialNotifPos !== 'undefined' && window.__initialNotifPos) {
+            const pos = window.__initialNotifPos;
+            // If a transform was used to move the panel (drag/translate), restore it or clear it
+            try {
+              if (pos.transform !== undefined && pos.transform !== null) {
+                panel.style.transform = pos.transform === 'none' ? 'none' : pos.transform;
+              } else {
+                panel.style.transform = 'none';
+              }
+            } catch(e) { panel.style.transform = 'none'; }
+
+            // Restore positional CSS values we captured (left/top/right/bottom/position)
+            if (pos.left !== undefined && pos.left !== null) panel.style.left = pos.left;
+            if (pos.top !== undefined && pos.top !== null) panel.style.top = pos.top;
+            if (pos.right !== undefined && pos.right !== null) panel.style.right = pos.right;
+            if (pos.bottom !== undefined && pos.bottom !== null) panel.style.bottom = pos.bottom;
+            if (pos.position !== undefined && pos.position !== null) panel.style.position = pos.position;
+
+            // Remove any dragging classes or inline offsets commonly applied by drag handlers
+            try { panel.classList.remove('dragging'); } catch(e) {}
+          }
+        } catch(e) { console.warn('restore panel pos failed', e); }
+        // Restore page scroll to the initial position captured on load
+        try {
+          const ix = (typeof window.__initialScrollX !== 'undefined') ? window.__initialScrollX : (typeof window.scrollX !== 'undefined' ? window.scrollX : window.pageXOffset || 0);
+          const iy = (typeof window.__initialScrollY !== 'undefined') ? window.__initialScrollY : (typeof window.scrollY !== 'undefined' ? window.scrollY : window.pageYOffset || 0);
+          try { window.scrollTo(ix, iy); } catch(e) {}
+        } catch(e) {}
+      } catch(e) { console.warn('resetNotifPanelPosition failed', e); }
+    }
+
+    // Capture initial page scroll coordinates and notif panel position on load so the reset button can restore them
+    document.addEventListener('DOMContentLoaded', function() {
+      try {
+        window.__initialScrollX = (typeof window.scrollX !== 'undefined') ? window.scrollX : window.pageXOffset || 0;
+        window.__initialScrollY = (typeof window.scrollY !== 'undefined') ? window.scrollY : window.pageYOffset || 0;
+      } catch(e) { window.__initialScrollX = 0; window.__initialScrollY = 0; }
+      try {
+        const panel = document.getElementById('sidebarNotifPanel');
+        if (panel) {
+          // Save explicit inline style values if present, otherwise computed styles
+          const cs = getComputedStyle(panel);
+          const left = panel.style.left && panel.style.left.trim() !== '' ? panel.style.left : cs.left;
+          const top = panel.style.top && panel.style.top.trim() !== '' ? panel.style.top : cs.top;
+          const right = panel.style.right && panel.style.right.trim() !== '' ? panel.style.right : cs.right;
+          const bottom = panel.style.bottom && panel.style.bottom.trim() !== '' ? panel.style.bottom : cs.bottom;
+          const position = panel.style.position && panel.style.position.trim() !== '' ? panel.style.position : cs.position;
+          const transform = panel.style.transform && panel.style.transform.trim() !== '' ? panel.style.transform : cs.transform || 'none';
+          window.__initialNotifPos = { left: left, top: top, right: right, bottom: bottom, position: position, transform: transform };
+        } else {
+          window.__initialNotifPos = null;
+        }
+      } catch(e) { window.__initialNotifPos = null; }
+    });
+
+    // Agregar animación de rotación si no existe
+    if (!document.getElementById('spinAnimation')) {
+      const style = document.createElement('style');
+      style.id = 'spinAnimation';
+      style.textContent = `
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // ============================================
+    // PRINTER NOTIFICATIONS IN SIDEBAR
+    // ============================================
+    async function loadSidebarPrinterNotifications() {
+      try {
+        const resp = await fetch('/devices/printers/data');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (!data.success) return;
+        
+        const printers = data.printers || [];
+        const list = document.getElementById('sidebarPrinterList');
+        const panelDate = document.getElementById('sidebarPrinterPanelDate');
+        
+        list.innerHTML = '';
+        
+        if (printers.length === 0) {
+          list.innerHTML = '<div style="padding:12px; text-align:center; color:#999; font-size:0.9rem;">Sin datos aún</div>';
+          panelDate.textContent = '-';
+          return;
+        }
+        
+        // Obtener valor mínimo de tinta para cada impresora
+        const getMinTinta = (printer) => {
+          if (!printer.tinta_levels || Object.keys(printer.tinta_levels).length === 0) {
+            return null;
+          }
+          const values = Object.values(printer.tinta_levels);
+          return Math.min(...values);
+        };
+        
+        // Contar impresoras con tinta <= 10% para badge
+        let criticalCount = 0;
+        printers.forEach(p => {
+          const minTinta = getMinTinta(p);
+          if (minTinta !== null && minTinta <= 10) {
+            criticalCount++;
+          }
+        });
+        
+        // Ordenar por nivel mínimo de tinta
+        const sortedPrinters = printers.sort((a, b) => {
+          const tintaA = getMinTinta(a) !== null ? getMinTinta(a) : 999;
+          const tintaB = getMinTinta(b) !== null ? getMinTinta(b) : 999;
+          return tintaA - tintaB;
+        });
+        
+        // Guardar todas para el checkbox
+        window._allPrinters = sortedPrinters;
+        
+        // Renderizar basado en checkbox
+        renderPrinterList(sortedPrinters);
+        
+        // Guardar contador para badge
+        window._sidebarPrintersCritical = criticalCount;
+        updateSidebarBadge();
+        
+        // Panel footer
+        const lastUpdated = data.last_updated ? new Date(data.last_updated).toLocaleString() : '-';
+        panelDate.textContent = `Última lectura: ${lastUpdated}`;
+        
+      } catch (e) {
+        console.warn('Error cargando notificaciones de impresoras', e);
+      }
+    }
+    
+    // Función auxiliar para renderizar la lista de impresoras
+    function renderPrinterList(printers) {
+      const list = document.getElementById('sidebarPrinterList');
+      const showAll = document.getElementById('chkShowAllPrinters')?.checked || false;
+      
+      list.innerHTML = '';
+      
+      const getMinTinta = (printer) => {
+        if (!printer.tinta_levels || Object.keys(printer.tinta_levels).length === 0) {
+          return null;
+        }
+        const values = Object.values(printer.tinta_levels);
+        return Math.min(...values);
+      };
+      
+      const colorAbbrev = {
+        'Cyan': 'C',
+        'Magenta': 'M',
+        'Amarillo': 'Y',
+        'Negro': 'K'
+      };
+      
+      printers.forEach(p => {
+        if (!p.ip) return;
+        
+        const minTinta = getMinTinta(p);
+        
+        // Filtrar: mostrar solo si checkbox está marcado O si tiene críticos (≤10%)
+        if (!showAll && (minTinta === null || minTinta > 10)) {
+          return;  // Skip si no es crítico y no mostramos todos
+        }
+        
+        const item = document.createElement('div');
+        item.style.padding = '12px 14px';
+        item.style.borderBottom = '1px solid #f7f7f7';
+        
+        // Determinar icono
+        let iconHtml = '';
+        const tinta = minTinta;
+        
+        if (tinta === null || tinta === undefined) {
+          iconHtml = '<div style="width:50px;height:50px;flex:0 0 50px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#fff;">' +
+            '<img src="{{ url_for("static", filename="img/qm.png") }}" alt="no corroborado" style="width:40px;height:40px;object-fit:contain;" />' +
+            '</div>';
+        } else if (tinta < 20) {
+          iconHtml = '<div style="width:50px;height:50px;flex:0 0 50px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#fff;">' +
+            '<img src="{{ url_for("static", filename="img/inkw.png") }}" alt="tinta crítica" style="width:40px;height:40px;object-fit:contain;" />' +
+            '</div>';
+        } else if (tinta === 20) {
+          iconHtml = '<div style="width:50px;height:50px;flex:0 0 50px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#fff;">' +
+            '<img src="{{ url_for("static", filename="img/inki.png") }}" alt="tinta media" style="width:40px;height:40px;object-fit:contain;" />' +
+            '</div>';
+        } else {
+          // Para niveles por encima de 20% usar icono inkc.png (tamaño ajustado)
+          iconHtml = '<div style="width:50px;height:50px;flex:0 0 50px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#fff;">' +
+            '<img src="{{ url_for("static", filename="img/inkc.png") }}" alt="tinta óptima" style="width:44px;height:44px;object-fit:contain;" />' +
+            '</div>';
+        }
+        
+        const ipEscaped = escapeHtmlSidebar(p.ip);
+        const descEscaped = p.description ? escapeHtmlSidebar(p.description) : ipEscaped;
+        const titleText = `<strong>${descEscaped}</strong>`;
+        
+        // Construir texto
+        let subtitleText = '';
+        if (!p.tinta_levels || Object.keys(p.tinta_levels).length === 0) {
+          subtitleText = `No se pudo corroborar`;
+        } else {
+          const colorOrder = ['Cyan', 'Magenta', 'Amarillo', 'Negro'];
+          const colorList = [];
+          
+          for (const color of colorOrder) {
+            if (p.tinta_levels[color] !== undefined) {
+              const abbrev = colorAbbrev[color] || color;
+              const percentage = p.tinta_levels[color];
+              
+              // Si checkbox NO está marcado, mostrar solo colores críticos (≤10%)
+              // Si checkbox ESTÁ marcado, mostrar todos
+              if (showAll || percentage <= 10) {
+                colorList.push(`${abbrev} ${percentage}%`);
+              }
+            }
+          }
+          
+          if (colorList.length > 0) {
+            subtitleText = `•${colorList.join(' •')}`;
+          } else {
+            subtitleText = `No se pudo corroborar`;
+          }
+        }
+        
+        // Detectar dark mode para colores
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const titleColor = isDarkMode ? '#ffffff' : '#1f2a37';
+        const subtitleColor = isDarkMode ? '#d0d0d0' : '#666';
+        
+        const ipSlug = (p.ip || '').replaceAll('.', '_');
+
+        item.innerHTML = `
+          <div style="display:flex; gap:10px; align-items:center;">
+            ${iconHtml}
+            <div style="flex:1">
+              <div style="font-weight:600; color:${titleColor};">${titleText}</div>
+              <div style="color:${subtitleColor}; margin-top:4px; font-size:0.9rem;">${subtitleText}</div>
+              <div style="margin-top:6px;">
+                <span
+                  onclick="openPrinterHistory('${ipEscaped}', '${ipSlug}', '${descEscaped}')"
+                  style="font-size:0.82rem; color:#28a745; cursor:pointer; text-decoration:underline; user-select:none;"
+                >Ver registro</span>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        list.appendChild(item);
+      });
+    }
+    
+    function toggleShowAllPrinters() {
+      if (window._allPrinters) {
+        renderPrinterList(window._allPrinters);
+      }
+    }
+    
+    async function revisarImpresoras() {
+      try {
+        const btn = document.getElementById('btnRevisarImpresoras');
+        btn.disabled = true;
+        btn.textContent = 'Revisando...';
+        const resp = await fetch('/devices/printers/scan', { method: 'POST' });
+        let data = {};
+        try {
+          data = await resp.json();
+        } catch (e) {
+          console.warn('No JSON body from /devices/printers/scan', e);
+        }
+
+        // Log status for debugging
+        if (window.__DEV_LOGS) console.log('[revisarImpresoras] resp.status=', resp.status, 'data=', data);
+
+        if (resp.ok && data && data.success) {
+          await loadSidebarPrinterNotifications();
+          btn.textContent = 'Revisar';
+        } else {
+          // Show server-provided message if available, otherwise generic
+          const message = (data && data.message) ? data.message : `Error: servidor respondió con status ${resp.status}`;
+          try { openGlobalMessageModal('error', 'Revisión fallida', message); } catch(e) { alert(message); }
+          if (window.__DEV_LOGS) console.warn('[revisarImpresoras] scan failed:', message);
+        }
+      } catch (e) {
+        console.error('Error al revisar impresoras', e);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function openConfirmScanModal() {
+      // show modal informing scheduled automatic run and asking for confirmation
+      const modal = document.getElementById('modalConfirmScan');
+      if (!modal) return;
+      // ensure modal text exists
+      const txt = modal.querySelector('.confirm-scan-text');
+      if (txt) txt.textContent = 'El escaneo se realiza automáticamente a las 08:00 AM. ¿Desea forzar la ejecución ahora?';
+      modal.classList.add('active');
+    }
+
+    async function confirmScanForce() {
+      const modal = document.getElementById('modalConfirmScan');
+      try {
+        try { if (typeof window.showLoading === 'function') window.showLoading('Espera un momento por favor, no recargues la página'); } catch(e){}
+        const btn = document.getElementById('confirmScanBtn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Ejecutando...'; }
+        const resp = await fetch('/devices/printers/scan', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ force: true }) });
+        let data = {};
+        try { data = await resp.json(); } catch(e) { console.warn('No JSON from scan', e); }
+        if (resp.ok && data && data.success) {
+          await loadSidebarPrinterNotifications();
+          openGlobalSuccessModal(data.message || 'Lectura de impresoras completada');
+        } else {
+          const msg = (data && data.message) ? data.message : `Error: servidor respondió con status ${resp.status}`;
+          openGlobalMessageModal('error','Revisión fallida', msg);
+        }
+      } catch (e) {
+        console.error('confirmScanForce error', e);
+        openGlobalMessageModal('error','Error','No se pudo ejecutar la revisión. Consulte la consola.');
+      } finally {
+        try { if (typeof window.hideLoading === 'function') window.hideLoading(); } catch(e){}
+        try { const btn = document.getElementById('confirmScanBtn'); if (btn) { btn.disabled = false; btn.textContent = 'Confirmar'; } } catch(e){}
+        if (modal) modal.classList.remove('active');
+      }
+    }
+
+    // ============================================
+    // SINCRONIZACIÓN MASIVA DE IMPRESORAS
+    // ============================================
+    async function syncAllPrinters() {
+      try {
+        if (typeof window.showLoading === 'function') {
+          window.showLoading('Sincronizando todas las impresoras... Por favor espera.');
+        }
+
+        const resp = await fetch('/dispositivos/historial/scan-all', { 
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'}
+        });
+        
+        let data = {};
+        try {
+          data = await resp.json();
+        } catch (e) {
+          console.warn('No JSON from sync-all', e);
+        }
+
+        if (resp.ok && data && data.success) {
+          // Mostrar resumen
+          const msg = data.message || 'Sincronización completada';
+          const detail = `${data.exitosas || 0} exitosas / ${data.fallidas || 0} fallidas`;
+          openGlobalSuccessModal(`${msg}\n\n${detail}`);
+          
+          // Recargar datos si es necesario
+          if (typeof loadSidebarPrinterNotifications === 'function') {
+            await loadSidebarPrinterNotifications();
+          }
+        } else {
+          const msg = (data && data.message) ? data.message : `Error: servidor respondió con status ${resp.status}`;
+          openGlobalMessageModal('error', 'Sincronización fallida', msg);
+        }
+      } catch (e) {
+        console.error('syncAllPrinters error', e);
+        openGlobalMessageModal('error', 'Error de conexión', 'No se pudo sincronizar las impresoras. Verifica tu conexión.');
+      } finally {
+        try { if (typeof window.hideLoading === 'function') window.hideLoading(); } catch(e){}
+      }
+    }
+
+    // ============================================
+    // PLAN NOTIFICATIONS IN SIDEBAR
+    // ============================================
+    function updateSidebarBadge(){
+      // Actualiza el badge con el conteo total de planes + impresoras críticas
+      const plansCount = (window._sidebarPlanNotifsCache || []).length;
+      const printersCount = window._sidebarPrintersCritical || 0;
+      const totalCount = plansCount + printersCount;
+      
+      const badge = document.getElementById('sidebarNotifBadge');
+      if(totalCount > 0){
+        badge.style.display = 'inline-block';
+        badge.textContent = totalCount;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    async function loadSidebarPlanNotifications(){
+      try{
+        const resp = await fetch('/devices/planes/notifications');
+        if(!resp.ok) return;
+        const data = await resp.json();
+        if(!data.success) return;
+        let notifs = data.notifications || [];
+        // Keep a client-side cache so expired notifications don't vanish immediately
+        // If server returns no notifications, reuse cached expired ones (days <= 0)
+        try {
+          window._sidebarPlanNotifsCache = window._sidebarPlanNotifsCache || [];
+          if ((!notifs || notifs.length === 0) && window._sidebarPlanNotifsCache.length) {
+            // keep only expired entries from cache (ensure numeric check)
+            const cachedExpired = window._sidebarPlanNotifsCache.filter(c => {
+              const val = Number(c.days_until_end);
+              return Number.isFinite(val) ? val <= 0 : true;
+            });
+            if (cachedExpired.length) notifs = cachedExpired;
+          } else {
+            // update cache with latest server-provided notifications
+            window._sidebarPlanNotifsCache = notifs.slice(0);
+          }
+        } catch(e) { /* ignore cache errors */ }
+        const list = document.getElementById('sidebarNotifList');
+        const panelDate = document.getElementById('sidebarNotifPanelDate');
+        const panelAgo = document.getElementById('sidebarNotifPanelAgo');
+
+        // Render list with urgency-based icon
+        list.innerHTML = '';
+        // helper: compute numeric days until end if backend didn't provide it
+        function computeDaysUntilEnd(n){
+          let d = null;
+          if(typeof n.days_until_end !== 'undefined' && n.days_until_end !== null && n.days_until_end !== ''){
+            const nv = Number(n.days_until_end);
+            if(Number.isFinite(nv)) return Math.trunc(nv);
+          }
+          // try common date fields from backend
+          const candidates = ['fecha_fin','fechaFin','fecha_vencimiento','fechaVencimiento','fecha_fin_plan','fecha_fin_hasta','fecha_termino'];
+          for(const key of candidates){
+            if(n[key]){ d = new Date(n[key]); if(!isNaN(d)) break; d = null; }
+          }
+          if(d){
+            // compute difference in days (fecha_fin - today). Use floor so past dates give <=0
+            const now = new Date();
+            const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const diffMs = d - startToday;
+            return Math.floor(diffMs / 86400000);
+          }
+          return 0;
+        }
+
+        // helper: compute how many days have passed since fecha_fin until today
+        // returns 0 when not expired (fecha_fin >= today), otherwise positive integer
+        function computeDaysSinceEnd(n){
+          // if backend already provides a positive 'days_since_end' or negative days_until_end, prefer that
+          if(typeof n.days_since_end !== 'undefined' && n.days_since_end !== null && n.days_since_end !== ''){
+            const nv = Number(n.days_since_end);
+            if(Number.isFinite(nv)) return Math.max(0, Math.trunc(nv));
+          }
+          if(typeof n.days_until_end !== 'undefined' && n.days_until_end !== null && n.days_until_end !== ''){
+            const nv2 = Number(n.days_until_end);
+            if(Number.isFinite(nv2) && nv2 <= 0) return Math.trunc(Math.abs(nv2));
+          }
+          // try the same candidate date fields used above
+          const candidates = ['fecha_fin','fechaFin','fecha_vencimiento','fechaVencimiento','fecha_fin_plan','fecha_fin_hasta','fecha_termino'];
+          let d = null;
+          for(const key of candidates){
+            if(n[key]){ d = new Date(n[key]); if(!isNaN(d)) break; d = null; }
+          }
+          if(d){
+            const now = new Date();
+            const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const endDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            const diffMs = startToday - endDate; // positive when today > endDate
+            const days = Math.floor(diffMs / 86400000);
+            return days > 0 ? days : 0;
+          }
+          return 0;
+        }
+
+        notifs.forEach(n => {
+          const item = document.createElement('div');
+          item.style.padding = '12px 14px';
+          item.style.borderBottom = '1px solid #f7f7f7';
+
+          // choose icon based on days until end: use pw.png for 31 días o menos, pa.png para más de 31 días
+          const pwUrl = '{{ url_for("static", filename="img/pw.png") }}';
+          const paUrl = '{{ url_for("static", filename="img/pa.png") }}';
+          let iconHtml = '';
+          const days = (function(){
+            const v = Number(n.days_until_end);
+            return Number.isFinite(v) ? Math.trunc(v) : computeDaysUntilEnd(n);
+          })();
+          // compute how many days have passed since end (0 if not expired)
+          const daysSince = computeDaysSinceEnd(n);
+          const isExpired = (days <= 0);
+          const effectiveDaysForIcon = isExpired ? daysSince : days;
+          const imgSrc = effectiveDaysForIcon <= 31 ? pwUrl : paUrl;
+          // aumentar tamaño del icono y su contenedor ~40%
+          iconHtml = '<div style="width:50px;height:50px;flex:0 0 50px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#ffffff;">' +
+              '<img src="' + imgSrc + '" alt="notif" style="width:40px;height:40px;object-fit:contain;" />' +
+              '</div>';
+
+            // Compose employee name and line number using possible keys from backend
+            const rawEmpleado = (n.empleado_nombre || n.nombre_empleado || n.empleado || n.nombre || '') || '';
+            const empleadoTrim = (rawEmpleado || '').toString().trim();
+            const hasEmpleado = !!empleadoTrim || (typeof n.fk_id_empleado !== 'undefined' && n.fk_id_empleado !== null && String(n.fk_id_empleado).trim() !== '');
+            const empleadoName = hasEmpleado && empleadoTrim ? empleadoTrim : (hasEmpleado ? String(n.fk_id_empleado) : '');
+            // prefer numero_linea fields; do NOT use numero_serie
+            const linea = (n.numero_linea || n.numeroLinea || n.numero || '').toString();
+            const lineaText = linea ? (` - ${escapeHtmlSidebar(linea)}`) : '';
+
+            // Determine expired state and choose colors
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            const titleColor = isExpired ? (isDarkMode ? '#ff6b6b' : '#b00020') : (isDarkMode ? '#ffffff' : '#1f2a37');
+            // subtitle should be light in dark mode, dark in light mode
+            const subColor = isDarkMode ? '#d0d0d0' : '#1f2a37';
+
+            // Choose title depending on whether there is an assigned empleado
+            const titleText = hasEmpleado && empleadoName ? `El plan asignado a ${escapeHtmlSidebar(empleadoName)}` : 'Plan por renovarse (sin empleado asignado)';
+
+            // Build subtitle text: if expired show "Este plan venció hace X días - linea"
+            let subtitleText = '';
+            if (isExpired) {
+              const ago = daysSince || Math.abs(days);
+              subtitleText = `Vencido hace ${ago} día${ago === 1 ? '' : 's'}${lineaText}`;
+            } else {
+              subtitleText = `Vencerá en ${days} día${days === 1 ? '' : 's'}${lineaText}`;
+            }
+
+            item.innerHTML = `\
+              <div style="display:flex; gap:10px; align-items:center;">\
+                ${iconHtml}\
+                <div style="flex:1">\
+                  <div style="font-weight:600; color:${titleColor};">${titleText}</div>\
+                  <div style="color:${subColor};margin-top:4px; font-size:0.9rem;">${subtitleText}</div>\
+                </div>\
+              </div>\
+            `;
+
+          list.appendChild(item);
+        });
+
+        // Panel footer: notified date (today) and days since created
+        const today = new Date().toISOString().slice(0,10);
+        panelDate.textContent = today;
+        panelAgo.textContent = notifs.length > 0 ? `${notifs.length} aviso(s)` : 'Sin avisos';
+
+        // Actualizar badge con total de planes + impresoras críticas
+        updateSidebarBadge();
+
+      }catch(e){
+        console.warn('Error cargando notificaciones de planes', e);
+      }
+    }
+
+    function escapeHtmlSidebar(s){
+      if(!s) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+
+    // Toggle panel in sidebar
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const bell = document.getElementById('sidebarNotifBell');
+      const panel = document.getElementById('sidebarNotifPanel');
+      const container = document.getElementById('sidebarNotifContainer');
+      
+      if(bell && panel){
+        bell.addEventListener('click', async (e)=>{
+          e.stopPropagation();
+          if(panel.style.display === 'none' || !panel.style.display){
+            await loadSidebarPlanNotifications();
+            await loadSidebarPrinterNotifications();
+            panel.style.display = 'block';
+          } else {
+            panel.style.display = 'none';
+          }
+        });
+
+        // Click outside to close (solo si está fuera de container Y fuera de panel)
+        document.addEventListener('click', (ev)=>{
+          if(!container.contains(ev.target) && !panel.contains(ev.target) && panel && panel.style.display === 'block'){
+            panel.style.display = 'none';
+          }
+        });
+
+        // Initial load to set badge
+        loadSidebarPlanNotifications();
+        loadSidebarPrinterNotifications();
+
+        // Poll for notifications every 60 seconds
+        setInterval(() => {
+          try { loadSidebarPlanNotifications(); } catch(e){ console.warn('sidebar notify poll error', e); }
+          try { loadSidebarPrinterNotifications(); } catch(e){ console.warn('sidebar printer poll error', e); }
+        }, 60000);
+      }
+    });
+  </script>
+  <!-- Modal: Historial de impresora (impresión y copias) -->
+  <div id="modalPrinterHistory" class="modal-overlay">
+    <div class="modal" style="max-width:860px; width:95vw;">
+      <div class="modal-header">
+        <h3 id="modalPrinterHistoryTitle">Historial de impresora</h3>
+        <button class="modal-close" onclick="closePrinterHistoryModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:0;">
+        <!-- Estado: cargando / error / sin datos -->
+        <div id="printerHistoryLoading" style="display:none; padding:32px; text-align:center; color:#666; font-size:0.95rem;">
+          <div style="margin-bottom:10px; font-size:1.4rem;">⏳</div>
+          <div id="printerHistoryLoadingText">Cargando…</div>
+        </div>
+        <div id="printerHistoryError" style="display:none; padding:24px; text-align:center; color:#b00020; font-size:0.95rem;"></div>
+        <div id="printerHistoryEmpty" style="display:none; padding:32px; text-align:center; color:#888; font-size:0.95rem;">
+          <div style="font-size:2rem; margin-bottom:8px;">📋</div>
+          <div>No hay registros guardados aún.</div>
+          <div style="margin-top:6px; font-size:0.85rem;">Usa el botón <strong>Extraer datos</strong> para conectarse a la impresora y obtener su historial.</div>
+        </div>
+        <!-- Pestañas -->
+        <style>
+          /* History tabs: ONLY change text color. Active = green text; inactive = white text. */
+          .history-tabs-row { display:flex; border-bottom:1px solid #e5e7eb; padding:0 16px; gap:8px; }
+          .history-tab {
+            padding:10px 18px; border:none; cursor:pointer; font-weight:600;
+            background: none; color:#ffffff; border-radius:6px 6px 0 0; margin-bottom:-1px;
+          }
+          .history-tab:focus { outline: none; }
+          .history-tab.history-tab-active {
+            color: #28a745;
+          }
+          /* Prevent global button:hover from applying a blue background to these tabs */
+          .history-tab:hover {
+            background: none !important;
+            box-shadow: none !important;
+            transform: none !important;
+          }
+          body.dark-mode .history-tab:hover {
+            background: none !important;
+            box-shadow: none !important;
+            transform: none !important;
+          }
+          /* Hover colors: prevent default blue — use gray tones per theme */
+          /* Light mode: inactive tabs hover -> medium gray */
+          .history-tab:not(.history-tab-active):hover { color: #6b7280; }
+          /* Dark mode: slightly lighter gray on hover for contrast */
+          body.dark-mode .history-tab:not(.history-tab-active):hover { color: #cfcfcf; }
+        </style>
+        <div id="printerHistoryTabs" style="display:none;">
+          <div class="history-tabs-row">
+            <button id="tabBtnPrint" class="history-tab history-tab-active" onclick="switchHistoryTab('print')">Impresión</button>
+            <button id="tabBtnCopy"  class="history-tab" onclick="switchHistoryTab('copy')">Copias</button>
+          </div>
+          <div id="tabContentPrint" style="padding:18px 18px 8px 18px; max-height:60vh; overflow:auto;">
+            <div id="printerHistoryContentPrint">Cargando tabla…</div>
+          </div>
+          <div id="tabContentCopy" style="padding:18px 18px 8px 18px; max-height:60vh; overflow:auto; display:none;">
+            <div id="printerHistoryContentCopy">Cargando tabla…</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="gap:8px;">
+        <button class="btn btn-cancel" onclick="closePrinterHistoryModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    // IP, slug y descripción de la impresora actualmente abierta en el modal
+    let _printerHistoryIp   = null;
+    let _printerHistorySlug = null;
+    let _printerHistoryDesc = null;
+
+    function closePrinterHistoryModal() {
+      document.getElementById('modalPrinterHistory').classList.remove('active');
+      // Clear injected content
+      try { document.getElementById('printerHistoryContentPrint').innerHTML = ''; } catch(e) {}
+      try { document.getElementById('printerHistoryContentCopy').innerHTML = ''; } catch(e) {}
+      _printerHistoryIp   = null;
+      _printerHistorySlug = null;
+    }
+
+    function switchHistoryTab(tab) {
+      const isPrint = tab === 'print';
+      document.getElementById('tabContentPrint').style.display = isPrint ? '' : 'none';
+      document.getElementById('tabContentCopy').style.display  = isPrint ? 'none' : '';
+      // Toggle active class to apply green/white styles
+      try {
+        const btnP = document.getElementById('tabBtnPrint');
+        const btnC = document.getElementById('tabBtnCopy');
+        if (isPrint) {
+          btnP.classList.add('history-tab-active');
+          btnC.classList.remove('history-tab-active');
+        } else {
+          btnC.classList.add('history-tab-active');
+          btnP.classList.remove('history-tab-active');
+        }
+      } catch(e) {}
+    }
+
+    function _showHistoryState(state) {
+      // state: 'loading' | 'error' | 'empty' | 'tabs'
+      document.getElementById('printerHistoryLoading').style.display = state === 'loading' ? '' : 'none';
+      document.getElementById('printerHistoryError').style.display   = state === 'error'   ? '' : 'none';
+      document.getElementById('printerHistoryEmpty').style.display   = state === 'empty'   ? '' : 'none';
+      document.getElementById('printerHistoryTabs').style.display    = state === 'tabs'    ? '' : 'none';
+    }
+
+    // Guardar URLs de paginación para cada contenedor
+    window._printerHistoryUrls = {};
+
+    async function _fetchAndRenderTable(url, containerId) {
+      try {
+        const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+        const data = await resp.json();
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (!data.success || !data.records || data.records.length === 0) {
+          container.innerHTML = '<div style="color:#888; padding:16px; text-align:center;">No hay registros para mostrar.</div>';
+          return;
+        }
+
+        // Guardar URL base para paginación
+        const urlObj = new URL(url, window.location.origin);
+        const baseUrl = url.split('?')[0];
+        const limit = new URLSearchParams(urlObj.search).get('limit') || 50;
+        window._printerHistoryUrls[containerId] = { baseUrl, limit, currentPage: data.page };
+
+        // Construir tabla HTML desde JSON
+        let html = '<table style="width:100%; border-collapse:collapse;">';
+        html += '<thead style="background-color:#eaf4fb; color:#1177c9;"><tr>';
+        
+        // Detectar tipo (print o copy) por los campos disponibles
+        const hasNombreArchivo = data.records.some(r => r.nombre_archivo);
+        const hasNombreUsuario = data.records.some(r => r.nombre_usuario);
+        
+        html += '<th style="padding:12px; text-align:left; border-bottom:1px solid #ccc;">Hora de inicio</th>';
+        if (hasNombreArchivo) html += '<th style="padding:12px; text-align:left; border-bottom:1px solid #ccc;">Nombre de archivo</th>';
+        if (hasNombreUsuario) html += '<th style="padding:12px; text-align:left; border-bottom:1px solid #ccc;">Nombre de usuario</th>';
+        html += '<th style="padding:12px; text-align:left; border-bottom:1px solid #ccc;">Hojas x copias</th>';
+        html += '</tr></thead>';
+        
+        html += '<tbody>';
+        data.records.forEach((record, idx) => {
+          const bgColor = idx % 2 === 0 ? '#ffffff' : '#f5f5f5';
+          html += `<tr style="background-color:${bgColor}; border-bottom:1px solid #e5e5e5;">`;
+          html += `<td style="padding:12px;">${record.hora_inicio || '-'}</td>`;
+          if (hasNombreArchivo) html += `<td style="padding:12px;">${record.nombre_archivo || '-'}</td>`;
+          if (hasNombreUsuario) html += `<td style="padding:12px;">${record.nombre_usuario || '-'}</td>`;
+          html += `<td style="padding:12px;">${record.hojas_x_copias || '-'}</td>`;
+          html += '</tr>';
+        });
+        html += '</tbody>';
+        html += '</table>';
+
+        // Agregar info de paginación con botones
+        if (data.pages > 1) {
+          html += `<div style="padding:16px; text-align:center;">`;
+          html += `<div style="color:#666; font-size:0.9rem; margin-bottom:12px;">Página ${data.page} de ${data.pages} (${data.total} registros totales)</div>`;
+          html += `<div style="display:flex; gap:8px; justify-content:center;">`;
+          
+          if (data.page > 1) {
+            html += `<button onclick="_goToPage('${containerId}', ${data.page - 1})" style="padding:8px 16px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem;">← Anterior</button>`;
+          } else {
+            html += `<button disabled style="padding:8px 16px; background:#ccc; color:#666; border:none; border-radius:4px; cursor:not-allowed; font-size:0.9rem;">← Anterior</button>`;
+          }
+          
+          if (data.page < data.pages) {
+            html += `<button onclick="_goToPage('${containerId}', ${data.page + 1})" style="padding:8px 16px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem;">Siguiente →</button>`;
+          } else {
+            html += `<button disabled style="padding:8px 16px; background:#ccc; color:#666; border:none; border-radius:4px; cursor:not-allowed; font-size:0.9rem;">Siguiente →</button>`;
+          }
+          
+          html += `</div>`;
+          html += `</div>`;
+        }
+
+        container.innerHTML = html;
+      } catch(e) {
+        const container = document.getElementById(containerId);
+        if (container) container.innerHTML = `<div style="color:#b00020; padding:16px;">Error al cargar: ${e.message}</div>`;
+      }
+    }
+
+    async function _goToPage(containerId, pageNum) {
+      const config = window._printerHistoryUrls[containerId];
+      if (!config) return;
+      const url = `${config.baseUrl}?page=${pageNum}&limit=${config.limit}&t=${Date.now()}`;
+      await _fetchAndRenderTable(url, containerId);
+    }
+
+    function _loadHistoryContent(slug) {
+      const ts = Date.now();
+      _fetchAndRenderTable(`/dispositivos/historial/${slug}/print?page=1&limit=50&t=${ts}`, 'printerHistoryContentPrint');
+      _fetchAndRenderTable(`/dispositivos/historial/${slug}/copy?page=1&limit=50&t=${ts}`, 'printerHistoryContentCopy');
+    }
+
+    function openPrinterHistory(ip, slug, desc) {
+      _printerHistoryIp   = ip;
+      _printerHistorySlug = slug;
+      _printerHistoryDesc = desc || ip;
+
+      // Show global loading overlay with custom title while extracting
+      try {
+        showLoading({ title: `Extrayendo historial — ${_printerHistoryDesc}` });
+      } catch (e) { /* ignore */ }
+
+      // Perform extraction and only open the history modal when finished
+      (async function() {
+        let ok = false;
+        try {
+          ok = await extractPrinterHistory();
+        } catch (err) {
+          ok = false;
+        }
+
+        try { hideLoading(); } catch(e) {}
+
+        // Open modal and show resulting content or error
+        document.getElementById('modalPrinterHistoryTitle').textContent = `Historial — ${_printerHistoryDesc}`;
+        document.getElementById('printerHistoryError').textContent = '';
+        document.getElementById('modalPrinterHistory').classList.add('active');
+        switchHistoryTab('print');
+
+        if (ok) {
+          // Load fresh content
+          try {
+            _loadHistoryContent(slug);
+            _showHistoryState('tabs');
+          } catch (e) {
+            _showHistoryState('empty');
+          }
+        } else {
+          // Show error state inside modal
+          _showHistoryState('error');
+        }
+      })();
+    }
+
+    // Extrae y actualiza automáticamente (llamable desde openPrinterHistory)
+    // Extracts history via server endpoint. Returns true on success, false on failure.
+    async function extractPrinterHistory() {
+      if (!_printerHistoryIp || !_printerHistorySlug) return false;
+
+      try {
+        const resp = await fetch(`/dispositivos/historial/scan/${_printerHistoryIp}`, { method: 'POST' });
+        let data = {};
+        try { data = await resp.json(); } catch(_) {}
+
+        if (!resp.ok || data.status === 'Fracaso') {
+          const msg = (data && data.error) ? data.error : `Error del servidor (${resp.status})`;
+          try { document.getElementById('printerHistoryError').textContent = `No se pudo extraer el historial: ${msg}`; } catch(e) {}
+          return false;
+        }
+
+        return true;
+      } catch (e) {
+        try { document.getElementById('printerHistoryError').textContent = `Error de conexión: ${e.message}`; } catch(err) {}
+        return false;
+      }
+    }
+  </script>
+
+  <!-- Modal: Confirmar ejecución manual de escaneo de impresoras -->
+  <div id="modalConfirmScan" class="modal-overlay">
+    <div class="modal" style="max-width:520px;">
+      <div class="modal-header">
+        <h3>Confirmar ejecución</h3>
+        <button class="modal-close" onclick="(function(){document.getElementById('modalConfirmScan').classList.remove('active');})()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="confirm-scan-text">El escaneo se realiza automáticamente a las 08:00 AM. ¿Desea forzar la ejecución ahora?</p>
+        <div id="confirmScanError" style="display:none; color:#b00020; margin-top:8px; font-weight:600;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" onclick="(function(){document.getElementById('modalConfirmScan').classList.remove('active');})()">Cancelar</button>
+        <button id="confirmScanBtn" class="btn btn-primary" onclick="confirmScanForce()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal global de confirmación de eliminación -->
+  <div id="globalDeleteModal" class="modal-overlay">
+    <div class="modal" style="max-width:520px;">
+      <div class="modal-header">
+        <h3 id="globalDeleteTitle">Confirmar acción</h3>
+        <button class="modal-close" onclick="closeGlobalDeleteModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="globalDeleteText">¿Deseas eliminar este elemento?</p>
+        <div id="globalDeleteError" style="display:none; color:#b00020; font-weight:600; margin-top:0.5rem;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-cancel" onclick="closeGlobalDeleteModal()">Cancelar</button>
+        <button type="button" id="globalDeleteConfirm" class="btn btn-danger">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal global de éxito decorado -->
+  <div id="globalSuccessModal" class="modal-overlay">
+    <div class="modal" style="max-width:440px; text-align:center; padding:1.5rem;">
+      <img src="{{ url_for('static', filename='img/chk.png') }}" alt="Éxito" style="width:72px; height:72px; display:block; margin:0 auto 8px auto;" />
+      <h3>Se ha realizado con éxito</h3>
+      <p id="globalSuccessText">La operación se completó correctamente.</p>
+      <div style="margin-top:1rem;"><button class="btn btn-primary" onclick="closeGlobalSuccessModal()">Cerrar</button></div>
+    </div>
+  </div>
+
+  <!-- Modal global de error/info -->
+  <div id="globalMessageModal" class="modal-overlay">
+    <div class="modal" style="max-width:520px; text-align:center; padding:1.25rem;">
+      <div id="globalMessageIcon" style="font-size:40px; margin-bottom:0.25rem;">!</div>
+      <h3 id="globalMessageTitle">Mensaje</h3>
+      <p id="globalMessageText" style="white-space: pre-line;">Detalle</p>
+      <div style="margin-top:1rem;"><button class="btn btn-primary" onclick="closeGlobalMessageModal()">Cerrar</button></div>
+    </div>
+  </div>
+
+  <script>
+    let globalDeleteUrl = null;
+    let globalDeleteCallback = null;
+    function openGlobalDeleteModal(urlOrCallback, titleText, itemName=null) {
+      // urlOrCallback can be a URL string for DELETE fetch, or a function to call when confirmed
+      if (typeof urlOrCallback === 'function') {
+        globalDeleteCallback = urlOrCallback;
+        globalDeleteUrl = null;
+      } else {
+        globalDeleteUrl = urlOrCallback;
+        globalDeleteCallback = null;
+      }
+      document.getElementById('globalDeleteTitle').textContent = titleText || 'Confirmar eliminación';
+      // Show a custom warning for asignaciones: explain the side-effects
+      if (typeof urlOrCallback === 'string' && urlOrCallback.includes('/asignacion/')) {
+        document.getElementById('globalDeleteText').textContent = '¿Deseas eliminar esta asignación? Al eliminarla, el dispositivo volverá a marcarse como sin asignar y se desvinculará del empleado.';
+      // Custom message for reclamos (insurance claims) so it's distinct from device deletion
+      } else if (typeof urlOrCallback === 'string' && urlOrCallback.includes('/reclamo/')) {
+        // Mensaje simple y sin exponer IDs: los identificadores quedan solo en la base de datos.
+        document.getElementById('globalDeleteText').textContent = '¿Confirmas eliminar este reclamo de seguro? Se borrará el registro y las evidencias adjuntas. Esta acción no afecta al dispositivo ni a la asignación.';
+      } else {
+        // If caller provided a full custom message (starts with '¿'), use it verbatim.
+        if (itemName && String(itemName).trim().startsWith('¿')) {
+          document.getElementById('globalDeleteText').textContent = String(itemName);
+        } else {
+          document.getElementById('globalDeleteText').textContent = itemName ? `¿Deseas eliminar "${itemName}"?` : '¿Deseas eliminar este elemento?';
+        }
+      }
+      document.getElementById('globalDeleteError').style.display = 'none';
+      // Use centralized modal stack handling so global modals appear on top
+      openModal('globalDeleteModal');
+    }
+
+    function closeGlobalDeleteModal() {
+      globalDeleteUrl = null;
+      globalDeleteCallback = null;
+      closeModal('globalDeleteModal');
+    }
+
+    // Auto-close success modal after short delay to avoid blocking UI after AJAX actions.
+    window.__globalSuccessTimer = window.__globalSuccessTimer || null;
+    function openGlobalSuccessModal(message) {
+      document.getElementById('globalSuccessText').textContent = message || 'La operación se completó correctamente.';
+      // Ensure any previous timer is cleared
+      try { if (window.__globalSuccessTimer) { clearTimeout(window.__globalSuccessTimer); window.__globalSuccessTimer = null; } } catch(e) {}
+      openModal('globalSuccessModal', true);
+      // If there is a pending global success callback, avoid auto-closing
+      // so the user can explicitly acknowledge the success (and the callback will run on close).
+      if (!window.__globalSuccessCallback) {
+        // Auto-close after 1200ms to avoid leaving an overlay that blocks interactions
+        window.__globalSuccessTimer = setTimeout(() => {
+          try { closeGlobalSuccessModal(); } catch(e) {}
+          window.__globalSuccessTimer = null;
+        }, 2000);
+      }
+    }
+
+    function closeGlobalSuccessModal() {
+      // Clear pending auto-close timer if any
+      try { if (window.__globalSuccessTimer) { clearTimeout(window.__globalSuccessTimer); window.__globalSuccessTimer = null; } } catch(e) {}
+      closeModal('globalSuccessModal');
+      // If a callback was set for post-success actions, call it now.
+      try {
+        if (window.__globalSuccessCallback && typeof window.__globalSuccessCallback === 'function') {
+          try { window.__globalSuccessCallback(); } catch(e) { console.warn('globalSuccessCallback error', e); }
+          window.__globalSuccessCallback = null;
+        }
+      } catch(e) { console.warn('Error invoking globalSuccessCallback', e); }
+
+    }
+
+    // Backwards-compatible wrapper used by some templates
+    function openGlobalErrorModal(message) {
+      return openGlobalMessageModal('error', 'Error', message || 'Ha ocurrido un error');
+    }
+
+    function openGlobalMessageModal(type, title, message) {
+      // type: 'success'|'error'|'info'
+      const icon = document.getElementById('globalMessageIcon');
+      const ttl = document.getElementById('globalMessageTitle');
+      const txt = document.getElementById('globalMessageText');
+      ttl.textContent = title || (type === 'error' ? 'Error' : 'Información');
+      txt.textContent = message || '';
+      if (type === 'success') {
+        icon.textContent = '✓'; icon.style.color = 'var(--success-color)';
+      } else if (type === 'error') {
+        icon.textContent = '✕'; icon.style.color = 'var(--danger-color)';
+      } else {
+        icon.textContent = 'ℹ'; icon.style.color = 'var(--primary-color)';
+      }
+      openModal('globalMessageModal');
+    }
+
+    function closeGlobalMessageModal() {
+      closeModal('globalMessageModal');
+    }
+
+    // Convenience function used by templates/scripts
+    function showModalMessage(type, title, message) {
+      if (type === 'success') return openGlobalSuccessModal(message || title);
+      return openGlobalMessageModal(type || 'info', title, message);
+    }
+
+    document.getElementById('globalDeleteConfirm').addEventListener('click', async () => {
+      const btn = document.getElementById('globalDeleteConfirm');
+      btn.disabled = true;
+      try {
+        if (globalDeleteCallback) {
+          // user provided a function to execute on confirm
+          await Promise.resolve(globalDeleteCallback());
+          closeGlobalDeleteModal();
+        } else if (globalDeleteUrl) {
+          const resp = await fetch(globalDeleteUrl, { method: 'DELETE', headers: {'Accept': 'application/json'} });
+          const data = await resp.json().catch(() => ({}));
+          if (resp.ok && data.success) {
+            closeGlobalDeleteModal();
+            openGlobalSuccessModal(data.message || 'Se ha realizado con éxito');
+            // Intentar recargar tablas relevantes según la URL eliminada
+            try {
+              if (globalDeleteUrl) {
+                if (globalDeleteUrl.includes('/asignacion/')) {
+                  // Recargar tabla de asignaciones
+                  if (typeof reloadAsignacionesTable === 'function') await reloadAsignacionesTable();
+                  if (typeof reloadDevicesTable === 'function') await reloadDevicesTable();
+                } else if (globalDeleteUrl.includes('/reclamo/')) {
+                  // Recargar tabla de reclamos
+                  if (typeof reloadReclamosTable === 'function') await reloadReclamosTable();
+                } else if (/\/devices\/\d+$/.test(globalDeleteUrl) || globalDeleteUrl.match(/\/devices\/[^/]+\/[0-9]+$/)) {
+                  if (typeof reloadDevicesTable === 'function') await reloadDevicesTable();
+                } else if (globalDeleteUrl.includes('/marca') || globalDeleteUrl.includes('/modelo')) {
+                  // For other resources, try a generic reload if available
+                  if (typeof reloadDevicesTable === 'function') await reloadDevicesTable();
+                  if (typeof reloadAsignacionesTable === 'function') await reloadAsignacionesTable();
+                  if (typeof reloadReclamosTable === 'function') await reloadReclamosTable();
+                }
+              }
+            } catch (e) {
+              // ignore reload errors
+            }
+          } else {
+            document.getElementById('globalDeleteError').textContent = data.message || 'No se pudo completar la operación. Verifica las restricciones.';
+            document.getElementById('globalDeleteError').style.display = 'block';
+          }
+        }
+      } catch (err) {
+        document.getElementById('globalDeleteError').textContent = 'No se pudo completar la operación. Verifica las restricciones.';
+        document.getElementById('globalDeleteError').style.display = 'block';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ============================================
+    // DRAGGABLE NOTIFICATION PANEL
+    // ============================================
+    const notifPanel = document.getElementById('sidebarNotifPanel');
+    let isDragging = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    // Cargar posición guardada
+    function loadNotifPanelPosition() {
+      const saved = localStorage.getItem('notifPanelPos');
+      if (saved) {
+        const pos = JSON.parse(saved);
+        notifPanel.style.left = pos.left + 'px';
+        notifPanel.style.bottom = pos.bottom + 'px';
+      } else {
+        // Posición inicial por defecto (la actual)
+        const defaultPos = {
+          left: 95,
+          bottom: 120
+        };
+        localStorage.setItem('notifPanelPos', JSON.stringify(defaultPos));
+      }
+    }
+
+    // Guardar posición
+    function saveNotifPanelPosition() {
+      const pos = {
+        left: notifPanel.offsetLeft,
+        bottom: window.innerHeight - notifPanel.offsetTop - notifPanel.offsetHeight
+      };
+      localStorage.setItem('notifPanelPos', JSON.stringify(pos));
+    }
+
+    // Iniciar drag
+    notifPanel.addEventListener('mousedown', function(e) {
+      if (e.target.closest('.notif-tab-btn') || e.target.closest('button') || e.target.closest('input')) {
+        return; // No draggable si clickeas botones o inputs
+      }
+      isDragging = true;
+      dragOffsetX = e.clientX - notifPanel.offsetLeft;
+      dragOffsetY = e.clientY - notifPanel.offsetTop;
+      notifPanel.style.cursor = 'grabbing';
+    });
+
+    // Mover durante drag
+    document.addEventListener('mousemove', function(e) {
+      if (!isDragging) return;
+      notifPanel.style.left = (e.clientX - dragOffsetX) + 'px';
+      notifPanel.style.bottom = (window.innerHeight - (e.clientY - dragOffsetY) - notifPanel.offsetHeight) + 'px';
+    });
+
+    // Terminar drag
+    document.addEventListener('mouseup', function() {
+      if (isDragging) {
+        isDragging = false;
+        notifPanel.style.cursor = 'auto';
+        saveNotifPanelPosition();
+      }
+    });
+
+    // Cargar posición al iniciar
+    loadNotifPanelPosition();
+
+    // ========================================
+    // DARK MODE TOGGLE
+    // ========================================
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const body = document.body;
+      
+      // Toggle dark mode
+      const isDark = body.classList.toggle('dark-mode');
+      
+      // Update html attribute
+      if (isDark) {
+        html.setAttribute('data-dark-mode', 'true');
+        html.style.colorScheme = 'dark';
+      } else {
+        html.removeAttribute('data-dark-mode');
+        html.style.colorScheme = 'light';
+      }
+      
+      // Guardar preferencia
+      try {
+        localStorage.setItem('appTheme', isDark ? 'dark' : 'light');
+      } catch(e) {
+        console.warn('Error saving dark mode preference:', e);
+      }
+      
+      updateDarkModeIcon(isDark);
+      updateDarkModeStyles();
+      try { if (typeof updateFavicons === 'function') updateFavicons(isDark); } catch(e) {}
+    }
+
+    function updateDarkModeIcon(isDark) {
+      const icon = document.getElementById('darkModeIcon');
+      const label = document.getElementById('darkModeLabel');
+      if (icon) { icon.textContent = isDark ? 'dark_mode' : 'light_mode'; }
+      if (label) { label.textContent = isDark ? 'Modo: Oscuro' : 'Modo: Claro'; }
+      // Header dropdown
+      const hdrIcon = document.getElementById('hdrThemeIcon');
+      const hdrLabel = document.getElementById('hdrThemeModeLabel');
+      if (hdrIcon) { hdrIcon.textContent = isDark ? 'dark_mode' : 'light_mode'; }
+      if (hdrLabel) { hdrLabel.textContent = isDark ? 'Oscuro' : 'Claro'; }
+    }
+
+    function initializeDarkMode() {
+      // El tema ya fue aplicado por el script inline, solo necesitamos actualizar el icono
+      const isDark = document.body.classList.contains('dark-mode');
+      updateDarkModeIcon(isDark);
+      updateDarkModeStyles();
+      // sincronizar favicons con el tema
+      try { if (typeof updateFavicons === 'function') updateFavicons(isDark); } catch(e) {}
+    }
+
+    function updateDarkModeStyles() {
+      // Aplicar estilos a elementos dinámicos como modales
+      const isDark = document.body.classList.contains('dark-mode');
+      const modals = document.querySelectorAll('.modal-overlay');
+      modals.forEach(modal => {
+        const modalDiv = modal.querySelector('.modal');
+        if (modalDiv) {
+          if (isDark) {
+            modalDiv.style.background = 'var(--modal-bg)';
+            modalDiv.style.color = 'var(--modal-text)';
+          } else {
+            modalDiv.style.background = '';
+            modalDiv.style.color = '';
+          }
+        }
+      });
+
+      // Aplicar a inputs, textareas, selects
+      const inputs = document.querySelectorAll('input, textarea, select');
+      inputs.forEach(input => {
+        if (isDark) {
+          input.style.background = 'var(--input-bg)';
+          input.style.color = 'var(--input-text)';
+          input.style.borderColor = 'var(--border-color)';
+        } else {
+          input.style.background = '';
+          input.style.color = '';
+          input.style.borderColor = '';
+        }
+      });
+
+      // Aplicar a tablas
+      const tables = document.querySelectorAll('table');
+      tables.forEach(table => {
+        const rows = table.querySelectorAll('tr');
+        rows.forEach(row => {
+          if (isDark) {
+            row.style.borderColor = 'var(--table-border)';
+          } else {
+            row.style.borderColor = '';
+          }
+        });
+      });
+    }
+
+    // Inicializar dark mode al cargar la página
+    document.addEventListener('DOMContentLoaded', initializeDarkMode);
+
+    // Observar cambios en el DOM para aplicar dark mode a contenido dinámico
+    const observer = new MutationObserver(() => {
+      updateDarkModeStyles();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // Función para sincronizar empleados (primero PROIMA, luego ELMIGO)
+    async function syncEmpleados() {
+      const syncBtn = document.getElementById('syncBtn');
+      const syncIcon = document.getElementById('syncIcon');
+      const syncLabel = document.getElementById('syncLabel');
+      
+      // Deshabilitar botón y animar
+      try { syncBtn.style.pointerEvents = 'none'; } catch(e) {}
+      try { syncIcon.textContent = 'hourglass_empty'; syncIcon.style.animation = 'spin 1s linear infinite'; } catch(e) {}
+      try { syncLabel.textContent = 'Sincronizando...'; } catch(e) {}
+
+      let totalCount = 0;
+      let failed = false;
+
+      // Paso 1: PROIMA (archivo principal)
+      try {
+        window.showLoading('Actualizando registros de empleados PROIMA...');
+        // small pause to ensure modal text updates before network activity
+        await new Promise(r => setTimeout(r, 250));
+        const resp1 = await fetch('/sync/empleados?only=primary', { method: 'POST', credentials: 'same-origin' });
+        const d1 = await resp1.json().catch(()=>({}));
+        if (resp1.ok && typeof d1.count === 'number') totalCount += d1.count;
+        else if (!resp1.ok) {
+          console.error('Sync primary error', d1);
+          failed = true;
+        }
+      } catch (e) {
+        console.error('Sync primary failed', e);
+        failed = true;
+      }
+
+      // Paso 2: ELMIGO (archivo alterno)
+      try {
+        window.showLoading('Actualizando registros de empleados ELMIGO...');
+        // small pause to ensure modal text updates before network activity
+        await new Promise(r => setTimeout(r, 250));
+        const resp2 = await fetch('/sync/empleados?only=alt', { method: 'POST', credentials: 'same-origin' });
+        const d2 = await resp2.json().catch(()=>({}));
+        if (resp2.ok && typeof d2.count === 'number') totalCount += d2.count;
+        else if (!resp2.ok) {
+          console.error('Sync alt error', d2);
+          failed = true;
+        }
+      } catch (e) {
+        console.error('Sync alt failed', e);
+        failed = true;
+      }
+
+      // Ocultar modal de carga
+      try { window.hideLoading(); } catch(e) {}
+
+      // Actualizar UI según resultado
+      if (!failed) {
+        try { syncIcon.textContent = 'check_circle'; syncIcon.style.color = '#10b981'; syncLabel.textContent = `Completado (${totalCount} empleados)`; } catch(e) {}
+        
+        // Limpiar badge de notificaciones después de sincronizar exitosamente
+        try {
+          if (typeof loadSidebarPlanNotifications === 'function') {
+            await loadSidebarPlanNotifications();
+          }
+          if (typeof loadSidebarPrinterNotifications === 'function') {
+            await loadSidebarPrinterNotifications();
+          }
+        } catch(e) {
+          console.warn('Error actualizando notificaciones después de sync', e);
+        }
+      } else {
+        try { syncIcon.textContent = 'error'; syncIcon.style.color = '#ef4444'; syncLabel.textContent = `Error en sincronización`; } catch(e) {}
+      }
+
+      // Restaurar estado normal después de 3 segundos
+      setTimeout(() => {
+        try { syncIcon.textContent = 'sync'; syncIcon.style.color = ''; syncIcon.style.animation = ''; syncLabel.textContent = 'Sincronizar'; syncBtn.style.pointerEvents = 'auto'; } catch(e) {}
+      }, 3000);
+    }
+
+    // Actualiza el favicon (y variantes) según el tema
+    function updateFavicons(isDark) {
+      try {
+        // Mantener el .ico sin cambios (favicon principal)
+        const icoHref = "{{ url_for('static', filename='img/favicon.ico') }}?v=2";
+        // PNG variantes según tema si fuera necesario
+        const png32Href = "{{ url_for('static', filename='img/favicon-32x32.png') }}?v=2";
+        const png16Href = "{{ url_for('static', filename='img/favicon-16x16.png') }}?v=2";
+        const appleHref = "{{ url_for('static', filename='img/apple-touch-icon.png') }}?v=2";
+        
+        const ico = document.getElementById('faviconIco');
+        const shortcut = document.getElementById('faviconShortcut');
+        const png32 = document.getElementById('favicon32');
+        const png16 = document.getElementById('favicon16');
+        const apple = document.getElementById('faviconApple');
+        
+        if (ico) ico.setAttribute('href', icoHref);
+        if (shortcut) shortcut.setAttribute('href', icoHref);
+        if (png32) png32.setAttribute('href', png32Href);
+        if (png16) png16.setAttribute('href', png16Href);
+        if (apple) apple.setAttribute('href', appleHref);
+      } catch(e) { console.warn('updateFavicons error', e); }
+    }
+
+    // Agregar animación de spin al CSS dinámicamente
+    if (!document.getElementById('syncAnimation')) {
+      const style = document.createElement('style');
+      style.id = 'syncAnimation';
+      style.textContent = `
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  </script>
+  <!-- PDF.js Library (v5.4.530) -->
+  <script type="module">
+    import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.530/+esm';
+    window.pdfjsLib = pdfjsLib;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.530/build/pdf.worker.min.mjs';
+  </script>
+  
+  <!-- Neon Glass Context Menu -->
+  <style>
+    /* Context Menu Styles - Neon Glass Effect */
+    :root {
+      --ctx-hue1: 210;
+      --ctx-hue2: 195;
+      --ctx-border: 1px;
+      --ctx-border-color: hsl(var(--ctx-hue2), 12%, 20%);
+      --ctx-radius: 18px;
+      --ctx-ease: cubic-bezier(0.5, 1, 0.89, 1);
+    }
+    
+    #contextMenu {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition-property: visibility, opacity, filter;
+      transition-duration: 0s, 0.25s, 0.25s;
+      transition-delay: 0.5s, 0s, 0s;
+      transition-timing-function: var(--ctx-ease);
+      filter: blur(4px);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #d4d4d8;
+      position: fixed;
+      top: 140px;
+      left: 2vw;
+      min-width: 240px;
+      border-radius: var(--ctx-radius);
+      border: var(--ctx-border) solid var(--ctx-border-color);
+      padding: 0.9em;
+      background: linear-gradient(235deg, hsl(var(--ctx-hue1) 50% 10% / 0.85), hsl(var(--ctx-hue1) 50% 10% / 0) 33%), 
+                  linear-gradient(45deg, hsl(var(--ctx-hue2) 50% 10% / 0.85), hsl(var(--ctx-hue2) 50% 10% / 0) 33%), 
+                  linear-gradient(hsl(220deg 25% 4.8% / 0.75));
+      backdrop-filter: blur(14px);
+      box-shadow: hsl(var(--ctx-hue2) 50% 2%) 0px 10px 16px -8px, hsl(var(--ctx-hue2) 50% 4%) 0px 20px 36px -14px;
+      z-index: 99999;
+    }
+    
+    #contextMenu.open {
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
+      transition-delay: 0s;
+      filter: blur(0px);
+    }
+    
+    #contextMenu .ctx-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4em;
+      margin-bottom: 0.8em;
+    }
+    
+    #contextMenu .ctx-section:last-child {
+      margin-bottom: 0;
+    }
+    
+    #contextMenu .ctx-header {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0 0.66em;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    #contextMenu hr {
+      width: 100%;
+      height: 0.5px;
+      background: var(--ctx-border-color);
+      border: none;
+      margin: 0.3em 0 0.6em;
+      opacity: 0.5;
+    }
+    
+    #contextMenu ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    #contextMenu li {
+      --item-hue: var(--ctx-hue2);
+      --item-opacity: 0;
+      position: relative;
+      padding: 0.7em 0.8em;
+      display: flex;
+      align-items: center;
+      gap: 0.6em;
+      border-radius: calc(var(--ctx-radius) * 0.4);
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      background: linear-gradient(90deg, hsl(var(--item-hue) 29% 13% / var(--item-opacity)), hsl(var(--item-hue) 30% 15% / var(--item-opacity)) 24% 32%, hsl(var(--item-hue) 5% 7% / 0) 95%);
+    }
+    
+    #contextMenu li:hover {
+      --item-opacity: 0.6;
+      color: #ffffff;
+      background: linear-gradient(90deg, hsl(var(--item-hue) 29% 20% / 0.7), hsl(var(--item-hue) 30% 22% / 0.7) 24% 32%, hsl(var(--item-hue) 5% 14% / 0.3) 95%);
+    }
+    
+    #contextMenu li .material-symbols-outlined {
+      font-size: 18px;
+      opacity: 0.85;
+    }
+    
+    #contextMenu section:nth-of-type(1) li {
+      --item-hue: var(--ctx-hue1);
+    }
+    
+    /* Dark mode adjustments */
+    html[data-dark-mode="true"] #contextMenu {
+      background: linear-gradient(235deg, hsl(var(--ctx-hue1) 50% 15% / 0.9), hsl(var(--ctx-hue1) 50% 15% / 0) 33%), 
+                  linear-gradient(45deg, hsl(var(--ctx-hue2) 50% 15% / 0.9), hsl(var(--ctx-hue2) 50% 15% / 0) 33%), 
+                  linear-gradient(hsl(220deg 25% 8% / 0.85));
+    }
+  </style>
+  
+  <!-- Context Menu HTML -->
+  <aside id="contextMenu">
+    <div class="ctx-section">
+      <header class="ctx-header">Sugerencias</header>
+      <ul id="ctxSuggestions">
+        <!-- Dynamic content based on current page -->
+      </ul>
+    </div>
+    
+    {% if session.get('is_super_admin') or session.get('sistemas_roles', {}).get('dispositivos') == 'admin' %}
+    <hr>
+    
+    <div class="ctx-section">
+      <header class="ctx-header">Ajustes</header>
+      <ul>
+        <li tabindex="0" onclick="handleContextMenuAction('revisar')">
+          <span class="material-symbols-outlined">print</span>
+          Revisión de Impresoras
+        </li>
+        <li tabindex="0" onclick="handleContextMenuAction('sincronizar')">
+          <span class="material-symbols-outlined">sync</span>
+          Sincronizar Empleados
+        </li>
+        <li tabindex="0" onclick="handleContextMenuAction('syncAllPrinters')">
+          <span class="material-symbols-outlined">sync_alt</span>
+          Actualizar registros de impresoras
+        </li>
+      </ul>
+    </div>
+    {% endif %}
+  </aside>
+  
+  <!-- Context Menu Script -->
+  <script>
+    (function() {
+      const $menu = document.getElementById('contextMenu');
+      let cleanTimer;
+      
+      // Detect current page
+      function getCurrentPage() {
+        const path = window.location.pathname;
+        if (path.includes('/asignaciones')) return 'asignaciones';
+        if (path.includes('/reclamos')) return 'reclamos';
+        if (path.includes('/planes')) return 'planes';
+        if (path.includes('/devices')) return 'dispositivos';
+        return 'menu';
+      }
+      
+      // Update suggestions based on current page
+      function updateContextMenuSuggestions() {
+        const currentPage = getCurrentPage();
+        const $suggestions = document.getElementById('ctxSuggestions');
+        if (!$suggestions) return;
+        
+        // Define all navigation options
+        const allOptions = [
+          { icon: 'devices', text: 'Ir a Dispositivos', url: '/devices/ui', page: 'dispositivos' },
+          { icon: 'assignment', text: 'Ir a Asignaciones', url: '/devices/asignaciones', page: 'asignaciones' },
+          { icon: 'report', text: 'Ir a Reclamos', url: '/devices/reclamos', page: 'reclamos' },
+          { icon: 'sim_card', text: 'Ir a Planes', url: '/devices/planes', page: 'planes' },
+          { icon: 'home', text: 'Ir al Menú', url: '/auth/menu', page: 'menu' }
+        ];
+        
+        // Filter out current page
+        const options = allOptions.filter(opt => opt.page !== currentPage);
+        
+        $suggestions.innerHTML = options.map(opt => 
+          `<li tabindex="0" onclick="window.location.href='${opt.url}'">
+            <span class="material-symbols-outlined">${opt.icon}</span>
+            ${opt.text}
+          </li>`
+        ).join('');
+      }
+      
+      // Show menu on right-click
+      document.addEventListener('contextmenu', function(event) {
+        const menuBox = $menu.getBoundingClientRect();
+        const bodyBox = { width: window.innerWidth, height: window.innerHeight };
+        const pos = { x: event.clientX, y: event.clientY };
+        const padding = { x: 30, y: 20 };
+        
+        // Check if menu would be off-screen
+        const hitX = pos.x + menuBox.width >= bodyBox.width - padding.x;
+        const hitY = pos.y + menuBox.height >= bodyBox.height - padding.y;
+        
+        if (hitX) pos.x = bodyBox.width - menuBox.width - padding.x;
+        if (hitY) pos.y = bodyBox.height - menuBox.height - padding.y;
+        
+        const $target = event.target;
+        const isMenu = $menu.contains($target);
+        event.preventDefault();
+        
+        // Move & show menu (if event occurs outside menu)
+        if (!isMenu) {
+          updateContextMenuSuggestions();
+          $menu.style.left = pos.x + 'px';
+          $menu.style.top = pos.y + 'px';
+          $menu.classList.add('open');
+          clearTimeout(cleanTimer);
+        }
+      });
+      
+      // Close menu when clicking anywhere else
+      document.addEventListener('pointerdown', function(event) {
+        const $target = event.target;
+        const isMenu = $menu.contains($target);
+        
+        if (!isMenu) {
+          $menu.classList.remove('open');
+        }
+      });
+      
+      // Handle context menu actions
+      window.handleContextMenuAction = function(action) {
+        $menu.classList.remove('open');
+        
+        if (action === 'revisar') {
+          // Call the printer review function
+          if (typeof openConfirmScanModal === 'function') {
+            openConfirmScanModal();
+          } else if (typeof revisarImpresoras === 'function') {
+            revisarImpresoras();
+          } else {
+            console.warn('Función de revisión de impresoras no disponible');
+          }
+        } else if (action === 'sincronizar') {
+          // Call the sync function
+          if (typeof syncEmpleados === 'function') {
+            syncEmpleados();
+          } else {
+            console.warn('Función de sincronización no disponible');
+          }
+        } else if (action === 'syncAllPrinters') {
+          // Sync all printers at once
+          syncAllPrinters();
+        }
+      };
+      
+      // Initialize on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        updateContextMenuSuggestions();
+      });
+    })();
+  </script>
+  
+  <!-- Header user dropdown toggle -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var hdrMenu = document.getElementById('hdrUserMenu');
+      var hdrToggle = document.getElementById('hdrUserToggle');
+      var hdrDropdown = document.getElementById('hdrUserDropdown');
+      var hdrArrow = document.getElementById('hdrUserArrow');
+      if (!hdrToggle || !hdrDropdown) return;
+      hdrToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        hdrDropdown.classList.toggle('visible');
+        if (hdrArrow) hdrArrow.classList.toggle('open');
+      });
+      document.addEventListener('click', function(e) {
+        if (!hdrMenu || !hdrMenu.contains(e.target)) {
+          hdrDropdown.classList.remove('visible');
+          if (hdrArrow) hdrArrow.classList.remove('open');
+        }
+      });
+      hdrDropdown.addEventListener('click', function(e) { e.stopPropagation(); });
+    });
+  </script>
+  <!-- Ocultar splash screen cuando la página esté completamente cargada -->
+  <script>
+    window.addEventListener('load', function() {
+      // Esperar un pequeño momento adicional para asegurar que todo el CSS se aplicó
+      setTimeout(function() {
+        const splash = document.getElementById('appSplash');
+        if (splash) {
+          splash.classList.add('hidden');
+          // Remover del DOM después de la transición
+          setTimeout(function() {
+            if (splash.parentNode) {
+              splash.parentNode.removeChild(splash);
+            }
+          }, 300);
+        }
+      }, 100);
+    });
+  </script>
+</body>
+</html>

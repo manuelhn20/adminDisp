@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block title %}PROIMA - Marcas{% endblock %}
+{% block content %}
+<hgroup>
+  <h2>Marcas</h2>
+  <p>Gestión de marcas de dispositivos</p>
+</hgroup>
+
+<div style="margin-bottom: 1.5rem;">
+  <button class="btn btn-primary" onclick="openModal('modalNewMarca')">Nueva marca</button>
+  <button class="btn btn-secondary" onclick="window.location.href='/devices/ui'" style="background-color: #757575; color: white;">← Volver a Dispositivos</button>
+</div>
+
+{% if marcas %}
+  <table role="grid">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for m in marcas %}
+      <tr>
+        <td><strong>{{ m.id_marca }}</strong></td>
+        <td>{{ m.nombre_marca }}</td>
+        <td class="table-actions">
+          <button class="btn btn-primary btn-small" onclick='openEditMarcaModal({{ m.id_marca }}, {{ m.nombre_marca | tojson }})'>Editar</button>
+          <button class="btn btn-danger btn-small" onclick='openGlobalDeleteModal(`/devices/marca/{{ m.id_marca }}`, "Confirmar eliminación", {{ m.nombre_marca | tojson }})'>Eliminar</button>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <article role="alert" class="empty-state">
+    No hay marcas registradas. Crea una nueva con el botón superior.
+  </article>
+{% endif %}
+
+<div id="modalNewMarca" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nueva marca</h3>
+      <button class="modal-close" onclick="closeModal('modalNewMarca')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="marcasCheckboxContainer" style="max-height:300px; overflow:auto;">
+        <!-- Checkboxes cargadas dinámicamente -->
+      </div>
+    </div>
+    <div style="position:absolute; top:12px; right:12px;">
+      <button class="btn btn-primary btn-quick" onclick="openModal('modalNewMarca')" title="Agregar nueva marca">+</button>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-primary" onclick="editarMarcaSeleccionada()" title="Editar marca" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+        <img src="/static/img/edi.png" alt="Editar" style="width:28px;height:28px;">
+      </button>
+      <button type="button" class="btn btn-success" onclick="activarMarcasSeleccionadas()" title="Activar marcas seleccionadas" style="margin-right:8px;">Activar</button>
+      <button type="button" class="btn btn-danger" onclick="desactivarMarcasSeleccionadas()" title="Desactivar marcas seleccionadas">Desactivar</button>
+<!-- Modal edición marca -->
+<div id="modalEditMarca" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Editar marca</h3>
+      function loadMarcasForManagement() {
+        // Cargar marcas (incluso inactivas) desde API
+        fetch('/devices/marca/all')
+          .then(r => r.json())
+          .then(list => {
+            const container = document.getElementById('marcasCheckboxContainer');
+            container.innerHTML = '';
+            if (!list || list.length === 0) {
+              container.innerHTML = '<p>No hay marcas disponibles</p>';
+              return;
+            }
+            list.forEach(m => {
+              const label = document.createElement('label');
+              label.style.display = 'flex';
+              label.style.alignItems = 'center';
+              label.style.gap = '0.5rem';
+              label.style.marginBottom = '0.5rem';
+              label.style.cursor = 'pointer';
+
+              const checkbox = document.createElement('input');
+              checkbox.type = 'checkbox';
+              checkbox.value = m.id_marca;
+              checkbox.dataset.nombreMarca = m.nombre_marca || m.NombreMarca || '';
+
+              const span = document.createElement('span');
+              span.textContent = (m.nombre_marca || m.NombreMarca || '') + (m.estado == 0 ? ' (inactiva)' : '');
+
+              label.appendChild(checkbox);
+              label.appendChild(span);
+              container.appendChild(label);
+            });
+          })
+          .catch(err => {
+            console.error('Error cargando marcas:', err);
+            document.getElementById('marcasCheckboxContainer').innerHTML = '<p>Error al cargar marcas</p>';
+          });
+      }
+
+      async function activarMarcasSeleccionadas() {
+        const checks = Array.from(document.querySelectorAll('#marcasCheckboxContainer input[type=checkbox]:checked'));
+        if (checks.length === 0) return alert('Selecciona al menos una marca');
+        for (const c of checks) {
+          try {
+            await fetch(`/devices/marca/${c.value}/estado`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({estado:1}) });
+          } catch (e) { console.error(e); }
+        }
+        loadMarcasForManagement();
+        openGlobalSuccessModal('Marcas activadas');
+      }
+
+      async function desactivarMarcasSeleccionadas() {
+        const checks = Array.from(document.querySelectorAll('#marcasCheckboxContainer input[type=checkbox]:checked'));
+        if (checks.length === 0) return alert('Selecciona al menos una marca');
+        for (const c of checks) {
+          try {
+            await fetch(`/devices/marca/${c.value}/estado`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({estado:0}) });
+          } catch (e) { console.error(e); }
+        }
+        loadMarcasForManagement();
+        openGlobalSuccessModal('Marcas desactivadas');
+      }
+  }
+  try {
+    const resp = await fetch(`/devices/marca/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({nombre_marca: nombre}) });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok && data.success) {
+      closeEditMarcaModal();
+      openGlobalSuccessModal(data.message || 'Se ha realizado con éxito');
+    } else {
+      document.getElementById('editMarcaError').textContent = data.message || 'No se pudo actualizar la marca.';
+      document.getElementById('editMarcaError').style.display = 'block';
+    }
+  } catch (err) {
+    document.getElementById('editMarcaError').textContent = 'No se pudo actualizar la marca.';
+    document.getElementById('editMarcaError').style.display = 'block';
+  }
+});
+
+// Habilitar botón guardar solo cuando nombre no vacío y confirmación exacta
+function refreshMarcaSaveState() {
+  const nombre = document.getElementById('editMarcaNombre').value.trim();
+  const confirmText = document.getElementById('editMarcaConfirm').value.trim();
+  document.getElementById('btnSaveMarca').disabled = !(nombre && confirmText === 'CONFIRMAR');
+}
+document.getElementById('editMarcaNombre').addEventListener('input', refreshMarcaSaveState);
+document.getElementById('editMarcaConfirm').addEventListener('input', refreshMarcaSaveState);
+</script>
+{% endblock %}

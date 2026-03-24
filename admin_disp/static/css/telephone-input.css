@@ -1,0 +1,167 @@
+/* Telephone input plugin styles (adapted for modal compatibility) */
+.select-box {
+    position: relative;
+    width: 100%;
+}
+
+.select-box input {
+    width: 100%;
+    padding: 0.5rem 0.6rem;
+    font-size: 1rem;
+    border: 1px solid #d0d7de;
+    outline: none;
+    box-sizing: border-box;
+    flex: 1;
+}
+
+input[type="tel"] {
+    border-radius: 0 6px 6px 0;
+    border-left: none;
+}
+
+.selected-option {
+    background-color: transparent;
+    border-radius: 6px;
+    overflow: visible;
+    display: flex;
+    justify-content: flex-start;
+    align-items: stretch;
+    border: none;
+    gap: 0;
+}
+
+.selected-option div {
+    position: relative;
+    padding: 0.3rem 2rem 0.3rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background-color: #f0f0f0;
+    border: 1px solid #d0d7de;
+    border-right: none;
+    border-radius: 6px 0 0 6px;
+    flex-shrink: 0;
+}
+
+.selected-option div::after {
+    position: absolute;
+    content: "";
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    width: 0.6rem;
+    height: 0.6rem;
+    border-right: 0.12rem solid #000;
+    border-bottom: 0.12rem solid #000;
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+.selected-option div.active::after {
+    transform: translateY(-50%) rotate(225deg);
+}
+
+.select-box .options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: #fff;
+    border-radius: 6px;
+    display: none;
+    border: 1px solid #d0d7de;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 10000;
+    margin-top: 4px;
+}
+
+.select-box .options.active {
+    display: block;
+}
+
+input.search-box {
+    background-color: #ffffff;
+    color: #000;
+    border-radius: 6px 6px 0 0;
+    padding: 0.8rem 1rem;
+    border: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.select-box ol {
+    list-style: none;
+    max-height: 20rem;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+}
+
+.select-box ol li {
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.select-box ol li.hide { display: none; }
+
+.select-box ol li:hover { background-color: #f5f5f5; }
+
+.select-box ol li .country-name { margin-left: 0.4rem; }
+
+.select-box ol li div { display: flex; align-items: center; flex: 1; }
+
+.select-box ol li strong { font-weight: 600; color: #333; }
+
+/* Dark mode styles for telephone input */
+body.dark-mode .select-box input {
+  background-color: #1a1a1a !important;
+  color: #e5e7eb !important;
+  border-color: #ffffff !important;
+}
+
+body.dark-mode .selected-option {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+body.dark-mode .selected-option div {
+  background-color: #1a1a1a !important;
+  border-color: #ffffff !important;
+  border-right: none !important;
+  color: #e5e7eb !important;
+}
+
+body.dark-mode .select-box .options {
+  background-color: #0f0f0f !important;
+  border-color: #ffffff !important;
+}
+
+body.dark-mode input.search-box {
+  background-color: #1a1a1a !important;
+  color: #e5e7eb !important;
+  border: none !important;
+}
+
+body.dark-mode .select-box ol li {
+  background-color: #0f0f0f !important;
+  color: #e5e7eb !important;
+  border-bottom-color: #1a1a1a !important;
+}
+
+body.dark-mode .select-box ol li:hover {
+  background-color: #1a1a1a !important;
+}
+
+body.dark-mode .select-box ol li strong {
+  color: #e5e7eb !important;
+}
+
+body.dark-mode .select-box ol li span {
+  color: #b0b0b0 !important;
+}

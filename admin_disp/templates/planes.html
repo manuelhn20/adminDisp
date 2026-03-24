@@ -1,0 +1,1262 @@
+{% extends 'base.html' %}
+{% block title %}PROIMA - Planes{% endblock %}
+{% block page_title %}Planes{% endblock %}
+{% block extra_head %}
+<!-- Telephone input CSS and Iconify -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/telephone-input.css') }}">
+<script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+{% endblock %}
+{% block content %}
+<style>
+  /* Improve form inputs inside the modals for better presentation */
+  .modal .modal-body label { display: block; margin-bottom: 0.75rem; }
+  .modal .label-title { display: block; font-weight: 600; margin-bottom: 0.25rem; }
+  .modal input[type="text"], .modal input[type="date"], .modal input[type="number"] {
+    width: 100%; padding: 0.5rem; border: 1px solid #d0d7de; border-radius: 6px; box-sizing: border-box;
+  }
+  .modal .required { color: #b00020; margin-left: 4px; }
+</style>
+
+<script>
+  // NOTE: Plan notifications have been moved to the sidebar in base.html
+  // The loadPlanNotifications() function is now called from there.
+  // This page only handles CRUD operations for plans.
+</script>
+<script>
+// Renew plan modal logic
+async function openRenewPlanModal(planId, numeroLinea) {
+  try {
+    document.getElementById('renewPlanId').value = planId || '';
+    document.getElementById('renewNumeroLinea').value = numeroLinea || '';
+    // default fecha inicio = today
+    const today = new Date().toISOString().slice(0,10);
+    document.getElementById('renewFechaInicio').value = today;
+    // set default slider value
+    const sliderMeses = document.getElementById('renewMesesSlider');
+    if (sliderMeses) {
+      sliderMeses.value = 18;
+      document.getElementById('renewMesesValue').textContent = '18';
+    }
+    // calculate and set fecha fin = fecha_inicio + 18 months
+    updateRenewPlanFechaFin();
+    document.getElementById('renewCosto').value = '';
+    document.getElementById('renewMoneda').value = 'L';
+    // populate devices without plan
+    try {
+      const resp = await fetch('/devices/sin-plan');
+      if (resp.ok) {
+        const list = await resp.json().catch(()=>[]);
+        const sel = document.getElementById('renewSelectDevice');
+        sel.innerHTML = '<option value="">-- Seleccionar dispositivo --</option>' + (Array.isArray(list) ? list.map(d=>`<option value="${d.id_dispositivo}" data-brand="${(d.nombre_marca||'')}" data-model="${(d.nombre_modelo||'')}" data-serial="${(d.numero_serie||'')}">${(d.nombre_marca||'')} ${(d.nombre_modelo||'')} | ${d.numero_serie||''}</option>`).join('') : '');
+      }
+    } catch(e) {}
+    document.getElementById('renewError').style.display = 'none';
+    openModal('modalRenewPlan', true);
+  } catch(e) { console.warn('openRenewPlanModal error', e); }
+}
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Wizard: Abrir modal de nuevo plan si venimos de wizard
+      if (localStorage.getItem('wizardOpenNewPlan') === 'true') {
+        localStorage.removeItem('wizardOpenNewPlan');
+        setTimeout(() => {
+          if (typeof openNewPlanModal === 'function') {
+            openNewPlanModal();
+          }
+        }, 300);
+      }
+      
+      const _btnSubmitRenew = document.getElementById('btnSubmitRenew');
+      if (!_btnSubmitRenew) return;
+      if (_btnSubmitRenew._bound) return;
+      _btnSubmitRenew.addEventListener('click', async () => {
+        try {
+          // Safely get all form elements
+          const renewPlanIdEl = document.getElementById('renewPlanId');
+          const renewFechaInicioEl = document.getElementById('renewFechaInicio');
+          const renewFechaFinEl = document.getElementById('renewFechaFin');
+          const renewCostoEl = document.getElementById('renewCosto');
+          const renewMonedaEl = document.getElementById('renewMoneda');
+          
+          // Validate all required elements exist
+          if (!renewPlanIdEl || !renewFechaInicioEl || !renewCostoEl || !renewMonedaEl) {
+            const el = document.getElementById('renewError'); 
+            el.textContent = 'Error: Algunos elementos del formulario no están disponibles'; 
+            el.style.display = '';
+            return;
+          }
+          
+          const id = renewPlanIdEl.value;
+          const fechaInicio = renewFechaInicioEl.value;
+          const fechaFin = renewFechaFinEl ? renewFechaFinEl.value : '';
+          const costoVal = renewCostoEl.value;
+          const costo = costoVal !== undefined && costoVal !== null && costoVal !== '' ? parseFloat(costoVal) : NaN;
+          const moneda = renewMonedaEl.value;
+          
+          if (!id || !fechaInicio || isNaN(costo)) {
+            const el = document.getElementById('renewError'); el.textContent = 'Completa fecha inicio y un costo válido (>= 0).'; el.style.display = '';
+            return;
+          }
+          if (costo < 0) {
+            const el = document.getElementById('renewError'); el.textContent = 'El costo no puede ser negativo.'; el.style.display = '';
+            return;
+          }
+          
+          // PASO 1: Guardar datos en variables temporales (sin enviar a servidor todavía)
+          tempRenewPlanData = {
+            plan_id: id,
+            fecha_inicio: fechaInicio,
+            fecha_fin: fechaFin,
+            costo_plan: costo,
+            moneda_plan: moneda
+          };
+          
+          // PASO 2: Cerrar modal de "Renovar plan"
+          closeModal('modalRenewPlan');
+          
+          // PASO 3: Abrir modal de "Vincular plan a celular" con datos temporales
+          try {
+            // Cargar dispositivos sin plan
+            const respD = await fetch('/devices/sin-plan');
+            if (respD.ok) {
+              const list = await respD.json();
+              const sel = document.getElementById('selectDeviceSinPlan');
+              sel.innerHTML = '<option value="">-- Seleccionar dispositivo --</option>' + (Array.isArray(list) ? list.map(d => `<option value="${d.id_dispositivo}" data-brand="${d.nombre_marca || ''}" data-model="${d.nombre_modelo || ''}" data-serial="${d.imei || ''}">${d.nombre_marca || ''} ${d.nombre_modelo || ''} | ${d.imei || ''}</option>`).join('') : '');
+            } else {
+              document.getElementById('selectDeviceSinPlan').innerHTML = '<option value="">No se pudieron cargar dispositivos</option>';
+            }
+          } catch (err) {
+            document.getElementById('selectDeviceSinPlan').innerHTML = '<option value="">No se pudieron cargar dispositivos</option>';
+          }
+          
+          // Mostrar datos temporales del plan renovado
+          document.getElementById('linkPlanDetails').innerHTML = `
+            <div style="margin-bottom: 0.5rem;">
+              <strong>Período (renovación):</strong> ${fechaInicio} → ${fechaFin}
+            </div>
+            <div>
+              <strong>Costo:</strong> ${moneda}${costo}
+            </div>
+          `;
+          
+          document.getElementById('linkDeviceDetails').textContent = 'Ninguno';
+          openModal('modalLinkPlanDevice', true);
+        } catch(e) { 
+          console.error('Error en btnSubmitRenew:', e); 
+          const el = document.getElementById('renewError'); 
+          el.textContent = `Error: ${e.message || e}`; 
+          el.style.display = ''; 
+        }
+      });
+      _btnSubmitRenew._bound = true;
+    });
+</script>
+<script>
+// keep renewFechaFin updated when user changes fecha inicio
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const fi = document.getElementById('renewFechaInicio');
+    const ff = document.getElementById('renewFechaFin');
+    if (fi && ff && !fi._renewBound) {
+      fi.addEventListener('change', () => {
+        try { ff.value = addMonthsToDateStr(fi.value || new Date().toISOString().slice(0,10), 18); } catch(e) {}
+      });
+      fi._renewBound = true;
+    }
+  } catch(e) {}
+});
+</script>
+</script>
+
+<script>
+// Bind local search input to shared filter for planes page
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const s = document.getElementById('planesPageSearch');
+    const table = document.getElementById('planesTable');
+    if (s && !s._bound) {
+      s.addEventListener('input', () => {
+        const v = (s.value || '').trim();
+        try { if (typeof applyTableSearchFilter === 'function') applyTableSearchFilter(v, table); } catch(e) {}
+      });
+      s._bound = true;
+    }
+    // bind acciones header to clear filters and sorting
+    const act = document.getElementById('thActionsPlanes');
+    if (act && !act._boundReset) {
+      act.style.cursor = 'pointer';
+      act.addEventListener('click', () => {
+        try { const p = document.getElementById('planesPageSearch'); if (p) p.value = ''; } catch(e) {}
+        try { if (typeof applyTableSearchFilter === 'function') applyTableSearchFilter('', table); } catch(e) {}
+        try { if (table && typeof table.clearSorting === 'function') table.clearSorting(); } catch(e) {}
+      });
+      act._boundReset = true;
+    }
+  } catch(e) {}
+});
+
+// Toggle between resumen and historico views
+function toggleHistoricoView() {
+  const vr = document.getElementById('viewResumen');
+  const vh = document.getElementById('viewHistorico');
+  if (!vr || !vh) return;
+  const wasResumen = (vr.style.display !== 'none');
+  const btnHist = document.getElementById('btnHistoricoPlanes');
+  const btnVol = document.getElementById('btnVolverResumenPlanes');
+  if (wasResumen) {
+    vr.style.display = 'none';
+    vh.style.display = 'block';
+    if (btnHist) btnHist.style.display = 'none';
+    if (btnVol) btnVol.style.display = 'inline-block';
+    // load historico tbody
+    reloadHistoricoTbody();
+  } else {
+    vr.style.display = 'block';
+    vh.style.display = 'none';
+    if (btnHist) btnHist.style.display = 'inline-block';
+    if (btnVol) btnVol.style.display = 'none';
+  }
+  // apply search filter to visible container if helper exists
+  try { const q = (document.getElementById('planesPageSearch') || {}).value || ''; const container = wasResumen ? document.getElementById('viewHistorico') : document.getElementById('viewResumen'); if (typeof applyTableSearchFilter === 'function') applyTableSearchFilter(q, container); } catch(e) {}
+}
+
+async function reloadHistoricoTbody() {
+  try {
+    const resp = await fetch('/devices/planes/historico/tbody');
+    if (!resp.ok) return;
+    const html = await resp.text();
+    const tbody = document.getElementById('historico-planes-tbody');
+    if (tbody) tbody.innerHTML = html;
+    // apply search filter if any
+    try { const q = (document.getElementById('planesPageSearch') || {}).value || ''; if (typeof applyTableSearchFilter === 'function') applyTableSearchFilter(q, document.getElementById('viewHistorico')); } catch(e) {}
+  } catch (e) { console.warn('No se pudo cargar histórico de planes', e); }
+}
+
+// Initialize shared sorting helper for planes table
+document.addEventListener('DOMContentLoaded', () => {
+  try { initTableSorting('#planesTable', { iconPrefix: 'sortIndicator_planes_' }); } catch(e) {}
+});
+</script>
+<div class="button-group" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:1rem;">
+  <div style="display:flex;gap:12px;">
+  <button class="btn btn-primary offset-btn" onclick="openNewPlanModal()">Nuevo plan</button>
+  <button class="btn btn-primary offset-btn" onclick="toggleHistoricoView()" id="btnHistoricoPlanes">Ver Histórico Planes</button>
+    <button class="btn btn-primary offset-btn" onclick="toggleHistoricoView()" id="btnVolverResumenPlanes" style="display:none;">
+      <img src="{{ url_for('static', filename='img/backw.png') }}" alt="Volver" style="height:16px; vertical-align:middle; margin-right:8px;">
+      <span style="position:relative; top:2px; display:inline-block;">Volver al Resumen</span>
+    </button>
+    <span id="planes-loading" class="htmx-indicator" style="color:var(--text-gray);font-size:14px;display:flex;align-items:center;gap:6px;">
+      <span class="spinner" style="display:inline-block;width:16px;height:16px;border:2px solid var(--text-gray);border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span>
+      Actualizando...
+    </span>
+  </div>
+  <div style="display:flex;align-items:center;">
+    <input id="planesPageSearch" class="global-table-search" placeholder="Buscar..." style="width:220px;" />
+  </div>
+</div>
+
+<!-- Views: resumen / historico -->
+<div id="viewResumen">
+
+<style>
+  .sort-icon { height:18px; width:18px; vertical-align:middle; margin-left:8px; transition: transform .15s ease, opacity .15s ease; opacity:0; visibility:hidden; transform:rotate(0deg); }
+  .sort-icon.active { opacity:1; visibility:visible; }
+  
+  /* Cursor pointer para headers ordenables */
+  th[data-sortable] {
+    cursor: pointer;
+    user-select: none;
+  }
+  th[data-sortable]:hover {
+    background-color: rgba(0,0,0,0.05);
+  }
+  body.dark-mode th[data-sortable]:hover {
+    background-color: rgba(255,255,255,0.05);
+  }
+  
+  /* HTMX Loading Indicator */
+  .htmx-indicator {
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+  }
+  .htmx-request .htmx-indicator,
+  .htmx-request.htmx-indicator {
+    opacity: 1;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+</style>
+
+  {% if planes %}
+    <table role="grid" id="planesTable">
+    <thead>
+      <tr>
+        <th data-sortable="numero">Número de línea <img id="sortIndicator_planes_numero" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="inicio">Inicio <img id="sortIndicator_planes_inicio" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="fin">Fin <img id="sortIndicator_planes_fin" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th data-sortable="costo">Costo <img id="sortIndicator_planes_costo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+        <th id="thActionsPlanes">Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="planes-tbody">
+    {% for p in planes %}
+      <tr data-id="{{ p.id_plan }}" data-num="{{ p.numero_linea }}" data-inicio="{{ p.fecha_inicio }}" data-fin="{{ p.fecha_fin }}" data-costo="{{ p.costo_plan }}" data-moneda="{{ p.moneda_plan or 'L' }}" data-linked-tipo="{{ p.linked_tipo or '' }}" data-linked-marca="{{ p.linked_marca or '' }}" data-linked-modelo="{{ p.linked_modelo or '' }}" data-linked-imei="{{ p.linked_imei or '' }}">
+        <td>+({{ p.codigo_pais }}) {{ p.numero_sin_codigo[:4] }}-{{ p.numero_sin_codigo[4:] }}</td>
+        <td>{{ p.fecha_inicio }}</td>
+        <td>{{ p.fecha_fin or '' }}</td>
+        <td>{{ p.moneda_plan or 'L' }} {{ p.costo_plan }}</td>
+        <td class="table-actions">
+          <button type="button" class="btn btn-primary btn-small btn-edit" title="Editar plan" style="width:44px;height:44px;border-radius:10px;background:transparent;border:none;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;position:relative;"><div style="width:42px;height:42px;border-radius:50%;background:#06a7e6;position:absolute;"></div><img src="/static/img/edi.png" alt="Editar" style="width:32px;height:32px;position:relative;z-index:1;"></button>
+          <!-- Delete button removed per request -->
+          <button type="button" class="btn btn-secondary btn-small btn-renew" onclick="openRenewPlanModal({{ p.id_plan }}, '{{ (p.numero_linea|default(''))|replace("'","\\'") }}')" title="Renovar" style="width:44px;height:44px;border-radius:10px;background:transparent;border:none;display:inline-flex;align-items:center;justify-content:center;position:relative;"><div style="width:42px;height:42px;border-radius:50%;background:#f59e0b;position:absolute;"></div><img src="{{ url_for('static', filename='img/renew.png') }}" alt="Renovar" style="width:42px;height:42px;position:relative;z-index:1;"></button>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+    {% else %}
+      <article role="alert" class="empty-state">
+        No hay planes registrados. Crea uno nuevo con el botón superior.
+      </article>
+    {% endif %}
+  </div>
+
+  <div id="viewHistorico" style="display:none;">
+    <div style="margin-top:8px;">
+      <table role="grid" id="historicoPlanesTable">
+        <thead>
+          <tr>
+            <th>Número de línea</th>
+            <th>Fecha operación</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Costo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="historico-planes-tbody">
+          <!-- cargado vía AJAX -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal: mostrar dispositivos vinculados a un historico de plan -->
+  <div id="modalHistoricoDevices" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Dispositivos relacionados</h3>
+        <button class="modal-close" onclick="closeModal('modalHistoricoDevices')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="historicoDevicesList">Cargando...</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-cancel" onclick="closeModal('modalHistoricoDevices')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // Bind click handlers for 'Ver' buttons in historico tbody
+  document.addEventListener('DOMContentLoaded', () => {
+    // delegate since tbody is loaded via AJAX
+    const tbody = document.getElementById('historico-planes-tbody');
+    if (!tbody) return;
+    tbody.addEventListener('click', async (ev) => {
+      const btn = ev.target.closest && ev.target.closest('.btn-view');
+      if (!btn) return;
+      const row = btn.closest('tr');
+      if (!row) return;
+      const historicoId = row.getAttribute('data-id');
+      if (!historicoId) return;
+      try {
+        const resp = await fetch(`/devices/planes/historico/${historicoId}/devices`);
+        if (!resp.ok) throw new Error('No se pudo obtener dispositivos');
+        const data = await resp.json();
+        const list = document.getElementById('historicoDevicesList');
+        if (!list) return;
+        if (!data.success || !Array.isArray(data.devices) || data.devices.length === 0) {
+          list.innerHTML = '<div>No hay dispositivos vinculados a este histórico.</div>';
+        } else {
+          const html = data.devices.map(d => `
+            <div style="padding:10px 0; border-bottom:1px solid #f3f3f3;">
+              <div style="font-weight:700; color:#1f2a37; margin-bottom:8px;">${escapeHtmlSidebar(d.nombre_marca || '-') } ${escapeHtmlSidebar(d.nombre_modelo || '')} - ${escapeHtmlSidebar(d.numero_serie || '-')}</div>
+              <div style="color:#444; margin-bottom:6px;"><strong>Tipo de dispositivo:</strong> <strong>${escapeHtmlSidebar(d.categoria || '-')}</strong></div>
+              <div style="color:#444; margin-bottom:6px;"><strong>Marca:</strong> <strong>${escapeHtmlSidebar(d.nombre_marca || '-')}</strong></div>
+              <div style="color:#444; margin-bottom:6px;"><strong>Modelo:</strong> <strong>${escapeHtmlSidebar(d.nombre_modelo || '-')}</strong></div>
+              <div style="color:#444; margin-bottom:6px;"><strong>IMEI:</strong> <strong>${escapeHtmlSidebar(d.imei || '-')}</strong></div>
+              <div style="color:#444; margin-bottom:6px;"><strong>MAC:</strong> <strong>${escapeHtmlSidebar(d.direccion_mac || '-')}</strong></div>
+              <div style="color:#444; margin-bottom:6px;"><strong>IP:</strong> <strong>${escapeHtmlSidebar(d.ip_asignada || d.ip || d.ip_address || '-')}</strong></div>
+              <div style="color:#666; margin-bottom:6px;"><strong>Tamaño:</strong> <strong>${escapeHtmlSidebar(d.tamano || '-')}</strong></div>
+              <div style="color:#666; margin-bottom:6px;"><strong>Color:</strong> <strong>${escapeHtmlSidebar(d.color || '-')}</strong></div>
+              <div style="color:#666;"><strong>Observaciones:</strong> <strong>${escapeHtmlSidebar(d.observaciones || '-')}</strong></div>
+            </div>
+          `).join('');
+          list.innerHTML = html;
+        }
+        openModal('modalHistoricoDevices', true);
+      } catch (e) {
+        console.warn('Error cargando dispositivos historico', e);
+        openGlobalErrorModal('No se pudieron cargar los dispositivos relacionados.');
+      }
+    });
+  });
+  </script>
+
+<div id="modalNewPlane" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nuevo plan</h3>
+      <button class="modal-close" onclick="closeModal('modalNewPlane')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formNewPlane" method="post" action="/devices/planes/new">
+        <label>
+          <span class="label-title" id="labelNewNumeroLinea">Número de línea<span class="required">*</span></span>
+          <!-- Telephone input plugin control -->
+          <div id="newNumeroLineaSelect" class="select-box">
+            <div class="selected-option">
+              <div>
+                <span class="iconify" data-icon="flag:hn-4x3"></span>
+                <strong>+504</strong>
+              </div>
+              <input type="tel" id="newNumeroLinea" name="numero_linea_display" required aria-label="Número de línea" placeholder="Número telefónico" maxlength="8">
+            </div>
+            <div class="options">
+              <input type="text" class="search-box" placeholder="Ingrese el nombre del país">
+              <ol></ol>
+            </div>
+          </div>
+          <!-- Hidden input to store the actual number_linea with country code -->
+          <input type="hidden" id="newNumeroLineaHidden" name="numero_linea">
+        </label>
+        <label>
+          <span class="label-title" id="labelNewFechaInicio">Fecha inicio<span class="required">*</span></span>
+          <input id="newFechaInicio" type="date" name="fecha_inicio" required aria-label="Fecha inicio" placeholder="Selecciona la fecha de inicio del plan">
+        </label>
+        <label>
+          <span class="label-title" id="labelNewMeses">Duración plan (meses)</span>
+          <div style="display:flex; gap:1rem; align-items:center;">
+            <input id="newMesesSlider" type="range" min="1" max="36" value="18" style="flex:1;">
+            <span id="newMesesValue" style="min-width:40px; text-align:center; font-weight:600;">18</span>
+          </div>
+        </label>
+        <label>
+          <span class="label-title" id="labelNewFechaFin">Fecha fin</span>
+          <input id="newFechaFin" type="date" name="fecha_fin" disabled aria-label="Fecha fin" placeholder="Fecha fin (opcional)">
+        </label>
+        <label>
+          <span class="label-title">Costo plan<span class="required">*</span></span>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <select id="newMonedaPlan" name="moneda_plan" style="flex:0 0 auto; width:auto; padding:0.5rem; border:1px solid #d0d7de; border-radius:6px;">
+              <option value="L">L</option>
+              <option value="$">$</option>
+            </select>
+            <input id="newCostoPlan" type="text" inputmode="decimal" name="costo_plan" required aria-label="Costo del plan" placeholder="Ingrese el monto del plan" style="flex:1; padding:0.5rem; border:1px solid #d0d7de; border-radius:6px;">
+          </div>
+        </label>
+        <div id="newPlanError" style="display:none;color:#b00020;margin-top:8px;font-weight:600;"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeModal('modalNewPlane')">Cancelar</button>
+      <button type="submit" form="formNewPlane" class="btn btn-primary">Guardar plan</button>
+    </div>
+  </div>
+</div>
+
+    <!-- Modal vincular plan a dispositivo -->
+    <div id="modalLinkPlanDevice" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Vincular plan a celular</h3>
+        </div>
+        <div class="modal-body">
+          <form id="formLinkPlanDevice">
+            <input type="hidden" id="linkPlanId">
+            <label>
+              <span class="label-title">Seleccionar dispositivo</span>
+              <select id="selectDeviceSinPlan">
+                <option value="">-- Cargando dispositivos --</option>
+              </select>
+            </label>
+            <div id="linkPreview" style="margin-top:0.75rem;">
+              <label style="display:block; margin-bottom:0.5rem;">
+                <span class="label-title" style="display:inline; border-bottom: 2px solid #000; padding-bottom: 0.25rem;">Datos del Plan</span>
+              </label>
+              <div id="linkPlanDetails" style="margin:0.5rem 0 1rem 0; font-weight:500;"></div>
+              <label style="display:block; margin-bottom:0.5rem;">
+                <span class="label-title" style="display:inline; border-bottom: 2px solid #000; padding-bottom: 0.25rem;">Dispositivo seleccionado</span>
+              </label>
+              <div id="linkDeviceDetails" style="margin:0.5rem 0 0.25rem 0; font-weight:500;">Ninguno</div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-cancel" id="btnCancelLink">Cancelar</button>
+          <button type="button" id="btnLinkPlanDevice" class="btn btn-primary">Vincular</button>
+        </div>
+      </div>
+    </div>
+
+        <!-- Employees modal moved to asignaciones for global access -->
+
+    <!-- Modal: Renovar plan -->
+    <div id="modalRenewPlan" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Renovar plan</h3>
+          <button class="modal-close" onclick="closeModal('modalRenewPlan')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="formRenewPlan">
+            <input type="hidden" id="renewPlanId">
+            <label>
+              <span class="label-title">Número de línea</span>
+              <input type="text" id="renewNumeroLinea" readonly style="width:100%;" />
+            </label>
+            <label>
+              <span class="label-title">Fecha inicio</span>
+              <input type="date" id="renewFechaInicio" required />
+            </label>
+            <label>
+              <span class="label-title">Duración plan (meses)</span>
+              <div style="display:flex; gap:1rem; align-items:center;">
+                <input id="renewMesesSlider" type="range" min="1" max="36" value="18" style="flex:1;">
+                <span id="renewMesesValue" style="min-width:40px; text-align:center; font-weight:600;">18</span>
+              </div>
+            </label>
+            <label>
+              <span class="label-title">Fecha fin</span>
+              <input type="date" id="renewFechaFin" disabled />
+            </label>
+            <label>
+              <span class="label-title">Costo</span>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <select id="renewMoneda" style="flex:0 0 76px; padding:0.45rem; border:1px solid #d0d7de; border-radius:6px;">
+                  <option value="L">L</option>
+                  <option value="$">$</option>
+                </select>
+                <input type="text" inputmode="decimal" id="renewCosto" required placeholder="Ingrese el monto del plan" style="flex:1; padding:0.45rem; border:1px solid #d0d7de; border-radius:6px;" />
+              </div>
+            </label>
+            <!-- Removed device link select: modal has a dedicated flow for linking devices -->
+            <div id="renewError" style="display:none;color:#b00020;margin-top:8px;font-weight:600;"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-cancel" onclick="closeModal('modalRenewPlan')">Cancelar</button>
+          <button class="btn btn-primary" id="btnSubmitRenew">Crear plan y transferir</button>
+        </div>
+      </div>
+    </div>
+
+<!-- Modal edición plan -->
+<div id="modalEditPlane" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Editar plan</h3>
+      <button class="modal-close" onclick="closeEditPlaneModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formEditPlane">
+        <input type="hidden" id="editPlanId">
+        <div id="editLinkedDeviceInfo" class="info-box hidden" role="status" aria-live="polite">
+           <span class="info-box-icon" aria-hidden="true">
+            <img src="{{ url_for('static', filename='img/info.png') }}" alt="info" />
+          </span>
+          <span class="info-box-text">
+            <span id="editLinkedDeviceTitle" class="info-box-title"></span>
+            <span id="editLinkedDeviceDetail" class="info-box-detail"></span>
+          </span>
+        </div>
+        <label>
+          <span class="label-title">Número de línea<span class="required">*</span></span>
+          <!-- Telephone input plugin control -->
+          <div id="editNumeroLineaSelect" class="select-box">
+            <div class="selected-option">
+              <div>
+                <span class="iconify" data-icon="flag:hn-4x3"></span>
+                <strong>+504</strong>
+              </div>
+              <input type="tel" id="editNumeroLinea" name="numero_linea_display" required aria-label="Número de línea" placeholder="Número telefónico">
+            </div>
+            <div class="options">
+              <input type="text" class="search-box" placeholder="Ingrese el nombre del país">
+              <ol></ol>
+            </div>
+          </div>
+          <!-- Hidden input to store the actual number_linea with country code -->
+          <input type="hidden" id="editNumeroLineaHidden" name="numero_linea">
+        </label>
+        <label>
+          <span class="label-title">Fecha inicio<span class="required">*</span></span>
+          <input type="date" id="editFechaInicio" name="fecha_inicio" required placeholder="Selecciona la fecha de inicio">
+        </label>
+        <label>
+          <span class="label-title" id="labelEditMeses">Duración plan (meses)</span>
+          <div style="display:flex; gap:1rem; align-items:center;">
+            <input id="editMesesSlider" type="range" min="1" max="36" value="18" style="flex:1;">
+            <span id="editMesesValue" style="min-width:40px; text-align:center; font-weight:600;">18</span>
+          </div>
+        </label>
+        <label>
+          <span class="label-title">Fecha fin</span>
+          <input type="date" id="editFechaFin" name="fecha_fin" disabled placeholder="Fecha fin (opcional)">
+        </label>
+        <label>
+          <span class="label-title">Costo plan<span class="required">*</span></span>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+            <select id="editMonedaPlan" name="moneda_plan" style="flex:0 0 auto; width:auto; padding:0.5rem; border:1px solid #d0d7de; border-radius:6px;">
+              <option value="L">L</option>
+              <option value="$">$</option>
+            </select>
+            <input type="text" inputmode="decimal" id="editCostoPlan" name="costo_plan" required placeholder="Ingrese el monto del plan" style="flex:1; padding:0.5rem; border:1px solid #d0d7de; border-radius:6px;">
+          </div>
+        </label>
+        <div id="editPlanError" style="display:none;color:#b00020;margin-top:8px;font-weight:600;"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeEditPlaneModal()">Cancelar</button>
+      <button type="button" id="btnSavePlane" class="btn btn-primary">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/telephone-input.js') }}"></script>
+<script>
+// Función para formatear el costo del plan: XXX.XX
+function formatCostoPlan(value) {
+  // Remover todo excepto dígitos
+  let digits = value.replace(/\D/g, '');
+  
+  // Limitar a 5 dígitos máximo (3 enteros + 2 decimales)
+  if (digits.length > 5) {
+    digits = digits.substring(0, 5);
+  }
+  
+  // Si tiene más de 3 dígitos, insertar punto
+  if (digits.length > 3) {
+    return digits.substring(0, 3) + '.' + digits.substring(3);
+  }
+  
+  return digits;
+}
+
+// Agregar listeners a los inputs de costo plan
+document.addEventListener('DOMContentLoaded', function() {
+  const costoPlanInputs = ['newCostoPlan', 'renewCosto', 'editCostoPlan'];
+  
+  costoPlanInputs.forEach(function(inputId) {
+    const input = document.getElementById(inputId);
+    if (input) {
+      input.addEventListener('input', function(e) {
+        const cursorPos = this.selectionStart;
+        const oldValue = this.value;
+        const formatted = formatCostoPlan(oldValue);
+        
+        if (formatted !== oldValue) {
+          this.value = formatted;
+          // Ajustar posición del cursor
+          const diff = formatted.length - oldValue.length;
+          this.setSelectionRange(cursorPos + diff, cursorPos + diff);
+        }
+      });
+    }
+  });
+});
+
+async function refreshPlanesTbody() {
+  try {
+    const resp = await fetch('/devices/planes/tbody');
+    if (resp.ok) {
+      const html = await resp.text();
+      const tbody = document.getElementById('planes-tbody');
+      tbody.innerHTML = html;
+      
+      // Apply search filter if any
+      try {
+        const q = (document.getElementById('planesPageSearch') || {}).value || '';
+        const table = document.getElementById('planesTable');
+        if (typeof applyTableSearchFilter === 'function') applyTableSearchFilter(q, table);
+      } catch(e) {}
+      
+      // Refresh sidebar notifications
+      try {
+        if (typeof loadSidebarPlanNotifications === 'function') await loadSidebarPlanNotifications();
+        else if (typeof loadPlanNotifications === 'function') await loadPlanNotifications();
+      } catch(e) { console.warn('load sidebar notifications error', e); }
+    }
+  } catch (e) {
+    console.warn('No se pudo refrescar tabla de planes', e);
+  }
+}
+
+// Nuevo plan: configurar fecha de hoy y slider de meses
+function openNewPlanModal() {
+  openModal('modalNewPlane');
+  const hoy = new Date().toISOString().slice(0, 10);
+  const inputFecha = document.getElementById('newFechaInicio');
+  if (inputFecha) {
+    inputFecha.value = hoy;
+    updateNewPlanFechaFin();
+  }
+}
+
+// Variable temporal para almacenar datos de renovación antes de vincular
+let tempRenewPlanData = null;
+
+// Funciones auxiliares
+function updateNewPlanFechaFin() {
+  const fechaInicio = document.getElementById('newFechaInicio');
+  const sliderMeses = document.getElementById('newMesesSlider');
+  const fechaFin = document.getElementById('newFechaFin');
+  
+  if (fechaInicio && fechaInicio.value && sliderMeses && fechaFin) {
+    const meses = parseInt(sliderMeses.value) || 18;
+    fechaFin.value = addMonthsToDateStr(fechaInicio.value, meses);
+  }
+}
+
+function updateEditPlanFechaFin() {
+  const fechaInicio = document.getElementById('editFechaInicio');
+  const sliderMeses = document.getElementById('editMesesSlider');
+  const fechaFin = document.getElementById('editFechaFin');
+  
+  if (fechaInicio && fechaInicio.value && sliderMeses && fechaFin) {
+    const meses = parseInt(sliderMeses.value) || 18;
+    fechaFin.value = addMonthsToDateStr(fechaInicio.value, meses);
+  }
+}
+
+function updateRenewPlanFechaFin() {
+  const fechaInicio = document.getElementById('renewFechaInicio');
+  const sliderMeses = document.getElementById('renewMesesSlider');
+  const fechaFin = document.getElementById('renewFechaFin');
+  
+  if (fechaInicio && fechaInicio.value && sliderMeses && fechaFin) {
+    const meses = parseInt(sliderMeses.value) || 18;
+    fechaFin.value = addMonthsToDateStr(fechaInicio.value, meses);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Manejar formulario Nuevo plan
+  const formNewPlane = document.getElementById('formNewPlane');
+  if (formNewPlane) {
+    formNewPlane.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const form = ev.target;
+      
+      // Validar que numero_linea_display tenga valor
+      const phoneDisplay = document.getElementById('newNumeroLinea').value || '';
+      if (!phoneDisplay) {
+        const el = document.getElementById('newPlanError'); 
+        if (el) { el.textContent = 'Ingresa el número telefónico'; el.style.display = ''; }
+        return;
+      }
+      
+      // Validar que tenga mínimo 6 dígitos (flexible para diferentes códigos de país)
+      const digitsOnly = phoneDisplay.replace(/\D/g, '');
+      if (digitsOnly.length < 6) {
+        openGlobalErrorModal('El número debe tener al menos 6 dígitos');
+        return;
+      }
+      
+      const phoneClean = digitsOnly;
+      const phoneCodeHidden = document.getElementById('newNumeroLineaHidden').value || '504';
+      // Guardar con espacio: "39 87654321" en lugar de "3987654321"
+      const numeroLinea = phoneCodeHidden + ' ' + phoneClean;
+      
+      // VERIFICACIÓN: Revisar si el número de línea ya existe
+      try {
+        const checkResp = await fetch(`/devices/planes/check-numero/${encodeURIComponent(numeroLinea)}`);
+        const checkData = await checkResp.json().catch(() => ({}));
+        
+        if (checkData.exists) {
+          openGlobalErrorModal(checkData.message || 'Este número de línea ya existe en el sistema');
+          return;  // No permitir avanzar si el número existe
+        }
+      } catch (err) {
+        console.error('Error verificando número de línea:', err);
+        // Si hay error en la verificación, permitir continuar (no bloquear)
+      }
+      
+      const fechaInicio = document.getElementById('newFechaInicio').value;
+      const fechaFin = document.getElementById('newFechaFin').value;
+      const costoPlan = document.getElementById('newCostoPlan').value;
+      const monedaPlan = document.getElementById('newMonedaPlan').value;
+      
+      // Normalizar costo (aceptar coma como decimal)
+      let costoVal = costoPlan;
+      try {
+        costoVal = parseFloat(costoPlan.toString().replace(',', '.'));
+      } catch(e) {
+        const el = document.getElementById('newPlanError'); 
+        if (el) { el.textContent = 'Costo inválido'; el.style.display = ''; }
+        return;
+      }
+      
+      // PASO 1: Guardar datos en variables temporales (sin enviar a servidor)
+      tempNewPlanData = {
+        numero_linea: numeroLinea,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+        costo_plan: costoVal,
+        moneda_plan: monedaPlan,
+        phoneCode: phoneCodeHidden  // Guardar el código de país para usar después
+      };
+      
+      // PASO 2: Cerrar modal de "Nuevo plan"
+      closeModal('modalNewPlane');
+      form.reset();
+      document.getElementById('newPlanError').style.display = 'none';
+      
+      // PASO 3: Abrir modal de "Vincular plan a celular" con datos temporales
+      try {
+        // Cargar dispositivos sin plan
+        const respD = await fetch('/devices/sin-plan');
+        if (respD.ok) {
+          const list = await respD.json();
+          const sel = document.getElementById('selectDeviceSinPlan');
+          sel.innerHTML = '<option value="">-- Seleccionar dispositivo --</option>' + (Array.isArray(list) ? list.map(d => `<option value="${d.id_dispositivo}" data-brand="${d.nombre_marca || ''}" data-model="${d.nombre_modelo || ''}" data-serial="${d.imei || ''}">${d.nombre_marca || ''} ${d.nombre_modelo || ''} | ${d.imei || ''}</option>`).join('') : '');
+        } else {
+          document.getElementById('selectDeviceSinPlan').innerHTML = '<option value="">No se pudieron cargar dispositivos</option>';
+        }
+      } catch (err) {
+        document.getElementById('selectDeviceSinPlan').innerHTML = '<option value="">No se pudieron cargar dispositivos</option>';
+      }
+      
+      // Mostrar datos temporales del plan
+      // Usar el código de país que se guardó en tempNewPlanData
+      const numeroSinCode = numeroLinea.substring(phoneCodeHidden.length);
+      const numeroLineaDisplay = `+(${phoneCodeHidden}) ${numeroSinCode.slice(0, 4)}-${numeroSinCode.slice(4)}`;
+      document.getElementById('linkPlanDetails').innerHTML = `
+        <div style="margin-bottom: 0.5rem;">
+          <strong>Número:</strong> ${numeroLineaDisplay}
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <strong>Período:</strong> ${fechaInicio} → ${fechaFin}
+        </div>
+        <div>
+          <strong>Costo:</strong> ${monedaPlan}${costoVal}
+        </div>
+      `;
+      
+      document.getElementById('linkDeviceDetails').textContent = 'Ninguno';
+      openModal('modalLinkPlanDevice', true);
+    });
+  }
+  
+  // Auto-calculate fecha_fin = fecha_inicio + 18 months for new and edit modals
+  (function(){
+    const newInicio = document.querySelector('#formNewPlane input[name="fecha_inicio"]');
+    const newFin = document.querySelector('#formNewPlane input[name="fecha_fin"]');
+      const newSlider = document.getElementById('newMesesSlider');
+      const newValueDisplay = document.getElementById('newMesesValue');
+    if (newInicio && newFin) {
+      newInicio.addEventListener('change', () => {
+        if (newInicio.value) newFin.value = addMonthsToDateStr(newInicio.value, 18);
+      });
+    }
+      // Bind slider for new plan to update months display and fecha_fin
+      if (newSlider) {
+        if (newValueDisplay) newValueDisplay.textContent = newSlider.value || '18';
+        newSlider.addEventListener('input', (ev) => {
+          try { if (newValueDisplay) newValueDisplay.textContent = ev.target.value; } catch(e){}
+          try { updateNewPlanFechaFin(); } catch(e){}
+        });
+      }
+
+    const editInicio = document.getElementById('editFechaInicio');
+    const editFin = document.getElementById('editFechaFin');
+    const editSlider = document.getElementById('editMesesSlider');
+    const editValueDisplay = document.getElementById('editMesesValue');
+    if (editInicio && editFin) {
+      editInicio.addEventListener('change', () => {
+        if (editInicio.value) editFin.value = addMonthsToDateStr(editInicio.value, 18);
+      });
+    }
+    // Bind slider for edit modal to update months display and fecha_fin
+    if (editSlider) {
+      if (editValueDisplay) editValueDisplay.textContent = editSlider.value || '18';
+      editSlider.addEventListener('input', (ev) => {
+        try { if (editValueDisplay) editValueDisplay.textContent = ev.target.value; } catch(e){}
+        try { updateEditPlanFechaFin(); } catch(e){}
+      });
+    }
+
+    // Event listeners para modal de renovación
+    const renewInicio = document.getElementById('renewFechaInicio');
+    const renewSlider = document.getElementById('renewMesesSlider');
+    const renewValue = document.getElementById('renewMesesValue');
+    if (renewInicio && renewSlider) {
+      renewInicio.addEventListener('change', updateRenewPlanFechaFin);
+      renewSlider.addEventListener('input', (ev) => {
+        if (renewValue) renewValue.textContent = ev.target.value;
+        updateRenewPlanFechaFin();
+      });
+    }
+  })();
+
+  // Guardar edición
+  document.getElementById('btnSavePlane').addEventListener('click', async () => {
+    const id = document.getElementById('editPlanId').value;
+    // clear inline edit error
+    try { const _e = document.getElementById('editPlanError'); if (_e) { _e.style.display = 'none'; _e.textContent = ''; } } catch(e) {}
+    
+    // Validar que numero_linea_display tenga valor
+    const phoneDisplay = document.getElementById('editNumeroLinea').value || '';
+    if (!phoneDisplay) {
+      openGlobalErrorModal('Ingresa el número telefónico');
+      return;
+    }
+    
+    // Concatenate extension + phone number (without spaces or + sign)
+    const phoneCode = document.getElementById('editNumeroLineaHidden').value || '';
+    let numeroLinea = phoneDisplay;
+    if (phoneCode) {
+      numeroLinea = phoneCode + phoneDisplay;
+    }
+    
+    const payload = {
+      numero_linea: numeroLinea,
+      fecha_inicio: document.getElementById('editFechaInicio').value || null,
+      fecha_fin: document.getElementById('editFechaFin').value || null,
+      costo_plan: document.getElementById('editCostoPlan').value,
+      moneda_plan: document.getElementById('editMonedaPlan').value || 'L'
+    };
+    try {
+      const resp = await fetch(`/devices/planes/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      const data = await resp.json().catch(()=>({}));
+      if (resp.ok && data.success) {
+        closeEditPlaneModal();
+        openGlobalSuccessModal(data.message || 'Plan actualizado');
+        await refreshPlanesTbody();
+      } else {
+        // Robust duplicate detection: prefer 409, then JSON flags/codes/messages
+        let isDuplicate = false;
+        if (resp.status === 409) isDuplicate = true;
+        if (!isDuplicate && data) {
+          if (data.duplicate === true || data.isDuplicate === true) isDuplicate = true;
+          if (data.code && String(data.code).toUpperCase().includes('DUPLIC')) isDuplicate = true;
+        }
+        const serverMsg = (data && (data.message || data.error)) || '';
+        const dupRe = /ya (est[aá]|esta) registrado|ya existe|en uso|duplicad|duplicate/i;
+        if (!isDuplicate && serverMsg && dupRe.test(serverMsg)) isDuplicate = true;
+
+        if (isDuplicate) {
+          const el = document.getElementById('editPlanError'); if (el) { el.textContent = 'El número ya está registrado.'; el.style.display = ''; }
+        } else {
+          const errMsg = serverMsg || 'No se pudo actualizar el plan';
+          openGlobalErrorModal(errMsg);
+        }
+      }
+    } catch (err) {
+      const el = document.getElementById('editPlanError'); if (el) { el.textContent = 'Error actualizando plan'; el.style.display = ''; } else { openGlobalErrorModal('Error actualizando plan'); }
+    }
+  });
+
+  // Delegated event handling for Edit/Delete buttons in the planes table
+  document.getElementById('planes-tbody').addEventListener('click', async (ev) => {
+    const btn = ev.target.closest('button');
+    if (!btn) return;
+    const tr = btn.closest('tr');
+    if (!tr) return;
+    const id = tr.dataset.id;
+    if (btn.classList.contains('btn-edit')) {
+      // Reconstruct object from data- attributes
+      const p = {
+        id_plan: id,
+        numero_linea: tr.dataset.num || '',
+        fecha_inicio: tr.dataset.inicio || '',
+        fecha_fin: tr.dataset.fin || '',
+        costo_plan: tr.dataset.costo || '',
+        moneda_plan: tr.dataset.moneda || 'L',
+        linked_tipo: tr.dataset.linkedTipo || '',
+        linked_marca: tr.dataset.linkedMarca || '',
+        linked_modelo: tr.dataset.linkedModelo || '',
+        linked_imei: tr.dataset.linkedImei || ''
+      };
+      openEditPlaneModal(id, p);
+      return;
+    }
+    // Delete action removed — deletion disabled in UI
+  });
+
+  // Handle select change in link modal to show device details
+  document.getElementById('selectDeviceSinPlan').addEventListener('change', (ev) => {
+    const opt = ev.target.selectedOptions[0];
+    if (!opt || !opt.value) {
+      document.getElementById('linkDeviceDetails').textContent = 'Ninguno';
+      return;
+    }
+    const brand = opt.getAttribute('data-brand') || '';
+    const model = opt.getAttribute('data-model') || '';
+    const serial = opt.getAttribute('data-serial') || '';
+    const identificador = opt.getAttribute('data-identificador') || '';
+    // `data-serial` for devices in this list contains the IMEI value, show as IMEI
+    
+    const deviceDetailsEl = document.getElementById('linkDeviceDetails');
+    deviceDetailsEl.innerHTML = `
+      <div>${identificador ? `ID: ${identificador} | ` : ''}IMEI: ${serial}</div>
+      <div>Marca: ${brand} | Modelo: ${model}</div>
+    `;
+  });
+
+  // Handle cancel button in link modal - clear temporary data since linking is mandatory
+  document.getElementById('btnCancelLink').addEventListener('click', () => {
+    // Limpiar datos temporales (nuevo plan o renovación)
+    tempNewPlanData = null;
+    tempRenewPlanData = null;
+    
+    // Cerrar modal de vinculación
+    closeModal('modalLinkPlanDevice');
+    
+    // Mostrar error indicando que se descartó el plan
+    openGlobalErrorModal('La vinculación es obligatoria para completar la creación del plan.<br>El plan ha sido descartado.');
+  });
+
+  // Perform linking when clicking the Vincular button
+  document.getElementById('btnLinkPlanDevice').addEventListener('click', async () => {
+    const deviceId = document.getElementById('selectDeviceSinPlan').value;
+    if (!deviceId) return openGlobalErrorModal('Selecciona un dispositivo');
+    
+    // Detectar si es renovación o nuevo plan
+    const isRenewal = tempRenewPlanData !== null;
+    const planData = isRenewal ? tempRenewPlanData : tempNewPlanData;
+    
+    if (!planData) return openGlobalErrorModal('Error: datos del plan no encontrados');
+    
+    // Mostrar modal de confirmación superpuesta
+    openGlobalDeleteModal(async () => {
+      try {
+        if (isRenewal) {
+          // Flujo de RENOVACIÓN: llamar a endpoint de renovación con device_id
+          const renewPayload = {
+            ...planData,
+            device_id: parseInt(deviceId)
+          };
+          
+          const resp = await fetch(`/devices/planes/${planData.plan_id}/renew`, { 
+            method: 'POST', 
+            headers: {'Content-Type':'application/json'}, 
+            body: JSON.stringify(renewPayload) 
+          });
+          const data = await resp.json().catch(()=>({}));
+          
+          if (resp.ok && data.success) {
+            // Éxito: plan renovado + vinculado
+            closeModal('modalLinkPlanDevice');
+            tempRenewPlanData = null;  // Limpiar datos temporales
+            openGlobalSuccessModal(data.message || 'Plan renovado y vinculado exitosamente');
+            await refreshPlanesTbody();
+            document.body.dispatchEvent(new CustomEvent('reload-asignaciones'));
+            return true;  // Cierra la modal de confirmación
+          } else {
+            // Error en renovación
+            closeModal('modalLinkPlanDevice');
+            const errorMsg = data.message || 'No se pudo renovar y vincular el plan';
+            openGlobalErrorModal(errorMsg);
+            tempRenewPlanData = null;
+            return false;
+          }
+        } else {
+          // Flujo de NUEVO PLAN: llamar a endpoint de creación y vinculación
+          const payload = {
+            ...planData,
+            device_id: parseInt(deviceId)
+          };
+          
+          const resp = await fetch('/devices/planes/create-and-link', { 
+            method: 'POST', 
+            headers: {'Content-Type':'application/json'}, 
+            body: JSON.stringify(payload) 
+          });
+          const data = await resp.json().catch(()=>({}));
+          
+          if (resp.ok && data.success) {
+            // Éxito: plan creado + vinculado
+            closeModal('modalLinkPlanDevice');
+            tempNewPlanData = null;  // Limpiar datos temporales
+            openGlobalSuccessModal(data.message || 'El plan se agregó con éxito, vinculación exitosa');
+            await refreshPlanesTbody();
+            document.body.dispatchEvent(new CustomEvent('reload-asignaciones'));
+            return true;  // Cierra la modal de confirmación
+          } else if (resp.status === 409) {
+            // Error 409: Conflicto (número de línea duplicado o dispositivo ya tiene plan)
+            tempNewPlanData = null;
+            closeModal('modalLinkPlanDevice');
+            const errorMsg = data.message || 'Conflicto: número de línea o dispositivo duplicado';
+            openGlobalErrorModal(errorMsg);
+            return false;  // No lanzar error, solo no cerrar la modal de confirmación
+          } else if (resp.status === 400) {
+            // Error 400: Validación (número de línea inválido, etc.)
+            tempNewPlanData = null;
+            closeModal('modalLinkPlanDevice');
+            const errorMsg = data.message || 'Datos inválidos';
+            openGlobalErrorModal(errorMsg);
+            return false;  // No lanzar error, solo no cerrar la modal de confirmación
+          } else {
+            // Error genérico
+            tempNewPlanData = null;
+            closeModal('modalLinkPlanDevice');
+            const errorMsg = data.message || 'No se pudo vincular el plan';
+            openGlobalErrorModal(errorMsg);
+            return false;
+          }
+        }
+      } catch (err) {
+        console.error('Error en vinculación de plan:', err);
+        // El error ya fue mostrado por openGlobalErrorModal en el bloque de arriba
+        // No necesitamos mostrar otro modal aquí
+      }
+    }, 'Confirmar', '¿Estás seguro de que deseas guardar los cambios?');
+  });
+});
+
+function addMonthsToDateStr(dateStr, months) {
+  // dateStr expected as YYYY-MM-DD
+  if (!dateStr) return '';
+  const parts = dateStr.split('-').map(Number);
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
+  const day = d.getDate();
+  d.setMonth(d.getMonth() + months);
+  // If month rolled over and day decreased, keep the last valid day
+  while (d.getDate() < day) {
+    d.setDate(d.getDate() + 1);
+    if (d.getDate() > day) break;
+  }
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function openEditPlaneModal(id, obj) {
+  const p = (typeof obj === 'string') ? JSON.parse(obj) : obj;
+  document.getElementById('editPlanId').value = id;
+  
+  // Parse numero_linea to extract extension and phone number
+  // Limpiar espacios: "39 87654321" -> "3987654321"
+  const numeroLineaRaw = (p.numero_linea || '').replace(/\s+/g, '');
+  let code = '504';
+  let phoneNumber = numeroLineaRaw;
+  let countryCode = null;
+  
+  // Find the correct country code (search by longest code first to avoid prefix conflicts)
+  const sortedCountries = [...countries].sort((a, b) => 
+    b.phone.toString().length - a.phone.toString().length
+  );
+  
+  for (const country of sortedCountries) {
+    const cc = country.phone.toString();
+    if (numeroLineaRaw.startsWith(cc)) {
+      code = cc;
+      phoneNumber = numeroLineaRaw.substring(cc.length);
+      countryCode = country;
+      break;
+    }
+  }
+  
+  document.getElementById('editNumeroLineaHidden').value = code;
+  document.getElementById('editNumeroLinea').value = phoneNumber;
+  
+  const inicioVal = p.fecha_inicio ? p.fecha_inicio.split('T')[0] : '';
+  const finVal = p.fecha_fin ? p.fecha_fin.split('T')[0] : '';
+  document.getElementById('editFechaInicio').value = inicioVal;
+  
+  // Calcular número de meses entre fechas
+  let meses = 18;
+  if (inicioVal && finVal) {
+    const inicio = new Date(inicioVal);
+    const fin = new Date(finVal);
+    meses = Math.round((fin.getFullYear() - inicio.getFullYear()) * 12 + 
+                        (fin.getMonth() - inicio.getMonth()));
+    meses = Math.max(1, Math.min(36, meses)); // Limitar entre 1 y 36
+  }
+  
+  const sliderEdit = document.getElementById('editMesesSlider');
+  const valueDisplayEdit = document.getElementById('editMesesValue');
+  if (sliderEdit) {
+    sliderEdit.value = meses;
+    if (valueDisplayEdit) valueDisplayEdit.textContent = meses;
+  }
+  
+  document.getElementById('editFechaFin').value = finVal || (inicioVal ? addMonthsToDateStr(inicioVal, 18) : '');
+  document.getElementById('editCostoPlan').value = p.costo_plan || '';
+  document.getElementById('editMonedaPlan').value = p.moneda_plan || 'L';
+  
+  // Show linked-device info if present using the reusable .info-box
+  const linkedInfoEl = document.getElementById('editLinkedDeviceInfo');
+  const linkedTitleEl = document.getElementById('editLinkedDeviceTitle');
+  const linkedDetailEl = document.getElementById('editLinkedDeviceDetail');
+  if (linkedInfoEl && linkedTitleEl && linkedDetailEl) {
+    if (p.linked_tipo && (p.linked_marca || p.linked_modelo || p.linked_imei)) {
+      linkedInfoEl.classList.remove('hidden');
+      linkedTitleEl.textContent = 'Plan ya vinculado';
+      const details = `${p.linked_tipo || ''} ${p.linked_marca || ''} ${p.linked_modelo || ''}`.trim();
+      // Mostrar IMEI en lugar de 'N.º Serie'. Si no hay IMEI, caer al serial.
+      const identificador = `IMEI: ${p.linked_imei || ''}`;
+      linkedDetailEl.textContent = details ? `${details} — ${identificador}` : identificador;
+    } else {
+      linkedInfoEl.classList.add('hidden');
+      linkedTitleEl.textContent = '';
+      linkedDetailEl.textContent = '';
+    }
+  }
+  
+  openModal('modalEditPlane', true);
+  
+  // After opening modal, reinitialize the telephone input dropdown and update the flag
+  setTimeout(() => {
+    // Reinitialize the dropdown (this removes old listeners and creates new ones)
+    initTelephoneInput('#editNumeroLineaSelect');
+    
+    // Then update the selected-option display with the correct flag and code
+    if (countryCode) {
+      const selectedOptionDiv = document.querySelector('#editNumeroLineaSelect .selected-option div');
+      if (selectedOptionDiv) {
+        selectedOptionDiv.innerHTML = `
+          <span class="iconify" data-icon="flag:${countryCode.code.toLowerCase()}-4x3"></span>
+          <strong>+${code}</strong>
+        `;
+        // Trigger Iconify to scan and load the icon
+        if (typeof Iconify !== 'undefined') {
+          Iconify.scan();
+        }
+      }
+    }
+  }, 100);
+}
+
+function closeEditPlaneModal() {
+  closeModal('modalEditPlane');
+}
+
+// Employees modal moved to Asignaciones page
+</script>
+
+{% endblock %}
+
+<!-- Modal: Mostrar detalle de error de BD/servidor -->
+<div id="modalDbError" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Error del servidor</h3>
+      <button class="modal-close" onclick="closeModal('modalDbError')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>Detalle de la respuesta del servidor (útil para depuración):</p>
+      <pre id="dbErrorDetail" style="white-space:pre-wrap; background:#f8f8f8; padding:8px; border-radius:4px; max-height:50vh; overflow:auto;"></pre>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('modalDbError')">Cerrar</button>
+    </div>
+  </div>
+</div>

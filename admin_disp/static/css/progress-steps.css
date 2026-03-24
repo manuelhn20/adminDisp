@@ -1,0 +1,132 @@
+/* Namespaced progress steps for documentation modal */
+@import url('https://fonts.googleapis.com/css?family=Muli&display=swap');
+
+/* Default (light) variables */
+:root {
+  /* primary color: luz verde clara para tema claro */
+  --doc-line-fill: #4CCF96; /* light green */
+  --doc-line-empty: #e0e0e0;
+  --doc-circle-bg: #ffffff;
+  --doc-circle-color: #666666;
+  --doc-circle-border: var(--doc-line-empty);
+  --doc-circle-active-color: var(--doc-line-fill);
+}
+
+/* Dark mode overrides: supported via body.dark-mode or html[data-dark-mode="true"] */
+body.dark-mode,
+html[data-dark-mode="true"] {
+  /* dark mode: verde ligeramente más brillante sobre fondo oscuro */
+  --doc-line-fill: #6DE0A9;
+  --doc-line-empty: #2f3942;
+  --doc-circle-bg: #0f1720;
+  --doc-circle-color: #cbd5e1;
+  --doc-circle-border: #374151;
+  --doc-circle-active-color: var(--doc-line-fill);
+}
+
+.doc-progress-steps-wrapper {
+  text-align: center;
+  margin-top: 14px; /* bajar el indicador un poco desde el header */
+  margin-bottom: 6px; /* reducir espacio entre progressbar y contenido */
+}
+
+/* Reduce top padding specifically for the seleccionar-tipo modal to bring text closer */
+#modalSeleccionarTipoDocumentacion .modal-body {
+  padding-top: 12px !important;
+}
+
+/* Ajustes para tablets en modo horizontal */
+@media screen and (max-height: 1300px) and (orientation: landscape) {
+  .doc-progress-steps-wrapper {
+    margin-top: 8px;
+    margin-bottom: 4px;
+  }
+  .doc-progress-container {
+    margin-bottom: 8px;
+  }
+  .doc-circle {
+    height: 28px;
+    width: 28px;
+    font-size: 0.85rem;
+  }
+}
+
+.doc-progress-container {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin-bottom: 12px;
+  max-width:100%;
+  width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.doc-progress-container::before {
+  content: '';
+  background-color: var(--doc-line-empty);
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  height: 4px;
+  width: 100%;
+  z-index: 0;
+}
+
+.doc-progress {
+  background-color: var(--doc-line-fill);
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  height: 6px;
+  width: 0%;
+  z-index: 0;
+  border-radius: 6px;
+  transition: .3s ease;
+}
+
+.doc-circle {
+  background-color: var(--doc-circle-bg);
+  color: var(--doc-circle-color);
+  border-radius: 50%;
+  height: 34px;
+  width: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--doc-circle-border);
+  transition: .25s ease;
+  font-size: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Completed step: filled circle with white number */
+.doc-circle.completed {
+  background-color: var(--doc-circle-active-color);
+  color: #ffffff;
+  border-color: var(--doc-circle-active-color);
+  box-shadow: 0 6px 18px rgba(16,185,129,0.12);
+}
+
+/* Current step: outlined green ring */
+.doc-circle.active {
+  background-color: var(--doc-circle-bg);
+  color: var(--doc-circle-active-color);
+  border-color: var(--doc-circle-active-color);
+}
+
+/* Visited (previous) steps — same outlined style as active but not filled */
+.doc-circle.visited {
+  background-color: var(--doc-circle-bg);
+  color: var(--doc-circle-active-color);
+  border-color: var(--doc-circle-active-color);
+}
+
+/* Responsive: shrink width on small screens */
+@media (max-width: 480px) {
+  .doc-progress-container { width: 260px; }
+  .doc-circle { height: 24px; width: 24px; border-width:2px; font-size:0.85rem; }
+}

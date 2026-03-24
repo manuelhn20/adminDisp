@@ -1,0 +1,155 @@
+{% extends "base_kardex.html" %}
+
+{% block title %}Almacenes — KARDEX{% endblock %}
+
+{% block extra_scripts %}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-material.css">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/kardex.css') }}">
+{% endblock %}
+
+{% block page_title %}Almacenes{% endblock %}
+
+{% block content %}
+<div class="kardex-toolbar">
+  <div class="kardex-toolbar__left">
+    <button class="btn btn-primary offset-btn" onclick="openModalCrearAlmacen()">
+      + Nuevo Almacén
+    </button>
+  </div>
+  <div class="kardex-toolbar__right">
+    <input type="text" id="quickFilter" class="kardex-search"
+           placeholder="Buscar almacén..." oninput="gridApi.setGridOption('quickFilterText', this.value)">
+    {% if periodo_activo %}
+      <span class="kardex-periodo-badge active">
+        <span class="material-symbols-outlined">calendar_month</span>
+        {{ periodo_activo.nombre }}
+      </span>
+    {% else %}
+      <span class="kardex-periodo-badge inactive">
+        <span class="material-symbols-outlined">warning</span>
+        Sin período activo
+      </span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="kardex-grid-wrap">
+  <div id="almacenesGrid" class="ag-theme-material kardex-grid"></div>
+</div>
+
+<!-- Modal Crear Almacén -->
+<div id="modalCrearAlmacen" class="kardex-modal-overlay">
+  <div class="kardex-modal">
+    <div class="kardex-modal__header">
+      <h3>Nuevo Almacén</h3>
+      <button class="kardex-modal__close" onclick="closeModalCrearAlmacen()">&times;</button>
+    </div>
+    <div class="kardex-modal__body">
+      <div class="kardex-form-grid">
+        <div class="kardex-field">
+          <label>Descripción</label>
+          <input type="text" id="inpDescripcionAlmacen" placeholder="Nombre del almacén">
+        </div>
+        <div class="kardex-field">
+          <label>Compañía</label>
+          <input type="text" id="inpCompaniaAlmacen" placeholder="Compañía">
+        </div>
+        <div class="kardex-field">
+          <label>Tipo de Almacén</label>
+          <input type="text" id="inpTipoAlmacen" placeholder="Tipo (Bodega, Tienda, etc.)">
+        </div>
+      </div>
+      <div id="errorCrearAlmacen" class="kardex-error" style="display:none;"></div>
+    </div>
+    <div class="kardex-modal__footer">
+      <button class="kardex-btn kardex-btn--ghost" onclick="closeModalCrearAlmacen()">Cancelar</button>
+      <button class="kardex-btn kardex-btn--primary" onclick="guardarAlmacen()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let gridApi = null;
+
+const colDefs = [
+  { field: 'id',          headerName: 'ID',          width: 200, pinned: 'left',
+    cellStyle: { fontFamily: 'monospace', fontSize: '12px' } },
+  { field: 'descripcion', headerName: 'Descripción', flex: 2, minWidth: 180 },
+  { field: 'company',     headerName: 'Compañía',    flex: 1, minWidth: 140 },
+  { field: 'tipoAlmacen', headerName: 'Tipo de Almacén', flex: 1, minWidth: 140 },
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+  gridApi = agGrid.createGrid(document.getElementById('almacenesGrid'), {
+    columnDefs: colDefs,
+    rowData: [],
+    defaultColDef: { sortable: true, filter: true, resizable: true },
+    pagination: true,
+    paginationPageSize: 50,
+    paginationPageSizeSelector: [25, 50, 100],
+    animateRows: true,
+    suppressCellFocus: true,
+    overlayNoRowsTemplate:
+      '<span style="padding:24px;color:#6b7280;">Sin datos. Usa Sync Almacenes en el menú lateral.</span>',
+  });
+  loadAlmacenes(false);
+});
+
+async function loadAlmacenes(todos = false) {
+  try {
+    const url = '/kardex/api/almacenes' + (todos ? '?todos=1' : '');
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error);
+    gridApi.setGridOption('rowData', d.data);
+  } catch(e) {
+    console.error('[Almacenes]', e);
+  }
+}
+
+function openModalCrearAlmacen() {
+  document.getElementById('errorCrearAlmacen').style.display = 'none';
+  document.getElementById('inpDescripcionAlmacen').value = '';
+  document.getElementById('inpCompaniaAlmacen').value = '';
+  document.getElementById('inpTipoAlmacen').value = '';
+  document.getElementById('modalCrearAlmacen').classList.add('active');
+}
+function closeModalCrearAlmacen() {
+  document.getElementById('modalCrearAlmacen').classList.remove('active');
+}
+
+async function guardarAlmacen() {
+  const errDiv = document.getElementById('errorCrearAlmacen');
+  errDiv.style.display = 'none';
+  const descripcion = document.getElementById('inpDescripcionAlmacen').value.trim();
+  const company = document.getElementById('inpCompaniaAlmacen').value.trim();
+  const tipoAlmacen = document.getElementById('inpTipoAlmacen').value.trim();
+  
+  if (!descripcion || !company) {
+    errDiv.textContent = 'Descripción y Compañía son obligatorios.';
+    errDiv.style.display = 'block';
+    return;
+  }
+  
+  try {
+    const r = await fetch('/kardex/api/almacenes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ descripcion, company, tipoAlmacen }),
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || d.message);
+    closeModalCrearAlmacen();
+    await loadAlmacenes();
+  } catch(e) {
+    errDiv.textContent = 'Error: ' + e.message;
+    errDiv.style.display = 'block';
+  }
+}
+</script>
+{% endblock %}

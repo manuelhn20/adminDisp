@@ -1,0 +1,91 @@
+/* ============================================================ */
+/* login.css - Estilos extraídos de login.html                */
+/* ============================================================ */
+
+/* ── Dark mode ─────────────────────────────────────────────────── */
+html[data-dark-mode="true"] body                { background-color: #1a1a1a; }
+html[data-dark-mode="true"] .main               { background-color: #2a2a2a; box-shadow: 10px 10px 10px #0d0d0d, -10px -10px 10px #474747; }
+html[data-dark-mode="true"] .container          { background-color: #2a2a2a; }
+html[data-dark-mode="true"] .form__input        { background-color: #2a2a2a; box-shadow: inset 2px 2px 4px #0d0d0d, inset -2px -2px 4px #474747; color: #e0e0e0; }
+html[data-dark-mode="true"] .form__input:focus  { box-shadow: inset 4px 4px 4px #0d0d0d, inset -4px -4px 4px #474747; }
+html[data-dark-mode="true"] .form__span,
+html[data-dark-mode="true"] .form__link,
+html[data-dark-mode="true"] .title,
+html[data-dark-mode="true"] .description        { color: #e0e0e0; }
+html[data-dark-mode="true"] .switch             { background-color: #2a2a2a; box-shadow: 4px 4px 10px #0d0d0d, -4px -4px 10px #474747; }
+html[data-dark-mode="true"] .switch__circle     { background-color: #2a2a2a; box-shadow: inset 8px 8px 12px #0d0d0d, inset -8px -8px 12px #474747; }
+
+/* ── Modales ───────────────────────────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background-color: rgba(0,0,0,.7); z-index: 10000;
+  opacity: 0; transition: opacity .3s ease;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.active { display: flex; opacity: 1; }
+.modal {
+  background-color: #1e1e1e; border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.5);
+  max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;
+  transform: scale(.9); transition: transform .3s ease;
+}
+.modal-overlay.active .modal { transform: scale(1); }
+.modal-header {
+  padding: 20px 24px; border-bottom: 1px solid #333;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-header h3 { margin: 0; font-size: 1.3rem; color: #e8e8e8; }
+.modal-close {
+  background: none; border: none; color: #999; font-size: 24px;
+  cursor: pointer; padding: 0; width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center; transition: color .2s;
+}
+.modal-close:hover { color: #e8e8e8; }
+.modal-body   { padding: 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 10px; }
+
+/* ── Botones ───────────────────────────────────────────────────── */
+.btn          { padding: 10px 20px; border: none; border-radius: 6px; font-size: .95rem; font-weight: 500; cursor: pointer; transition: all .2s; }
+.btn-primary  { background-color: #2260ff; color: #fff; }
+.btn-primary:hover { background-color: #1a4fd8; }
+
+/* ── Inputs de modal ───────────────────────────────────────────── */
+.form-input {
+  width: 100%; padding: 12px; border: 2px solid #333; border-radius: 6px;
+  font-size: 1rem; box-sizing: border-box; transition: border-color .2s;
+  background-color: #2a2a2a; color: #e8e8e8;
+}
+.form-input:focus { outline: none; border-color: #2260ff; }
+.codigo-input { font-size: 24px; text-align: center; letter-spacing: 8px; font-weight: bold; }
+
+/* ── Indicador de fortaleza ────────────────────────────────────── */
+.password-strength { margin-top: 15px; }
+.strength-bar { height: 8px; background-color: #333; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+.strength-fill { height: 100%; width: 0%; transition: all .3s; border-radius: 4px; }
+.strength-fill.weak   { width: 33%; background-color: #ef4444; }
+.strength-fill.medium { width: 66%; background-color: #f59e0b; }
+.strength-fill.strong { width: 100%; background-color: #10b981; }
+.strength-label { display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 600; margin-bottom: 12px; color: #999; }
+.strength-label.weak   { color: #ef4444; }
+.strength-label.medium { color: #f59e0b; }
+.strength-label.strong { color: #10b981; }
+.password-requirements { font-size: .85rem; color: #999; margin-top: 10px; }
+.requirement { margin: 6px 0; display: flex; align-items: center; gap: 8px; }
+.requirement.met { color: #10b981; }
+.requirement .check::before     { content: '○'; }
+.requirement.met .check::before { content: '✓'; font-weight: bold; }
+
+/* ── Mensajes de error ─────────────────────────────────────────── */
+.error-text      { color: #ef4444; font-size: .9rem; margin-top: 10px; display: none; }
+.error-text.show { display: block; }
+
+/* Password toggle */
+.password-wrapper { position: relative; }
+.password-wrapper .form__input { padding-right: 44px; }
+.toggle-password {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  cursor: pointer; color: #a5a5a5; font-size: 20px; line-height:1; user-select:none;
+  opacity: 0; pointer-events: none; transition: opacity .15s ease, color .15s ease;
+}
+.toggle-password.show { opacity: 1; pointer-events: auto; }
+.toggle-password:hover { color: #e8e8e8; }

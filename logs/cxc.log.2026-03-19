@@ -1,0 +1,270 @@
+2026-03-19 08:21:13,941 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 09:26:56,842 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 09:26:58,662 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 09:27:01,562 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T15:21:47Z
+2026-03-19 09:27:02,479 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 09:28:01,453 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T15:22:47Z
+2026-03-19 09:28:02,480 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:34:15,641 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 10:34:17,175 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 10:34:20,000 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:29:03Z
+2026-03-19 10:34:20,963 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:35:20,221 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:30:03Z
+2026-03-19 10:35:21,225 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:36:20,944 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:31:03Z
+2026-03-19 10:36:22,209 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:37:20,716 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:32:03Z
+2026-03-19 10:37:21,793 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:38:20,442 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:33:03Z
+2026-03-19 10:38:21,587 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:39:20,223 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:34:03Z
+2026-03-19 10:39:21,149 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:40:20,074 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:35:03Z
+2026-03-19 10:40:21,112 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:40:29,221 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 10:40:32,231 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:35:20Z
+2026-03-19 10:40:33,199 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:40:39,536 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 10:40:43,098 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:35:32Z
+2026-03-19 10:40:43,989 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:41:03,223 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 10:41:06,811 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:36:03Z
+2026-03-19 10:41:07,854 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:41:23,519 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 10:41:26,793 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:36:06Z
+2026-03-19 10:41:27,901 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:42:26,480 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:37:03Z
+2026-03-19 10:42:27,528 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:43:26,516 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:38:04Z
+2026-03-19 10:43:27,594 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:44:26,895 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:39:03Z
+2026-03-19 10:44:27,924 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:45:26,293 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:40:03Z
+2026-03-19 10:45:27,185 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:46:26,501 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:41:03Z
+2026-03-19 10:46:27,385 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:47:26,383 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:42:04Z
+2026-03-19 10:47:27,267 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:48:26,404 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:43:03Z
+2026-03-19 10:48:27,329 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:49:26,770 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:44:03Z
+2026-03-19 10:49:27,819 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:50:26,281 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:45:03Z
+2026-03-19 10:50:27,397 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:51:26,762 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:46:03Z
+2026-03-19 10:51:27,722 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:52:26,445 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:47:03Z
+2026-03-19 10:52:27,379 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:53:26,330 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:48:03Z
+2026-03-19 10:53:27,222 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:54:26,436 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:49:03Z
+2026-03-19 10:54:27,343 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:55:26,448 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:50:03Z
+2026-03-19 10:55:27,382 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:56:26,491 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:51:03Z
+2026-03-19 10:56:27,878 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:57:27,083 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:52:03Z
+2026-03-19 10:57:27,993 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:58:26,471 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:53:03Z
+2026-03-19 10:58:27,351 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 10:59:26,528 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:54:03Z
+2026-03-19 10:59:27,627 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:00:26,303 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:55:03Z
+2026-03-19 11:00:27,198 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:01:26,465 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:56:03Z
+2026-03-19 11:01:27,360 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:02:26,591 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:57:03Z
+2026-03-19 11:02:27,565 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:03:26,301 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:58:03Z
+2026-03-19 11:03:27,234 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:04:26,546 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T16:59:03Z
+2026-03-19 11:04:27,507 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:09:04,605 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:09:25,633 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:12:06,020 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:12:17,735 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:14:40,637 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:18:18,498 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:18:49,755 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:19:03,460 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:19:42,611 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:19:44,488 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:19:47,790 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:14:04Z
+2026-03-19 11:19:48,861 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:20:47,512 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:15:04Z
+2026-03-19 11:20:48,523 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:21:47,552 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:16:04Z
+2026-03-19 11:21:48,745 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:21:48,750 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 1 | Actualizados: 0 | Omitidos: 0
+2026-03-19 11:22:47,514 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:17:04Z
+2026-03-19 11:22:48,609 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:22:48,615 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-19 11:23:47,364 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:18:04Z
+2026-03-19 11:23:48,450 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:23:48,455 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-19 11:24:47,290 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:19:04Z
+2026-03-19 11:24:48,331 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:24:48,335 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 1 | Actualizados: 0 | Omitidos: 1
+2026-03-19 11:25:47,567 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:20:03Z
+2026-03-19 11:25:48,634 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:25:48,639 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-19 11:26:47,484 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:21:04Z
+2026-03-19 11:26:48,441 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:26:48,449 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 1 | Actualizados: 0 | Omitidos: 1
+2026-03-19 11:27:47,512 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:22:03Z
+2026-03-19 11:27:48,724 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:27:48,734 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 0 | Actualizados: 0 | Omitidos: 2
+2026-03-19 11:28:33,677 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:28:36,833 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:23:03Z
+2026-03-19 11:28:37,891 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:28:37,912 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 0 | Actualizados: 0 | Omitidos: 2
+2026-03-19 11:29:36,670 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:24:03Z
+2026-03-19 11:29:37,735 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:29:37,757 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 0 | Actualizados: 0 | Omitidos: 2
+2026-03-19 11:30:36,664 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:25:04Z
+2026-03-19 11:30:37,756 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:30:37,761 INFO [admin_disp.cxc.service] Sync completado | SP: 3 | Insertados: 0 | Actualizados: 0 | Omitidos: 3
+2026-03-19 11:31:36,610 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:26:03Z
+2026-03-19 11:31:37,749 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:31:37,755 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 0 | Actualizados: 0 | Omitidos: 2
+2026-03-19 11:31:58,917 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:32:07,136 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:32:09,441 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:32:10,558 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:27:03Z
+2026-03-19 11:32:11,648 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:32:11,659 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 0 | Actualizados: 0 | Omitidos: 2
+2026-03-19 11:32:47,390 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:32:50,919 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:27:10Z
+2026-03-19 11:32:52,244 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:32:52,252 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-19 11:33:46,657 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:33:50,329 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:28:04Z
+2026-03-19 11:33:51,404 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:33:51,411 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 1 | Actualizados: 0 | Omitidos: 1
+2026-03-19 11:33:53,681 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:33:56,757 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:28:50Z
+2026-03-19 11:33:58,161 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:33:58,167 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-19 11:34:56,596 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:29:03Z
+2026-03-19 11:34:57,602 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:34:57,606 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-19 11:35:56,584 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:30:03Z
+2026-03-19 11:35:57,571 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:35:57,578 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 0 | Actualizados: 0 | Omitidos: 2
+2026-03-19 11:36:56,764 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:31:03Z
+2026-03-19 11:36:57,797 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:36:57,819 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 0 | Actualizados: 0 | Omitidos: 2
+2026-03-19 11:37:03,990 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:37:19,266 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:37:22,726 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:32:03Z
+2026-03-19 11:37:24,271 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:37:24,279 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-19 11:38:22,397 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:33:03Z
+2026-03-19 11:38:23,403 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 11:38:23,413 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-19 11:38:37,427 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:38:49,289 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:39:02,019 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:39:05,352 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:34:03Z
+2026-03-19 11:39:06,302 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:39:07,977 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:39:10,779 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:34:05Z
+2026-03-19 11:39:11,683 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:40:04,367 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:40:07,078 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:40:10,270 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:35:03Z
+2026-03-19 11:40:11,231 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:40:19,678 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:40:22,644 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:35:10Z
+2026-03-19 11:40:23,765 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:40:34,854 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:40:37,762 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:40:40,244 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:40:40,992 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:35:22Z
+2026-03-19 11:40:42,038 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:40:54,810 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:40:57,725 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:35:40Z
+2026-03-19 11:40:58,726 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:41:57,775 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:36:03Z
+2026-03-19 11:41:58,807 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:42:38,223 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:42:45,279 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:42:49,040 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:42:52,468 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:37:04Z
+2026-03-19 11:42:53,550 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:43:52,138 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:38:03Z
+2026-03-19 11:43:53,198 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:44:52,247 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:39:03Z
+2026-03-19 11:44:53,390 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:45:52,008 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:40:03Z
+2026-03-19 11:45:52,903 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:46:52,315 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:41:03Z
+2026-03-19 11:46:53,253 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:47:55,956 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:42:03Z
+2026-03-19 11:47:58,045 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:48:27,712 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:48:32,104 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:43:04Z
+2026-03-19 11:48:33,865 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:49:32,243 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:44:04Z
+2026-03-19 11:49:33,766 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:50:33,121 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:45:03Z
+2026-03-19 11:50:34,954 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:51:33,276 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:46:03Z
+2026-03-19 11:52:05,176 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:52:33,173 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:46:33Z
+2026-03-19 11:52:34,942 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:53:32,995 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:48:04Z
+2026-03-19 11:53:34,680 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:54:33,456 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:49:03Z
+2026-03-19 11:54:35,307 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:55:33,272 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:50:03Z
+2026-03-19 11:55:35,170 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:56:33,443 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:51:03Z
+2026-03-19 11:56:35,355 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:57:33,028 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:52:03Z
+2026-03-19 11:57:34,841 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:58:36,180 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:53:03Z
+2026-03-19 11:58:38,760 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:58:44,943 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 11:58:49,723 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:53:36Z
+2026-03-19 11:58:50,715 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 11:58:54,687 INFO [admin_disp.cxc.routes] PDF de control (sin guardar): 3 filas, ejecutivo=Juan Francisco Pinel Hernández, razón=control_only
+2026-03-19 11:59:03,443 INFO [admin_disp.cxc.routes] PDF de control (sin guardar): 23 filas, ejecutivo=Juan Francisco Pinel Hernández, razón=control_only
+2026-03-19 11:59:48,021 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:54:03Z
+2026-03-19 11:59:49,013 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 12:00:48,270 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:55:04Z
+2026-03-19 12:00:49,404 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 12:01:48,185 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:56:03Z
+2026-03-19 12:01:49,286 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 12:02:31,629 INFO [admin_disp.cxc.routes] PDF de control (sin guardar): 19 filas, ejecutivo=Juan Francisco Pinel Hernández, razón=control_only
+2026-03-19 12:02:48,354 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:57:04Z
+2026-03-19 12:02:49,479 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 12:03:48,089 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:58:03Z
+2026-03-19 12:03:49,258 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 12:04:45,006 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 12:04:48,600 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T17:59:04Z
+2026-03-19 12:04:49,511 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 12:05:41,450 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 12:05:44,755 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T18:00:04Z
+2026-03-19 12:05:45,905 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 12:05:50,142 INFO [admin_disp.cxc.routes] PDF de control (sin guardar): 16 filas, ejecutivo=Juan Francisco Pinel Hernández, razón=control_only
+2026-03-19 12:06:44,221 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T18:01:03Z
+2026-03-19 12:06:45,098 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 12:07:44,702 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T18:02:03Z
+2026-03-19 12:07:45,717 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 12:07:59,824 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 12:08:02,916 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T18:02:44Z
+2026-03-19 12:08:03,895 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 12:08:16,908 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 12:08:19,991 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T18:03:03Z
+2026-03-19 12:08:21,088 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 12:08:23,953 INFO [admin_disp.cxc.routes] PDF de control (sin guardar): 37 filas, ejecutivo=Juan Francisco Pinel Hernández, razón=control_only
+2026-03-19 12:09:20,180 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T18:04:03Z
+2026-03-19 12:09:21,194 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-19 12:09:21,200 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-19 12:13:55,221 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 12:13:57,169 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-19 12:14:00,385 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-19T18:08:22Z
+2026-03-19 12:14:01,530 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-19 12:14:07,719 INFO [admin_disp.cxc.routes] PDF de control (sin guardar): 12 filas, ejecutivo=Juan Francisco Pinel Hernández, razón=control_only
+2026-03-19 12:14:21,202 INFO [admin_disp.cxc.routes] PDF de control (sin guardar): 62 filas, ejecutivo=Luis Armando Sosa Rojas, razón=control_only

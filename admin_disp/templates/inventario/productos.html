@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Productos - Inventario{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-material.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/inventario.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 20px;">Gestión de Productos</h1>
+
+<!-- Panel de Controles -->
+<div class="button-group" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;">
+    <div style="display:flex;gap:12px;">
+        <button class="btn btn-primary offset-btn" onclick="openModalCrear()">
+            <span style="margin-right:8px;">+</span> Nuevo Producto
+        </button>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+        <input id="productosPageSearch" class="global-table-search" placeholder="Buscar producto..." style="width:220px;" />
+    </div>
+</div>
+
+<!-- Tabla de Productos -->
+<div id="productosGrid" style="height: 600px;" class="ag-theme-material"></div>
+
+<!-- Modal crear/editar -->
+<div class="modal fade" id="modalProducto" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nuevo Producto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formProducto" onsubmit="guardarProducto(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="productoId">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre *</label>
+                            <input type="text" class="form-control" id="productoNombre" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Marca *</label>
+                            <select class="form-select" id="productoMarca" required>
+                                <option value="">Seleccionar marca...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Descripción</label>
+                            <textarea class="form-control" id="productoDescripcion" rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">UPC 1 *</label>
+                            <input type="text" class="form-control" id="productoUpc1" required>
+                            <div class="invalid-feedback mt-1" id="errorUpc1"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">UPC 2</label>
+                            <input type="text" class="form-control" id="productoUpc2">
+                            <div class="invalid-feedback mt-1" id="errorUpc2"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Precio *</label>
+                            <input type="number" class="form-control" id="productoPrecio" step="0.01" min="0" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/inventario/productos.js') }}"></script>
+{% endblock %}

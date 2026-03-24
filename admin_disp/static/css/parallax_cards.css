@@ -1,0 +1,268 @@
+/* Copiado desde static/parallax_cards/style.css */
+
+html {
+  height: 100%;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  overflow: hidden;
+  position: fixed;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  font: normal 14px/1.618em system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(1200px 600px at 25% 20%, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(135deg, #22c997, #1ea87c);
+  background-size: cover;
+  transition: background 0.3s ease;
+}
+
+html.dark body {
+  background:
+    radial-gradient(1200px 600px at 25% 20%, rgba(13, 95, 63, 0.35), rgba(13, 95, 63, 0) 60%),
+    linear-gradient(135deg, #0d5f3f, #0a3d2a);
+  background-size: cover;
+}
+
+body:before {
+  content: "";
+  height: 0;
+  padding: 0;
+  border: 130em solid #313440;
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  z-index: 1;
+  display: block;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation:
+    puff 0.5s 1.8s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards,
+    borderRadius 0.2s 2.3s linear forwards;
+  transition: border-color 0.3s ease;
+}
+
+html.dark body:before {
+  border-color: #1a1a1a;
+}
+
+.cards-panel {
+  background: #ffb300;
+  width: 56px;
+  height: 56px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  overflow: hidden;
+  opacity: 0;
+  margin-top: 70px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  box-shadow:
+    0px 3px 6px rgba(0, 0, 0, 0.16),
+    0px 3px 6px rgba(0, 0, 0, 0.23);
+  animation:
+    init 0.5s 0.2s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards,
+    moveDown 1s 0.8s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards,
+    moveUp 1s 1.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+    materiaPanel 0.6s 2.7s cubic-bezier(0.86, 0, 0.07, 1) forwards;
+  transition: background-color 0.3s ease;
+}
+
+.cards-panel-content {
+  height: 100%;
+  width: 100%;
+  opacity: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 31px 26px 26px;
+  box-sizing: border-box;
+  background: #ffffff;
+  animation: moveIn 1s 3.1s ease forwards;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark .cards-panel-content {
+  background: #000000;
+  color: #ffffff;
+}
+
+.parallax-title {
+  margin: 0 0 14px 0;
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: 0.2px;
+  color: #2b2b2b;
+  transition: color 0.3s ease;
+}
+
+html.dark .parallax-title {
+  color: #e2e8f0;
+}
+
+.parallax-container {
+  padding: 11px 11px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+}
+
+.card-wrap {
+  transform: perspective(1000px);
+  transform-style: preserve-3d;
+  cursor: pointer;
+}
+
+.card-wrap:hover .card-info { transform: translateY(0); }
+.card-wrap:hover .card-info p { opacity: 1; }
+.card-wrap:hover .card-info, .card-wrap:hover .card-info p { transition: 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
+.card-wrap:hover .card-info:after { transition: 5s cubic-bezier(0.23, 1, 0.32, 1); opacity: 1; transform: translateY(0); }
+.card-wrap:hover .card-bg { transition: 0.6s cubic-bezier(0.23, 1, 0.32, 1), opacity 5s cubic-bezier(0.23, 1, 0.32, 1); opacity: 0.86; }
+
+.card { position: relative; width: 264px; height: 352px; background-color: #333; overflow: hidden; border-radius: 12px; transform-style: preserve-3d; will-change: transform; box-shadow: rgba(0,0,0,.66) 0 30px 60px 0, inset #333 0 0 0 5px, inset rgba(255,255,255,.5) 0 0 0 6px; transition: transform 120ms ease-out; }
+
+.card-bg { opacity: 0.5; position: absolute; top: -22px; left: -22px; width: 100%; height: 100%; padding: 22px; background-repeat: no-repeat; background-position: center; background-size: cover; transition: 1s cubic-bezier(.445,.05,.55,.95), opacity 5s 1s cubic-bezier(.445,.05,.55,.95); pointer-events: none; }
+
+.card-info { padding: 20px; position: absolute; bottom: 0; color: #fff; transform: translateY(40%); transition: 0.6s 1.6s cubic-bezier(.215,.61,.355,1); }
+.card-info p { opacity: 0; text-shadow: rgba(0,0,0,1) 0 2px 3px; transition: 0.6s 1.6s cubic-bezier(.215,.61,.355,1); margin:10px 0 0 0; }
+.card-info * { position: relative; z-index:1 }
+.card-info:after { content: ""; position:absolute; top:0; left:0; z-index:0; width:100%; height:100%; background-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.6) 100%); background-blend-mode:overlay; opacity:0; transform:translateY(100%); transition:5s 1s cubic-bezier(.445,.05,.55,.95); }
+.card-info h1 { font-size:30px; font-weight:800; line-height:1.05; text-shadow: rgba(0,0,0,.5) 0 10px 10px; margin:0 }
+
+@keyframes init { 0%{ width:0; height:0 } 100%{ width:56px; height:56px; margin-top:0; opacity:1 } }
+@keyframes puff { 0%{ top:100%; height:0; padding:0 } 100%{ top:50%; height:100%; padding:0 100% } }
+@keyframes borderRadius { 0%{ border-radius:50% } 100%{ border-radius:0 } }
+@keyframes moveDown { 0%{ top:50% } 50%{ top:40% } 100%{ top:100% } }
+@keyframes moveUp { 0%{ background:#ffb300; top:100% } 50%{ top:40% } 100%{ top:50%; background:#e0e0e0 } }
+@keyframes moveUpDark { 0%{ background:#ffb300; top:100% } 50%{ top:40% } 100%{ top:50%; background:#333844 } }
+@keyframes materiaPanel { 0%{ background:#e0e0e0 } 50%{ border-radius:10px } 100%{ width:1210px; height:616px; background:#ffffff; border-radius:12px } }
+@keyframes materiaPanelDark { 0%{ background:#333844 } 50%{ border-radius:10px } 100%{ width:1210px; height:616px; background:#0f172a; border-radius:12px } }
+@keyframes moveIn { 0%{ transform:translateY(18px); opacity:0 } 100%{ transform:translateY(0); opacity:1 } }
+
+/* Once the opening animation finishes, lock the panel so theme-class changes
+   don't restart the animation sequence. Background is then set via inline style. */
+.cards-panel.panel-locked {
+  animation: none !important;
+}
+
+/* Responsiveness tweaks */
+.cards-panel { max-width:92vw; max-height:86vh }
+.cards-panel-content { max-width:92vw; max-height:86vh }
+
+/* Dark mode: override animation chain so circle starts yellow and ends at #0f172a */
+html.dark .cards-panel {
+  animation:
+    init             0.5s  0.2s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards,
+    moveDown         1s    0.8s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards,
+    moveUpDark       1s    1.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+    materiaPanelDark 0.6s  2.7s cubic-bezier(0.86, 0, 0.07, 1) forwards;
+}
+
+html.dark .cards-panel-content {
+  background: #0f172a !important;
+}
+
+@media (max-width:1100px){ .card{ width:242px; height:330px } .card-info h1{ font-size:28px } }
+@media (max-width:980px){ .cards-panel-content{ padding:22px 14px 16px } }
+@media (max-width:520px){ .card{ width:220px; height:308px } .parallax-title{ font-size:18px } }
+
+/* ===================== RESPONSIVE MÓVIL ===================== */
+@keyframes materiaPanel-mobile {
+  0%   { background:#e0e0e0 }
+  50%  { border-radius:10px }
+  100% { width:calc(100vw - 32px); height:82vh; background:#ffffff; border-radius:12px }
+}
+@keyframes materiaPanelDark-mobile {
+  0%   { background:#333844 }
+  50%  { border-radius:10px }
+  100% { width:calc(100vw - 32px); height:82vh; background:#0f172a; border-radius:12px }
+}
+
+@media (max-width:600px) {
+  /* Panel: ancho ajustado con márgenes, altura fija con scroll interno */
+  .cards-panel {
+    max-width:calc(100vw - 32px);
+    max-height:82vh;
+    animation:
+      init            0.5s  0.2s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards,
+      moveDown        1s    0.8s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards,
+      moveUp          1s    1.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+      materiaPanel-mobile 0.6s 2.7s cubic-bezier(0.86, 0, 0.07, 1) forwards;
+  }
+
+  html.dark .cards-panel {
+    animation:
+      init                    0.5s  0.2s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards,
+      moveDown                1s    0.8s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards,
+      moveUpDark              1s    1.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+      materiaPanelDark-mobile 0.6s  2.7s cubic-bezier(0.86, 0, 0.07, 1) forwards;
+  }
+
+  /* Contenedor con scroll vertical */
+  .cards-panel-content {
+    max-width:100%;
+    max-height:100%;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:16px 12px;
+    align-items:stretch;
+    justify-content:flex-start;
+    box-sizing:border-box;
+  }
+
+  /* Columna única, sin wrap */
+  .parallax-container {
+    flex-direction:column;
+    flex-wrap:nowrap;
+    gap:12px;
+    padding:0;
+    width:100%;
+  }
+
+  /* Tarjetas: ancho completo, altura reducida */
+  .card-wrap { width:100% }
+
+  .card {
+    width:100%;
+    height:185px;
+    box-shadow:rgba(0,0,0,.5) 0 8px 20px 0, inset #333 0 0 0 3px, inset rgba(255,255,255,.5) 0 0 0 4px;
+  }
+
+  /* Imagen de fondo ligeramente más visible */
+  .card-bg { opacity:0.75 }
+
+  /* Texto siempre visible en móvil (sin requerir hover) */
+  .card-info {
+    padding:14px 16px;
+    transform:translateY(0);
+  }
+
+  .card-info p {
+    opacity:1;
+    font-size:12px;
+    margin:5px 0 0;
+  }
+
+  .card-info h1 {
+    font-size:20px;
+    line-height:1.1;
+  }
+
+  /* Degradado inferior siempre activo para legibilidad del texto */
+  .card-info:after {
+    opacity:1;
+    transform:translateY(0);
+  }
+}

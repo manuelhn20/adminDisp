@@ -1,0 +1,17 @@
+{% set a = asignacion if asignacion is defined else (asignaciones[0] if asignaciones is defined and asignaciones|length > 0 else None) %}
+{% if a %}
+<tr data-asignacion-id="{{ a.id_asignacion }}">
+  <td>{{ a.categoria or '-' }}</td>
+  <td>{{ a.empleado_nombre or a.fk_id_empleado }}</td>
+  <td>{{ a.fecha_inicio_asignacion }}</td>
+  <td>{{ a.fecha_fin_asignacion or '-' }}</td>
+  <td>{{ a.correlativo|format_correlativo }}</td>
+  <td class="table-actions">
+    <!-- Match the Histórico view: only Edit asignación + Generar documentación -->
+    <button class="btn btn-primary btn-small" title="Editar asignación" onclick="openEditAsignacionModal({{ a.id_asignacion }})" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:none;position:relative;margin-right:6px;"><div style="width:42px;height:42px;border-radius:50%;background:#06a7e6;position:absolute;"></div><img src="/static/img/edi.png" alt="Editar" style="width:28px;height:28px;position:relative;z-index:1;"></button>
+    <button class="btn btn-primary btn-small" title="Generar documentacion" onclick="abrirModalSeleccionarTipoDocumentacion({{ a.id_asignacion }})" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:1.0rem;background:transparent;border:none;position:relative;"><div style="width:42px;height:42px;border-radius:50%;background:transparent;position:absolute;"></div><img src="{{ url_for('static', filename='img/docgen.png') }}" alt="Generar documentación" style="width:38px;height:38px;position:relative;z-index:1;"></button>
+  </td>
+</tr>
+{% else %}
+<!-- No asignacion provided -->
+{% endif %}

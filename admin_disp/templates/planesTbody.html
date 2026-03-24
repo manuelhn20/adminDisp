@@ -1,0 +1,12 @@
+{% for p in planes %}
+<tr data-id="{{ p.id_plan }}" data-num="{{ p.numero_linea }}" data-inicio="{{ p.fecha_inicio }}" data-fin="{{ p.fecha_fin }}" data-costo="{{ p.costo_plan }}" data-moneda="{{ p.moneda_plan or 'L' }}" data-linked-tipo="{{ p.linked_tipo or '' }}" data-linked-marca="{{ p.linked_marca or '' }}" data-linked-modelo="{{ p.linked_modelo or '' }}" data-linked-imei="{{ p.linked_imei or '' }}">
+  <td>+({{ p.codigo_pais }}) {{ p.numero_sin_codigo[:4] }}-{{ p.numero_sin_codigo[4:] }}</td>
+  <td>{{ p.fecha_inicio }}</td>
+  <td>{{ p.fecha_fin or '' }}</td>
+  <td>{{ p.moneda_plan or 'L' }} {{ p.costo_plan }}</td>
+  <td class="table-actions">
+    <button type="button" class="btn btn-primary btn-small btn-edit" title="Editar plan" style="width:44px;height:44px;border-radius:10px;background:transparent;border:none;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;position:relative;"><div style="width:42px;height:42px;border-radius:50%;background:#06a7e6;position:absolute;"></div><img src="/static/img/edi.png" alt="Editar" style="width:32px;height:32px;position:relative;z-index:1;"></button>
+    <button type="button" class="btn btn-secondary btn-small btn-renew" onclick="openRenewPlanModal({{ p.id_plan }}, '{{ (p.numero_linea|default(''))|replace("'","\\'") }}')" title="Renovar" style="width:44px;height:44px;border-radius:10px;background:transparent;border:none;display:inline-flex;align-items:center;justify-content:center;position:relative;"><div style="width:42px;height:42px;border-radius:50%;background:#f59e0b;position:absolute;"></div><img src="{{ url_for('static', filename='img/renew.png') }}" alt="Renovar" style="width:42px;height:42px;position:relative;z-index:1;"></button>
+  </td>
+</tr>
+{% endfor %}

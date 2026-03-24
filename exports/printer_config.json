@@ -1,0 +1,91 @@
+{
+  "printers": [
+    {
+      "ip": "192.168.0.138",
+      "description": "Facturacion ElmigoTGU",
+      "status": "Exito",
+      "tinta_levels": {
+        "Negro": 90
+      },
+      "tiempo_segundos": 10.68,
+      "intentos": 1,
+      "timestamp": "2026-02-04T08:33:26.416593"
+    },
+    {
+      "ip": "192.168.0.187",
+      "description": "PROIMA 1er piso TGU",
+      "status": "Exito",
+      "tinta_levels": {
+        "Negro": 10
+      },
+      "tiempo_segundos": 4.63,
+      "intentos": 1,
+      "timestamp": "2026-02-04T08:33:20.388075"
+    },
+    {
+      "ip": "192.168.0.155",
+      "description": "Elmigo TGU",
+      "status": "Exito",
+      "tinta_levels": {
+        "Negro": 100
+      },
+      "tiempo_segundos": 4.62,
+      "intentos": 1,
+      "timestamp": "2026-02-04T08:33:20.380075"
+    },
+    {
+      "ip": "192.168.0.102",
+      "description": "Facturacion PROIMA TGU",
+      "status": "Exito",
+      "tinta_levels": {
+        "Negro": 50
+      },
+      "tiempo_segundos": 4.61,
+      "intentos": 1,
+      "timestamp": "2026-02-04T08:33:20.371078"
+    },
+    {
+      "ip": "192.168.0.29",
+      "description": "Contabilidad TGU",
+      "status": "Exito",
+      "tinta_levels": {
+        "Negro": 40
+      },
+      "tiempo_segundos": 4.62,
+      "intentos": 1,
+      "timestamp": "2026-02-04T08:33:20.392076"
+    },
+    {
+      "ip": "192.168.0.10",
+      "description": "Canon color",
+      "status": "Fracaso",
+      "tinta_levels": {},
+      "error": "Timeout al conectar a http://192.168.0.10",
+      "tiempo_segundos": 8.12,
+      "intentos": 2,
+      "timestamp": "2026-02-04T08:33:37.663678"
+    },
+    {
+      "ip": "192.168.1.114",
+      "description": "PROIMA SPS",
+      "status": "Exito",
+      "tinta_levels": {
+        "Negro": 90
+      },
+      "tiempo_segundos": 1.83,
+      "intentos": 1,
+      "timestamp": "2026-02-04T08:33:22.214077"
+    },
+    {
+      "ip": "192.168.2.202",
+      "description": "Elmigo SPS",
+      "status": "Fracaso",
+      "tinta_levels": {},
+      "error": "Timeout al conectar a http://192.168.2.202",
+      "tiempo_segundos": 8.12,
+      "intentos": 2,
+      "timestamp": "2026-02-04T08:33:37.665583"
+    }
+  ],
+  "last_updated": "2026-02-04T08:33:37.801682"
+}

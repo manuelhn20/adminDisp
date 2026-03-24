@@ -1,0 +1,18 @@
+{% for r in reclamos %}
+  <tr>
+    <td>{{ r.empleado_nombre or r.fk_id_empleado }}</td>
+    <td>{{ r.empresa or '-' }}</td>
+    <td>{{ r.numero_serie or '-' }}</td>
+    <td>{{ r.nombre_marca or '-' }}</td>
+    <td>{{ r.nombre_modelo or '-' }}</td>
+    <td>
+      <span class="text-{{ 'success' if r.estado_proceso else 'warning' }}">
+        {{ 'Completado' if r.estado_proceso else 'En proceso' }}
+      </span>
+    </td>
+    <td class="table-actions">
+      <button class="btn btn-primary btn-small" onclick="openEditReclamoModal({{ r.id_reclamo }})" title="Editar reclamo" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;"><img src="/static/img/edi.png" alt="Editar" style="width:28px;height:28px;"></button>
+      <button class="btn btn-danger btn-small" onclick='openGlobalDeleteModal(`/devices/reclamo/{{ r.id_reclamo }}`, "Confirmar eliminación", {{ r.id_reclamo | tojson }})' title="Eliminar reclamo" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;"><img src="/static/img/del.png" alt="Eliminar" style="width:28px;height:28px;"></button>
+    </td>
+  </tr>
+{% endfor %}

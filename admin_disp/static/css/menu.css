@@ -1,0 +1,592 @@
+/* Estilos para Modal de Gestión de Usuarios */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 9998;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Modales específicos con prioridad visual (asegurar que confirmaciones queden encima) */
+#modalConfirmRegenerar {
+  z-index: 10010;
+}
+#modalConfirmRegenerar .modal {
+  z-index: 10011;
+}
+/* Modal de empleado sin usuario: hacerla más compacta */
+#modalErrorEmpleado .modal {
+  max-width: 480px;
+  width: 86%;
+  padding: 0;
+}
+#modalErrorEmpleado .modal-body {
+  padding: 18px 24px;
+}
+#modalErrorEmpleado .modal-header h3 {
+  font-size: 1.1rem;
+}
+
+.modal-overlay.active {
+  display: flex;
+  opacity: 1;
+}
+
+.modal {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.modal-overlay.active .modal {
+  transform: scale(1);
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2,
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+/* Standardize modal close button style for menu modals: orange X on right */
+.modal-header .modal-close {
+  background: #ff9800;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto; /* push to right while keeping title on the left */
+}
+
+.modal-header .modal-close:hover {
+  background: #fb8c00;
+}
+
+.modal-body {
+  padding: 32px 40px;
+}
+
+.form-group {
+  margin-bottom: 28px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.form-group select,
+.form-group input[type="text"],
+.form-group input[type="password"] {
+  width: 100%;
+  max-width: 315px;
+  padding: 10px 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  outline: none;
+  border-color: #2260ff;
+}
+
+.form-group select:disabled,
+.form-group input:disabled {
+  background-color: #f8f8f8;
+  cursor: not-allowed;
+}
+
+/* Estilos para empleados sin usuario */
+.empleado-sin-usuario {
+  color: #d32f2f !important;
+  font-weight: 500;
+}
+
+.info-message {
+  padding: 12px 16px;
+  background-color: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  border-radius: 4px;
+  color: #1976d2;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+.error-message {
+  padding: 12px 16px;
+  background-color: #ffebee;
+  border-left: 4px solid #f44336;
+  border-radius: 4px;
+  color: #c62828;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background-color: #00bcd4;
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #00acc1;
+  box-shadow: 0 4px 12px rgba(0, 188, 212, 0.3);
+}
+
+.btn-primary:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.btn-cancel,
+.btn-secondary {
+  background-color: #ff9800;
+  color: #fff;
+}
+
+.btn-cancel:hover,
+.btn-secondary:hover {
+  background-color: #fb8c00;
+}
+
+/* Checkbox group styled as tiles - Adaptado para radio buttons */
+.roles-container {
+  margin-top: 12px;
+}
+
+.sistema-roles-group {
+  margin-bottom: 28px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.sistema-roles-group h4 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.radio-input {
+  clip: rect(0 0 0 0);
+  clip-path: inset(100%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.radio-input:checked + .radio-tile {
+  border-color: #2260ff;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+  color: #2260ff;
+}
+
+.radio-input:checked + .radio-tile:before {
+  transform: scale(1);
+  opacity: 1;
+  background-color: #2260ff;
+  border-color: #2260ff;
+}
+
+.radio-input:checked + .radio-tile .radio-icon,
+.radio-input:checked + .radio-tile .radio-label {
+  color: #2260ff;
+}
+
+.radio-input:focus + .radio-tile {
+  border-color: #2260ff;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1), 0 0 0 4px #b5c9fc;
+}
+
+.radio-input:focus + .radio-tile:before {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.radio-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 6.5rem;
+  min-height: 6.5rem;
+  border-radius: 0.5rem;
+  border: 2px solid #b5bfd9;
+  background-color: #fff;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+  transition: 0.15s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.radio-tile:before {
+  content: "";
+  position: absolute;
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid #b5bfd9;
+  background-color: #fff;
+  border-radius: 50%;
+  top: 0.25rem;
+  left: 0.25rem;
+  opacity: 0;
+  transform: scale(0);
+  transition: 0.25s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' fill='%23FFFFFF' viewBox='0 0 256 256'%3E%3Crect width='256' height='256' fill='none'%3E%3C/rect%3E%3Cpolyline points='216 72.005 104 184 48 128.005' fill='none' stroke='%23FFFFFF' stroke-linecap='round' stroke-linejoin='round' stroke-width='32'%3E%3C/polyline%3E%3C/svg%3E");
+  background-size: 12px;
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+}
+
+.radio-tile:hover {
+  border-color: #2260ff;
+}
+
+.radio-tile:hover:before {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.radio-icon {
+  transition: 0.375s ease;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.radio-icon img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.radio-label {
+  color: #707070;
+  transition: 0.375s ease;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* ============== DARK MODE STYLES ============== */
+
+html.dark .modal {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark .modal-header {
+  border-bottom-color: #334155;
+}
+
+html.dark .modal-header h2,
+html.dark .modal-header h3 {
+  color: #e2e8f0;
+}
+
+html.dark .modal-close {
+  color: #94a3b8;
+}
+
+html.dark .modal-close:hover {
+  background-color: #334155;
+  color: #e2e8f0;
+}
+
+html.dark .form-group label {
+  color: #cbd5e1;
+}
+
+html.dark .form-group select,
+html.dark .form-group input[type="text"],
+html.dark .form-group input[type="password"] {
+  background-color: #0f172a;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+html.dark .form-group select:focus,
+html.dark .form-group input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
+html.dark .form-group select:disabled,
+html.dark .form-group input:disabled {
+  background-color: #1e293b;
+  color: #64748b;
+}
+
+html.dark .sistema-roles-group {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+}
+
+html.dark .sistema-roles-group h4 {
+  color: #e2e8f0;
+}
+
+html.dark .radio-tile {
+  background-color: #1e293b;
+  border-color: #475569;
+}
+
+html.dark .radio-tile:hover {
+  border-color: #60a5fa;
+}
+
+html.dark .radio-input:checked + .radio-tile {
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+
+html.dark .radio-input:checked + .radio-tile:before {
+  background-color: #60a5fa;
+  border-color: #60a5fa;
+}
+
+html.dark .radio-input:checked + .radio-tile .radio-icon,
+html.dark .radio-input:checked + .radio-tile .radio-label {
+  color: #60a5fa;
+}
+
+html.dark .radio-label {
+  color: #cbd5e1;
+}
+
+html.dark .modal-footer {
+  border-top-color: #334155;
+}
+
+html.dark .btn-primary {
+  background-color: #0ea5e9;
+}
+
+html.dark .btn-primary:hover:not(:disabled) {
+  background-color: #0284c7;
+}
+
+html.dark .btn-cancel,
+html.dark .btn-secondary {
+  background-color: #f97316;
+}
+
+html.dark .btn-cancel:hover,
+html.dark .btn-secondary:hover {
+  background-color: #ea580c;
+}
+
+html.dark .info-message {
+  background-color: #1e3a5f;
+  border-left-color: #0ea5e9;
+  color: #7dd3fc;
+}
+
+html.dark .error-message {
+  background-color: #3f1616;
+  border-left-color: #ef4444;
+  color: #fca5a5;
+  display: none;
+}
+
+/* Código temporal styles */
+.codigo-temporal-bg {
+  background: #f5f5f5;
+}
+
+html.dark .codigo-temporal-bg {
+  background: #1e293b;
+}
+
+.codigo-info-box {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #333;
+}
+
+html.dark .codigo-info-box {
+  background: #1e3a2f;
+  border-color: #10b981;
+  color: #d1fae5;
+}
+
+/* Modal success/error text styles */
+.modal-success-text {
+  color: #555;
+  transition: color 0.3s ease;
+}
+
+html.dark .modal-success-text {
+  color: #cbd5e1;
+}
+
+.modal-error-text {
+  color: #333;
+  transition: color 0.3s ease;
+}
+
+html.dark .modal-error-text {
+  color: #e2e8f0;
+}
+
+.modal-error-subtext {
+  color: #666;
+  transition: color 0.3s ease;
+}
+
+html.dark .modal-error-subtext {
+  color: #94a3b8;
+}
+
+.modal-warning-text {
+  color: #333;
+  transition: color 0.3s ease;
+  font-size: 1rem;
+}
+
+html.dark .modal-warning-text {
+  color: #e2e8f0;
+}
+
+.modal-warning-subtext {
+  color: #666;
+  transition: color 0.3s ease;
+  font-size: 0.95rem;
+}
+
+html.dark .modal-warning-subtext {
+  color: #94a3b8;
+}
+
+.modal-codigo-container {
+  background: #f0f9ff;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+html.dark .modal-codigo-container {
+  background: #1e3a5f;
+}
+
+.modal-codigo-label {
+  color: #333;
+  transition: color 0.3s ease;
+}
+
+html.dark .modal-codigo-label {
+  color: #7dd3fc;
+}
+
+.modal-codigo-display {
+  color: #00bcd4;
+  transition: color 0.3s ease;
+}
+
+html.dark .modal-codigo-display {
+  color: #06b6d4;
+}
+
+.modal-codigo-subtitle {
+  color: #666;
+  transition: color 0.3s ease;
+}
+
+html.dark .modal-codigo-subtitle {
+  color: #94a3b8;
+}
+
+/* Roles container border */
+.roles-container-border {
+  border-top: 1px solid #e8e8e8;
+  transition: border-color 0.3s ease;
+}
+
+html.dark .roles-container-border {
+  border-top-color: #334155;
+}

@@ -1,0 +1,19 @@
+{% if historico and historico|length > 0 %}
+  {% for h in historico %}
+  <tr data-id="{{ h.id_historico }}" data-id-plan="{{ h.id_plan }}" data-num="{{ h.numero_linea }}" data-fecha-op="{{ h.fecha_operacion }}" data-inicio="{{ h.fecha_inicio }}" data-fin="{{ h.fecha_fin }}" data-costo="{{ h.costo_plan }}" data-moneda="{{ h.moneda_plan or 'L' }}">
+    <td>+({{ h.codigo_pais }}) {{ h.numero_sin_codigo[:4] }}-{{ h.numero_sin_codigo[4:] }}</td>
+    <td>{{ h.fecha_operacion or '' }}</td>
+    <td>{{ h.fecha_inicio or '' }}</td>
+    <td>{{ h.fecha_fin or '' }}</td>
+    <td>{{ h.moneda_plan or 'L' }} {{ h.costo_plan }}</td>
+    <td class="table-actions">
+      <!-- histórico: solo visualización, no acciones por defecto -->
+      <button type="button" class="btn btn-secondary btn-small btn-view">Ver</button>
+    </td>
+  </tr>
+  {% endfor %}
+{% else %}
+  <tr>
+    <td colspan="6" class="text-center text-muted">No hay registros de histórico para mostrar.</td>
+  </tr>
+{% endif %}

@@ -1,0 +1,1185 @@
+2026-03-10 07:58:35,037 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 07:58:37,098 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 07:58:40,865 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-09T22:57:03Z
+2026-03-10 07:58:42,617 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 07:58:42,620 INFO [admin_disp.cxc.service] Sync completado | SP: 14 | Insertados: 14 | Actualizados: 0 | Omitidos: 0
+2026-03-10 07:59:41,457 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T13:53:40Z
+2026-03-10 07:59:42,883 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:00:40,530 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T13:54:41Z
+2026-03-10 08:00:41,585 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:01:40,330 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T13:55:40Z
+2026-03-10 08:01:41,631 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:02:22,616 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 08:02:25,814 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T13:56:40Z
+2026-03-10 08:02:26,765 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:02:37,695 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 08:02:40,189 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 08:02:41,074 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T13:57:25Z
+2026-03-10 08:02:42,384 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:03:03,505 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 08:03:06,701 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T13:57:41Z
+2026-03-10 08:03:07,653 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:04:06,422 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T13:58:06Z
+2026-03-10 08:04:07,469 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:05:06,463 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T13:59:06Z
+2026-03-10 08:05:07,715 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:06:06,912 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:00:06Z
+2026-03-10 08:06:07,971 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:07:06,654 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:01:06Z
+2026-03-10 08:07:07,664 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:08:06,575 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:02:06Z
+2026-03-10 08:08:07,646 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:09:06,596 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:03:06Z
+2026-03-10 08:09:07,633 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:10:06,566 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:04:06Z
+2026-03-10 08:10:07,584 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:11:06,413 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:05:06Z
+2026-03-10 08:11:07,368 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:12:06,390 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:06:06Z
+2026-03-10 08:12:07,457 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:13:06,393 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:07:06Z
+2026-03-10 08:13:07,440 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:14:06,619 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:08:06Z
+2026-03-10 08:14:07,709 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:15:06,836 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:09:06Z
+2026-03-10 08:15:07,788 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:16:06,560 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:10:06Z
+2026-03-10 08:16:07,627 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:17:06,645 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:11:06Z
+2026-03-10 08:17:07,721 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:18:06,560 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:12:06Z
+2026-03-10 08:18:07,608 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:19:06,668 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:13:06Z
+2026-03-10 08:19:07,690 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:20:06,466 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:14:06Z
+2026-03-10 08:20:07,742 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:21:06,564 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:15:06Z
+2026-03-10 08:21:07,625 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:22:06,693 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:16:06Z
+2026-03-10 08:22:07,771 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:23:06,638 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:17:06Z
+2026-03-10 08:23:07,563 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:24:06,603 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:18:06Z
+2026-03-10 08:24:07,689 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:24:45,261 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 08:25:06,428 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:19:06Z
+2026-03-10 08:25:07,294 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:26:06,624 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:20:06Z
+2026-03-10 08:26:07,772 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:27:06,558 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:21:06Z
+2026-03-10 08:27:07,602 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:28:06,986 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:22:06Z
+2026-03-10 08:28:08,123 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:29:06,457 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:23:06Z
+2026-03-10 08:29:07,364 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:30:06,499 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:24:06Z
+2026-03-10 08:30:07,537 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:31:06,737 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:25:06Z
+2026-03-10 08:31:07,077 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 08:31:07,907 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:32:06,734 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:26:06Z
+2026-03-10 08:32:07,722 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:32:51,678 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 08:33:06,535 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:27:06Z
+2026-03-10 08:33:07,582 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:34:06,451 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:28:06Z
+2026-03-10 08:34:07,562 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:35:06,618 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:29:06Z
+2026-03-10 08:35:07,628 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:36:06,760 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:30:06Z
+2026-03-10 08:36:07,900 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:37:06,417 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:31:06Z
+2026-03-10 08:37:07,485 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:38:06,526 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:32:06Z
+2026-03-10 08:38:07,530 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:39:06,650 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:33:06Z
+2026-03-10 08:39:07,618 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:40:06,980 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:34:06Z
+2026-03-10 08:40:08,022 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:41:06,847 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:35:06Z
+2026-03-10 08:41:07,752 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:42:06,725 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:36:06Z
+2026-03-10 08:42:07,882 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:43:06,693 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:37:06Z
+2026-03-10 08:43:07,874 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:44:06,542 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:38:06Z
+2026-03-10 08:44:07,593 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:45:06,609 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:39:06Z
+2026-03-10 08:45:07,812 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:46:06,641 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:40:06Z
+2026-03-10 08:46:07,827 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:47:06,562 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:41:06Z
+2026-03-10 08:47:07,596 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:48:06,711 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:42:06Z
+2026-03-10 08:48:07,809 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:49:06,943 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:43:06Z
+2026-03-10 08:49:08,043 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:50:06,893 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:44:06Z
+2026-03-10 08:50:08,116 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:51:06,786 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:45:06Z
+2026-03-10 08:51:08,077 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:52:06,781 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:46:06Z
+2026-03-10 08:52:07,925 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:53:07,128 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:47:06Z
+2026-03-10 08:53:08,229 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:54:22,713 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:48:07Z
+2026-03-10 08:54:23,916 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:55:06,632 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:49:22Z
+2026-03-10 08:55:07,675 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:56:06,489 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:50:06Z
+2026-03-10 08:56:07,513 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:57:06,446 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:51:06Z
+2026-03-10 08:57:07,341 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:58:06,479 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:52:06Z
+2026-03-10 08:58:07,538 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 08:59:06,696 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:53:06Z
+2026-03-10 08:59:07,571 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:00:06,622 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:54:06Z
+2026-03-10 09:00:07,746 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:01:06,562 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:55:06Z
+2026-03-10 09:01:07,559 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:02:07,138 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:56:06Z
+2026-03-10 09:02:08,221 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:03:06,782 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:57:07Z
+2026-03-10 09:03:07,879 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:04:07,695 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:58:06Z
+2026-03-10 09:04:09,472 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:05:06,637 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T14:59:07Z
+2026-03-10 09:05:07,721 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:06:06,914 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:00:06Z
+2026-03-10 09:06:07,820 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:07:06,442 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:01:06Z
+2026-03-10 09:07:07,527 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:08:07,109 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:02:06Z
+2026-03-10 09:08:08,173 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:09:06,443 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:03:07Z
+2026-03-10 09:09:07,403 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:10:06,307 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:04:06Z
+2026-03-10 09:10:07,218 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:11:06,924 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:05:06Z
+2026-03-10 09:11:07,846 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:12:06,547 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:06:06Z
+2026-03-10 09:12:07,684 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:13:06,603 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:07:06Z
+2026-03-10 09:13:07,593 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:14:06,746 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:08:06Z
+2026-03-10 09:14:07,752 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:15:06,616 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:09:06Z
+2026-03-10 09:15:07,686 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:16:06,322 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:10:06Z
+2026-03-10 09:16:07,380 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:17:06,552 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:11:06Z
+2026-03-10 09:17:07,444 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:18:06,833 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:12:06Z
+2026-03-10 09:18:07,868 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:19:06,607 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:13:06Z
+2026-03-10 09:19:07,824 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:20:06,561 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:14:06Z
+2026-03-10 09:20:07,622 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:21:06,510 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:15:06Z
+2026-03-10 09:21:07,508 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:22:06,459 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:16:06Z
+2026-03-10 09:22:08,172 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:23:06,422 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:17:06Z
+2026-03-10 09:23:07,627 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:23:07,629 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 1 | Actualizados: 0 | Omitidos: 0
+2026-03-10 09:24:06,485 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:18:06Z
+2026-03-10 09:24:07,532 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:24:07,533 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 09:25:06,600 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:19:06Z
+2026-03-10 09:25:07,685 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:25:07,686 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 09:26:06,534 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:20:06Z
+2026-03-10 09:26:07,695 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:26:07,696 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 1 | Actualizados: 0 | Omitidos: 1
+2026-03-10 09:27:06,553 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:21:06Z
+2026-03-10 09:27:07,740 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:27:07,742 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 0 | Actualizados: 0 | Omitidos: 2
+2026-03-10 09:28:06,601 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:22:06Z
+2026-03-10 09:28:07,605 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:28:07,606 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 09:29:06,847 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:23:06Z
+2026-03-10 09:29:07,919 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:29:07,920 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 09:30:06,598 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:24:06Z
+2026-03-10 09:30:07,611 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:30:07,612 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 1 | Actualizados: 0 | Omitidos: 0
+2026-03-10 09:31:06,839 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:25:06Z
+2026-03-10 09:31:07,866 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:31:07,867 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 09:32:06,598 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:26:06Z
+2026-03-10 09:32:07,515 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:32:07,516 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 09:33:06,406 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:27:06Z
+2026-03-10 09:33:07,336 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:33:07,337 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 09:34:06,538 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:28:06Z
+2026-03-10 09:34:07,571 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:35:06,670 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:29:06Z
+2026-03-10 09:35:07,681 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:36:06,532 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:30:06Z
+2026-03-10 09:36:07,498 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:37:06,699 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:31:06Z
+2026-03-10 09:37:07,603 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:38:06,656 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:32:06Z
+2026-03-10 09:38:07,834 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:39:06,851 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:33:06Z
+2026-03-10 09:39:08,015 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:39:08,016 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 1 | Actualizados: 0 | Omitidos: 0
+2026-03-10 09:40:06,989 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:34:06Z
+2026-03-10 09:40:08,216 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:40:08,218 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 09:41:06,734 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:35:06Z
+2026-03-10 09:41:08,128 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:41:08,130 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 09:42:06,584 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:36:06Z
+2026-03-10 09:42:07,707 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:42:07,708 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 09:43:06,719 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:37:06Z
+2026-03-10 09:43:07,813 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 09:43:07,814 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 09:44:06,655 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:38:06Z
+2026-03-10 09:44:07,798 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:45:06,458 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:39:06Z
+2026-03-10 09:45:07,525 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:46:06,980 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:40:06Z
+2026-03-10 09:46:08,073 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:47:07,928 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:41:06Z
+2026-03-10 09:47:09,030 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:48:06,764 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:42:07Z
+2026-03-10 09:48:07,893 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:49:06,546 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:43:06Z
+2026-03-10 09:49:07,592 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:50:06,515 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:44:06Z
+2026-03-10 09:50:07,663 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:51:06,824 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:45:06Z
+2026-03-10 09:51:07,918 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:52:06,550 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:46:06Z
+2026-03-10 09:52:07,631 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:53:06,601 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:47:06Z
+2026-03-10 09:53:07,643 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:54:06,530 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:48:06Z
+2026-03-10 09:54:07,434 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:55:06,649 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:49:06Z
+2026-03-10 09:55:07,665 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:56:07,275 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:50:06Z
+2026-03-10 09:56:08,467 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:57:06,660 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:51:07Z
+2026-03-10 09:57:07,511 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:57:48,253 INFO [admin_disp.cxc.routes] Sync manual [mode=update_all] solicitado por roussbel.medina
+2026-03-10 09:57:51,227 INFO [admin_disp.cxc.service] Sync FORZADO: cargando TODOS los registros de SharePoint (manual)...
+2026-03-10 09:58:06,662 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:52:06Z
+2026-03-10 09:58:07,728 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 09:58:54,910 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 115 registros actualizados
+2026-03-10 09:58:54,911 INFO [admin_disp.cxc.service] fill_sucursal_from_empleados: 115 registros actualizados
+2026-03-10 09:58:54,912 INFO [admin_disp.cxc.service] Sync completado | SP: 10499 | Insertados: 0 | Actualizados: 10499 | Omitidos: 0
+2026-03-10 09:59:06,629 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:52:51Z
+2026-03-10 09:59:07,665 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:00:06,697 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:54:06Z
+2026-03-10 10:00:07,806 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:01:06,580 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:55:06Z
+2026-03-10 10:01:07,853 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 10:01:07,855 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 1 | Actualizados: 0 | Omitidos: 0
+2026-03-10 10:02:06,698 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:56:06Z
+2026-03-10 10:02:07,772 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 10:02:07,773 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 10:03:06,293 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:57:06Z
+2026-03-10 10:03:07,370 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 10:03:07,371 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 10:04:06,512 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:58:06Z
+2026-03-10 10:04:07,617 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 10:04:07,618 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 1 | Actualizados: 0 | Omitidos: 1
+2026-03-10 10:05:06,748 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T15:59:06Z
+2026-03-10 10:05:07,915 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 10:05:07,917 INFO [admin_disp.cxc.service] Sync completado | SP: 3 | Insertados: 1 | Actualizados: 0 | Omitidos: 2
+2026-03-10 10:06:06,403 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:00:06Z
+2026-03-10 10:06:07,354 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 10:06:07,355 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 0 | Actualizados: 0 | Omitidos: 2
+2026-03-10 10:07:06,673 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:01:06Z
+2026-03-10 10:07:07,747 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 10:07:07,749 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 0 | Actualizados: 0 | Omitidos: 2
+2026-03-10 10:08:06,633 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:02:06Z
+2026-03-10 10:08:07,706 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 10:08:07,707 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 0 | Actualizados: 0 | Omitidos: 2
+2026-03-10 10:09:06,567 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:03:06Z
+2026-03-10 10:09:07,643 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 10:09:07,644 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 10:10:06,305 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:04:06Z
+2026-03-10 10:10:07,380 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:11:07,226 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:05:06Z
+2026-03-10 10:11:08,477 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:12:06,701 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:06:07Z
+2026-03-10 10:12:07,928 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:12:31,669 INFO [admin_disp.cxc.operations] registrar_liquidacion_pdf: lote_id=73 numero=LIQ-00018 cobros_vinculados=1/1
+2026-03-10 10:12:37,067 INFO [admin_disp.cxc.operations] registrar_liquidacion_pdf: lote_id=74 numero=LIQ-00019 cobros_vinculados=1/1
+2026-03-10 10:12:53,535 INFO [admin_disp.cxc.routes] lote_subir_firmado: lote=74 → IT/CxC/2026/LIQ-00019 rev.pdf subido, estado=12 por roussbel.medina
+2026-03-10 10:13:06,803 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:07:06Z
+2026-03-10 10:13:07,898 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:13:49,389 INFO [admin_disp.cxc.routes] lote_confirmar: lote=74 confirmado (estado=14) por roussbel.medina
+2026-03-10 10:14:06,784 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:08:06Z
+2026-03-10 10:14:07,957 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:15:06,666 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:09:06Z
+2026-03-10 10:15:07,769 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:16:06,956 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:10:06Z
+2026-03-10 10:16:07,901 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:17:06,569 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:11:06Z
+2026-03-10 10:17:07,606 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:18:06,823 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:12:06Z
+2026-03-10 10:18:07,866 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:19:06,774 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:13:06Z
+2026-03-10 10:19:08,007 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:20:07,088 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:14:06Z
+2026-03-10 10:20:08,348 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:21:06,578 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:15:07Z
+2026-03-10 10:21:07,679 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:22:06,442 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:16:06Z
+2026-03-10 10:22:07,523 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:23:06,319 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:17:06Z
+2026-03-10 10:23:07,183 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:24:06,758 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:18:06Z
+2026-03-10 10:24:07,796 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:25:07,047 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:19:06Z
+2026-03-10 10:25:08,265 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:26:06,700 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:20:07Z
+2026-03-10 10:26:07,635 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:27:07,435 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:21:06Z
+2026-03-10 10:27:08,385 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:28:06,610 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:22:07Z
+2026-03-10 10:28:07,797 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:29:06,678 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:23:06Z
+2026-03-10 10:29:07,871 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:30:06,861 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:24:06Z
+2026-03-10 10:30:07,913 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:31:06,693 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:25:06Z
+2026-03-10 10:31:07,690 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:32:06,477 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:26:06Z
+2026-03-10 10:32:07,392 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:33:07,151 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:27:06Z
+2026-03-10 10:33:08,231 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:34:06,524 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:28:07Z
+2026-03-10 10:34:07,390 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:35:06,531 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:29:06Z
+2026-03-10 10:35:07,625 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:36:06,771 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:30:06Z
+2026-03-10 10:36:08,036 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:37:06,630 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:31:06Z
+2026-03-10 10:37:07,678 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:38:06,583 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:32:06Z
+2026-03-10 10:38:07,831 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:39:06,629 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:33:06Z
+2026-03-10 10:39:07,626 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:40:06,626 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:34:06Z
+2026-03-10 10:40:07,651 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:41:06,866 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:35:06Z
+2026-03-10 10:41:08,081 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:42:06,608 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:36:06Z
+2026-03-10 10:42:07,523 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:43:06,374 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:37:06Z
+2026-03-10 10:43:07,323 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:44:07,459 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:38:06Z
+2026-03-10 10:44:08,706 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:45:06,513 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:39:07Z
+2026-03-10 10:45:07,585 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:46:06,696 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:40:06Z
+2026-03-10 10:46:07,858 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:47:06,846 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:41:06Z
+2026-03-10 10:47:07,744 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:48:06,625 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:42:06Z
+2026-03-10 10:48:07,528 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:49:06,609 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:43:06Z
+2026-03-10 10:49:07,663 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:50:07,096 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:44:06Z
+2026-03-10 10:50:08,337 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:51:06,774 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:45:07Z
+2026-03-10 10:51:07,842 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:52:06,624 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:46:06Z
+2026-03-10 10:52:07,709 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:53:06,503 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:47:06Z
+2026-03-10 10:53:07,461 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:54:06,248 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:48:06Z
+2026-03-10 10:54:07,327 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:55:06,627 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:49:06Z
+2026-03-10 10:55:07,702 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:56:06,448 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:50:06Z
+2026-03-10 10:56:07,494 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:57:06,444 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:51:06Z
+2026-03-10 10:57:07,432 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:58:06,379 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:52:06Z
+2026-03-10 10:58:07,486 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 10:58:39,343 INFO [admin_disp.cxc.operations] registrar_liquidacion_pdf: lote_id=75 numero=LIQ-00020 cobros_vinculados=3/3
+2026-03-10 10:59:06,512 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:53:06Z
+2026-03-10 10:59:07,592 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:00:06,672 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:54:06Z
+2026-03-10 11:00:07,559 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:01:06,731 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:55:06Z
+2026-03-10 11:01:07,776 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:02:06,387 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:56:06Z
+2026-03-10 11:02:07,604 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:03:06,852 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:57:06Z
+2026-03-10 11:03:07,787 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:04:06,513 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:58:06Z
+2026-03-10 11:04:07,492 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:04:58,581 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 11:05:01,793 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T16:59:06Z
+2026-03-10 11:05:02,831 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:05:05,141 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 11:05:08,383 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:00:01Z
+2026-03-10 11:05:09,700 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:05:12,001 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 11:05:15,368 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:00:08Z
+2026-03-10 11:05:16,445 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:05:18,330 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 11:05:21,372 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:00:15Z
+2026-03-10 11:05:22,470 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:05:30,370 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 11:05:33,451 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:00:21Z
+2026-03-10 11:05:34,387 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:06:33,333 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:00:33Z
+2026-03-10 11:06:34,271 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:06:42,893 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 11:06:46,047 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:01:33Z
+2026-03-10 11:06:47,310 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:06:54,492 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 11:06:57,647 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:01:46Z
+2026-03-10 11:06:58,942 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:07:57,293 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:01:57Z
+2026-03-10 11:07:58,326 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:08:57,716 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:02:57Z
+2026-03-10 11:08:58,661 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:09:57,615 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:03:57Z
+2026-03-10 11:09:58,498 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:10:57,834 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:04:57Z
+2026-03-10 11:10:58,887 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:11:57,705 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:05:57Z
+2026-03-10 11:11:58,813 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:12:57,693 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:06:57Z
+2026-03-10 11:12:58,742 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:13:57,395 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:07:57Z
+2026-03-10 11:13:58,445 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:14:57,965 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:08:57Z
+2026-03-10 11:14:59,039 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:15:57,605 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:09:57Z
+2026-03-10 11:15:58,555 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:16:57,764 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:10:57Z
+2026-03-10 11:16:58,695 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:17:57,424 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:11:57Z
+2026-03-10 11:17:58,417 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:18:57,766 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:12:57Z
+2026-03-10 11:18:58,831 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:19:57,678 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:13:57Z
+2026-03-10 11:19:58,774 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:20:57,577 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:14:57Z
+2026-03-10 11:20:58,734 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:21:57,577 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:15:57Z
+2026-03-10 11:21:58,687 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:22:57,561 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:16:57Z
+2026-03-10 11:22:58,472 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:23:57,609 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:17:57Z
+2026-03-10 11:23:58,792 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:24:57,682 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:18:57Z
+2026-03-10 11:24:58,688 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:25:57,259 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:19:57Z
+2026-03-10 11:25:58,161 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:26:57,476 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:20:57Z
+2026-03-10 11:26:58,592 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:27:57,597 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:21:57Z
+2026-03-10 11:27:58,513 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:28:57,506 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:22:57Z
+2026-03-10 11:28:58,548 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:29:57,305 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:23:57Z
+2026-03-10 11:29:58,245 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:30:57,240 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:24:57Z
+2026-03-10 11:30:58,124 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:31:57,343 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:25:57Z
+2026-03-10 11:31:58,253 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:32:57,809 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:26:57Z
+2026-03-10 11:32:58,862 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:33:57,517 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:27:57Z
+2026-03-10 11:33:58,630 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:34:57,577 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:28:57Z
+2026-03-10 11:34:58,721 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:35:58,278 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:29:57Z
+2026-03-10 11:35:59,319 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:36:57,310 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:30:58Z
+2026-03-10 11:36:58,382 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:37:57,324 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:31:57Z
+2026-03-10 11:37:58,267 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:38:57,780 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:32:57Z
+2026-03-10 11:38:58,701 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:39:57,330 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:33:57Z
+2026-03-10 11:39:58,249 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:40:57,442 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:34:57Z
+2026-03-10 11:40:58,399 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:41:57,370 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:35:57Z
+2026-03-10 11:41:58,310 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:42:57,342 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:36:57Z
+2026-03-10 11:42:58,254 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:43:57,350 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:37:57Z
+2026-03-10 11:43:58,243 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:44:57,533 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:38:57Z
+2026-03-10 11:44:58,563 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:45:57,530 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:39:57Z
+2026-03-10 11:45:58,513 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:46:57,640 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:40:57Z
+2026-03-10 11:46:58,553 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:47:57,983 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:41:57Z
+2026-03-10 11:47:59,029 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:48:57,210 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:42:57Z
+2026-03-10 11:48:58,255 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:49:57,658 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:43:57Z
+2026-03-10 11:49:58,579 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:50:57,997 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:44:57Z
+2026-03-10 11:50:59,010 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:51:57,513 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:45:57Z
+2026-03-10 11:51:58,527 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 11:52:57,647 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:46:57Z
+2026-03-10 11:52:58,797 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 11:52:58,799 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 1 | Actualizados: 0 | Omitidos: 0
+2026-03-10 11:53:57,214 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:47:57Z
+2026-03-10 11:53:58,180 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 11:53:58,181 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 11:54:57,644 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:48:57Z
+2026-03-10 11:54:58,719 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 11:54:58,720 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 11:55:57,429 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:49:57Z
+2026-03-10 11:55:58,390 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 11:55:58,392 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 1 | Actualizados: 0 | Omitidos: 1
+2026-03-10 11:56:57,531 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:50:57Z
+2026-03-10 11:56:58,497 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 11:56:58,499 INFO [admin_disp.cxc.service] Sync completado | SP: 2 | Insertados: 0 | Actualizados: 0 | Omitidos: 2
+2026-03-10 11:57:57,357 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:51:57Z
+2026-03-10 11:57:58,413 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 11:57:58,414 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 11:58:53,625 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 11:58:56,444 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:52:57Z
+2026-03-10 11:58:57,704 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 11:58:57,706 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 11:59:41,048 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 11:59:44,000 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:53:56Z
+2026-03-10 11:59:45,170 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 11:59:45,171 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 12:00:43,949 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:54:43Z
+2026-03-10 12:00:44,883 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:01:43,940 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:55:43Z
+2026-03-10 12:01:44,900 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:02:43,994 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:56:43Z
+2026-03-10 12:02:45,022 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:03:43,991 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:57:43Z
+2026-03-10 12:03:45,136 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:04:44,107 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:58:43Z
+2026-03-10 12:04:44,987 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:05:43,963 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T17:59:44Z
+2026-03-10 12:05:44,898 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:06:43,952 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:00:43Z
+2026-03-10 12:06:44,975 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:07:44,089 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:01:43Z
+2026-03-10 12:07:45,047 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:08:43,832 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:02:44Z
+2026-03-10 12:08:44,801 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:09:44,167 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:03:43Z
+2026-03-10 12:09:45,175 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:10:45,453 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:04:44Z
+2026-03-10 12:10:46,364 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:11:44,099 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:05:45Z
+2026-03-10 12:11:45,096 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:12:43,895 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:06:44Z
+2026-03-10 12:12:45,041 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:13:44,584 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:07:43Z
+2026-03-10 12:13:45,509 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:14:44,366 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:08:44Z
+2026-03-10 12:14:45,271 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:15:43,993 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:09:44Z
+2026-03-10 12:15:45,388 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:15:45,389 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 1 | Actualizados: 0 | Omitidos: 0
+2026-03-10 12:16:43,776 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:10:43Z
+2026-03-10 12:16:44,740 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:16:44,742 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 12:17:43,956 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:11:43Z
+2026-03-10 12:17:44,914 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:17:44,915 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 12:18:43,977 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:12:43Z
+2026-03-10 12:18:44,935 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:18:44,936 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 12:19:43,971 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:13:43Z
+2026-03-10 12:19:44,955 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:19:44,957 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 12:20:44,362 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:14:43Z
+2026-03-10 12:20:45,313 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:21:44,113 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:15:44Z
+2026-03-10 12:21:45,118 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:22:44,230 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:16:44Z
+2026-03-10 12:22:45,450 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:22:45,452 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 1 | Actualizados: 0 | Omitidos: 0
+2026-03-10 12:23:43,960 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:17:44Z
+2026-03-10 12:23:44,932 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:23:44,933 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 12:24:43,879 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:18:43Z
+2026-03-10 12:24:44,894 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:24:44,896 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 12:25:44,442 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:19:43Z
+2026-03-10 12:25:45,419 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:25:45,420 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 12:26:44,723 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:20:44Z
+2026-03-10 12:26:45,938 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:26:45,940 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 12:27:44,441 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:21:44Z
+2026-03-10 12:27:45,395 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:27:45,396 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 1 | Actualizados: 0 | Omitidos: 0
+2026-03-10 12:28:44,237 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:22:44Z
+2026-03-10 12:28:45,350 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:28:45,351 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 12:29:44,193 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:23:44Z
+2026-03-10 12:29:45,771 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:29:45,772 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 12:30:44,225 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:24:44Z
+2026-03-10 12:30:45,193 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:30:45,194 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 12:31:44,973 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:25:44Z
+2026-03-10 12:31:45,924 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 0 registros actualizados
+2026-03-10 12:31:45,925 INFO [admin_disp.cxc.service] Sync completado | SP: 1 | Insertados: 0 | Actualizados: 0 | Omitidos: 1
+2026-03-10 12:32:44,640 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:26:44Z
+2026-03-10 12:32:45,571 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:33:44,015 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:27:44Z
+2026-03-10 12:33:44,966 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:34:43,786 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:28:44Z
+2026-03-10 12:34:44,797 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:35:44,234 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:29:43Z
+2026-03-10 12:35:45,129 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:36:44,013 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:30:44Z
+2026-03-10 12:36:45,430 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:37:44,121 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:31:44Z
+2026-03-10 12:37:45,034 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:38:43,962 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:32:44Z
+2026-03-10 12:38:45,008 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:39:44,579 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:33:43Z
+2026-03-10 12:39:45,585 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:40:44,203 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:34:44Z
+2026-03-10 12:40:45,287 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:41:44,110 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:35:44Z
+2026-03-10 12:41:45,145 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:42:44,086 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:36:44Z
+2026-03-10 12:42:45,005 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:43:44,215 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:37:44Z
+2026-03-10 12:43:45,265 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:44:43,978 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:38:44Z
+2026-03-10 12:44:44,883 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:45:43,992 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:39:43Z
+2026-03-10 12:45:45,040 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:46:44,360 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:40:43Z
+2026-03-10 12:46:45,482 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:47:44,092 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:41:44Z
+2026-03-10 12:47:45,108 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:48:44,164 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:42:44Z
+2026-03-10 12:48:45,254 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:49:43,781 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:43:44Z
+2026-03-10 12:49:44,754 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:50:43,817 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:44:43Z
+2026-03-10 12:50:44,747 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:51:43,991 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:45:43Z
+2026-03-10 12:51:45,072 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:52:02,165 INFO [admin_disp.cxc.routes] lote_subir_firmado: lote=75 → IT/CxC/2026/LIQ-00020 rev.pdf subido, estado=12 por Joel Reyes
+2026-03-10 12:52:29,843 INFO [admin_disp.cxc.routes] lote_marcar_revision: lote=75 → estado=13 por Joel Reyes
+2026-03-10 12:52:43,945 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:46:43Z
+2026-03-10 12:52:44,860 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:53:44,132 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:47:43Z
+2026-03-10 12:53:45,202 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:54:43,848 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:48:44Z
+2026-03-10 12:54:44,704 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:55:44,111 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:49:43Z
+2026-03-10 12:55:45,592 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:56:44,220 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:50:44Z
+2026-03-10 12:56:45,288 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:57:44,178 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:51:44Z
+2026-03-10 12:57:45,074 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:58:44,116 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:52:44Z
+2026-03-10 12:58:45,101 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 12:59:43,967 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:53:44Z
+2026-03-10 12:59:44,955 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:00:43,815 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:54:43Z
+2026-03-10 13:00:44,683 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:01:44,218 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:55:43Z
+2026-03-10 13:01:45,239 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:02:44,236 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:56:44Z
+2026-03-10 13:02:45,320 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:03:44,438 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:57:44Z
+2026-03-10 13:03:45,573 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:04:43,977 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:58:44Z
+2026-03-10 13:04:45,077 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:05:44,390 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T18:59:43Z
+2026-03-10 13:05:45,464 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:06:44,169 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:00:44Z
+2026-03-10 13:06:45,214 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:07:44,328 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:01:44Z
+2026-03-10 13:07:45,617 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:08:44,479 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:02:44Z
+2026-03-10 13:08:45,542 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:09:44,162 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:03:44Z
+2026-03-10 13:09:45,241 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:10:44,263 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:04:44Z
+2026-03-10 13:10:45,351 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:11:44,292 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:05:44Z
+2026-03-10 13:11:45,425 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:12:44,167 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:06:44Z
+2026-03-10 13:12:45,365 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:13:44,248 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:07:44Z
+2026-03-10 13:13:45,202 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:14:44,523 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:08:44Z
+2026-03-10 13:14:45,619 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:15:44,014 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:09:44Z
+2026-03-10 13:15:45,228 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:16:44,188 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:10:44Z
+2026-03-10 13:16:45,120 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:17:44,219 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:11:44Z
+2026-03-10 13:17:45,334 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:18:44,290 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:12:44Z
+2026-03-10 13:18:45,214 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:19:44,092 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:13:44Z
+2026-03-10 13:19:45,069 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:20:44,243 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:14:44Z
+2026-03-10 13:20:45,709 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:21:44,408 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:15:44Z
+2026-03-10 13:21:45,388 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:22:44,257 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:16:44Z
+2026-03-10 13:22:45,401 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:23:45,413 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:17:44Z
+2026-03-10 13:23:46,437 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:24:44,362 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:18:45Z
+2026-03-10 13:24:45,483 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:25:44,108 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:19:44Z
+2026-03-10 13:25:45,233 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:26:43,998 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:20:44Z
+2026-03-10 13:26:45,037 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:27:44,087 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:21:43Z
+2026-03-10 13:27:45,148 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:28:44,173 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:22:44Z
+2026-03-10 13:28:45,173 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:29:44,128 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:23:44Z
+2026-03-10 13:29:45,214 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:30:44,133 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:24:44Z
+2026-03-10 13:30:45,165 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:31:45,207 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:25:44Z
+2026-03-10 13:31:51,076 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:32:44,159 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:26:45Z
+2026-03-10 13:32:45,119 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:33:44,278 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:27:44Z
+2026-03-10 13:33:45,291 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:34:44,266 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:28:44Z
+2026-03-10 13:34:45,136 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:35:43,969 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:29:44Z
+2026-03-10 13:35:44,858 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:36:44,037 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:30:43Z
+2026-03-10 13:36:45,039 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:37:44,211 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:31:44Z
+2026-03-10 13:37:45,193 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:38:47,972 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:32:44Z
+2026-03-10 13:38:48,985 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:39:43,961 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:33:47Z
+2026-03-10 13:39:44,837 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:40:43,950 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:34:43Z
+2026-03-10 13:40:45,082 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:41:44,000 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:35:43Z
+2026-03-10 13:41:44,983 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:42:44,067 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:36:44Z
+2026-03-10 13:42:45,250 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:43:48,402 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:37:44Z
+2026-03-10 13:43:49,433 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:44:43,956 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:38:48Z
+2026-03-10 13:44:44,887 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:45:43,951 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:39:43Z
+2026-03-10 13:45:44,836 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:46:44,128 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:40:43Z
+2026-03-10 13:46:45,435 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:47:44,862 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:41:44Z
+2026-03-10 13:47:45,749 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:48:44,157 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:42:44Z
+2026-03-10 13:48:45,221 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:49:44,099 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:43:44Z
+2026-03-10 13:49:44,987 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:50:44,125 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:44:44Z
+2026-03-10 13:50:45,157 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:51:44,139 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:45:44Z
+2026-03-10 13:51:45,162 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:52:44,077 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:46:44Z
+2026-03-10 13:52:45,069 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:53:44,127 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:47:44Z
+2026-03-10 13:53:45,184 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:54:44,648 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:48:44Z
+2026-03-10 13:54:45,753 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:55:44,173 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:49:44Z
+2026-03-10 13:55:45,230 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:56:44,454 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:50:44Z
+2026-03-10 13:56:45,655 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:57:44,350 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:51:44Z
+2026-03-10 13:57:45,434 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:58:44,424 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:52:44Z
+2026-03-10 13:58:45,520 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 13:59:43,949 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:53:44Z
+2026-03-10 13:59:45,037 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:00:44,277 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:54:43Z
+2026-03-10 14:00:45,289 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:01:44,440 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:55:44Z
+2026-03-10 14:01:45,500 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:02:43,980 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:56:44Z
+2026-03-10 14:02:44,886 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:03:44,235 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:57:43Z
+2026-03-10 14:03:45,284 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:04:43,982 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:58:44Z
+2026-03-10 14:04:45,225 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:05:44,436 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T19:59:43Z
+2026-03-10 14:05:45,459 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:06:44,022 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:00:44Z
+2026-03-10 14:06:44,961 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:07:44,202 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:01:44Z
+2026-03-10 14:07:45,241 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:08:43,896 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:02:44Z
+2026-03-10 14:08:45,004 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:09:44,339 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:03:43Z
+2026-03-10 14:09:45,442 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:10:44,053 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:04:44Z
+2026-03-10 14:10:45,100 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:11:43,934 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:05:44Z
+2026-03-10 14:11:44,961 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:12:44,427 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:06:43Z
+2026-03-10 14:12:45,382 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:13:43,899 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:07:44Z
+2026-03-10 14:13:45,066 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:14:44,107 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:08:43Z
+2026-03-10 14:14:45,223 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:15:43,922 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:09:44Z
+2026-03-10 14:15:44,969 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:15:55,174 INFO [admin_disp.cxc.routes] lote_marcar_revision: lote=75 → estado=13 por Joel Reyes
+2026-03-10 14:16:44,036 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:10:43Z
+2026-03-10 14:16:45,147 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:17:44,147 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:11:44Z
+2026-03-10 14:17:45,024 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:18:43,852 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:12:44Z
+2026-03-10 14:18:44,744 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:19:44,233 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:13:43Z
+2026-03-10 14:19:45,235 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:20:43,905 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:14:44Z
+2026-03-10 14:20:44,944 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:21:44,124 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:15:43Z
+2026-03-10 14:21:45,066 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:22:44,366 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:16:44Z
+2026-03-10 14:22:45,412 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:23:43,798 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:17:44Z
+2026-03-10 14:23:44,845 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:24:44,038 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:18:43Z
+2026-03-10 14:24:44,928 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:25:44,060 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:19:44Z
+2026-03-10 14:25:45,502 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:26:43,939 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:20:44Z
+2026-03-10 14:26:44,943 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:27:44,143 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:21:43Z
+2026-03-10 14:27:45,178 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:28:40,170 INFO [admin_disp.cxc.routes] lote_confirmar: lote=75 confirmado (estado=14) por roussbel.medina
+2026-03-10 14:28:44,316 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:22:44Z
+2026-03-10 14:28:45,524 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:29:44,240 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:23:44Z
+2026-03-10 14:29:45,235 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:30:44,093 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:24:44Z
+2026-03-10 14:30:45,193 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:31:44,290 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:25:44Z
+2026-03-10 14:31:45,199 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:32:43,980 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:26:44Z
+2026-03-10 14:32:45,139 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:33:43,978 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:27:43Z
+2026-03-10 14:33:44,976 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:34:43,776 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:28:43Z
+2026-03-10 14:34:44,873 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:35:43,807 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:29:43Z
+2026-03-10 14:35:44,842 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:36:44,485 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:30:43Z
+2026-03-10 14:36:45,383 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:37:44,203 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:31:44Z
+2026-03-10 14:37:45,298 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:38:43,998 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:32:44Z
+2026-03-10 14:38:45,020 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:39:43,965 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:33:43Z
+2026-03-10 14:39:45,148 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:40:44,373 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:34:43Z
+2026-03-10 14:40:45,460 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:41:44,591 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:35:44Z
+2026-03-10 14:41:45,534 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:42:44,198 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:36:44Z
+2026-03-10 14:42:45,216 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:43:44,150 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:37:44Z
+2026-03-10 14:43:45,059 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:44:44,105 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:38:44Z
+2026-03-10 14:44:45,173 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:45:44,245 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:39:44Z
+2026-03-10 14:45:45,125 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:46:44,265 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:40:44Z
+2026-03-10 14:46:45,357 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:47:44,082 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:41:44Z
+2026-03-10 14:47:45,109 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:48:44,073 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:42:44Z
+2026-03-10 14:48:45,192 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:49:43,928 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:43:44Z
+2026-03-10 14:49:44,847 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:50:43,970 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:44:43Z
+2026-03-10 14:50:44,960 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:51:44,574 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:45:43Z
+2026-03-10 14:51:45,813 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:52:44,724 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:46:44Z
+2026-03-10 14:52:45,950 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:53:44,180 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:47:44Z
+2026-03-10 14:53:45,221 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:54:44,116 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:48:44Z
+2026-03-10 14:54:45,163 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:55:44,002 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:49:44Z
+2026-03-10 14:55:44,969 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:56:45,164 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:50:44Z
+2026-03-10 14:56:46,263 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:57:44,168 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:51:45Z
+2026-03-10 14:57:45,131 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:58:43,822 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:52:44Z
+2026-03-10 14:58:44,785 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 14:59:44,096 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:53:43Z
+2026-03-10 14:59:45,088 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:00:44,093 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:54:44Z
+2026-03-10 15:00:44,976 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:01:44,542 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:55:44Z
+2026-03-10 15:01:45,511 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:02:44,271 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:56:44Z
+2026-03-10 15:02:45,316 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:03:44,084 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:57:44Z
+2026-03-10 15:03:45,085 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:04:44,291 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:58:44Z
+2026-03-10 15:04:45,318 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:05:43,942 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T20:59:44Z
+2026-03-10 15:05:44,915 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:06:43,929 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:00:43Z
+2026-03-10 15:06:45,054 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:07:44,104 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:01:43Z
+2026-03-10 15:07:45,048 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:08:44,074 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:02:44Z
+2026-03-10 15:08:44,984 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:09:44,320 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:03:44Z
+2026-03-10 15:09:45,476 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:10:44,365 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:04:44Z
+2026-03-10 15:10:45,247 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:11:44,193 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:05:44Z
+2026-03-10 15:11:45,062 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:12:44,255 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:06:44Z
+2026-03-10 15:12:45,262 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:13:43,921 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:07:44Z
+2026-03-10 15:13:45,015 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:14:43,975 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:08:43Z
+2026-03-10 15:14:44,826 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:15:43,989 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:09:43Z
+2026-03-10 15:15:45,011 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:16:44,080 INFO [admin_disp.cxc.routes] PDF de control (sin guardar): 6 filas, ejecutivo=Joel Reyes, razón=control_only
+2026-03-10 15:16:44,157 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:10:43Z
+2026-03-10 15:16:45,252 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:17:44,313 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:11:44Z
+2026-03-10 15:17:45,418 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:18:44,050 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:12:44Z
+2026-03-10 15:18:45,093 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:19:44,097 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:13:44Z
+2026-03-10 15:19:45,087 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:20:44,109 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:14:44Z
+2026-03-10 15:20:45,322 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:21:44,090 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:15:44Z
+2026-03-10 15:21:45,080 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:22:43,958 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:16:44Z
+2026-03-10 15:22:44,933 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:23:43,786 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:17:43Z
+2026-03-10 15:23:44,784 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:24:44,103 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:18:43Z
+2026-03-10 15:24:45,131 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:25:44,211 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:19:44Z
+2026-03-10 15:25:45,304 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:26:43,782 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:20:44Z
+2026-03-10 15:26:44,804 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:27:43,858 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:21:43Z
+2026-03-10 15:27:44,893 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:28:44,022 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:22:43Z
+2026-03-10 15:28:44,923 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:29:44,084 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:23:44Z
+2026-03-10 15:29:45,056 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:30:44,094 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:24:44Z
+2026-03-10 15:30:45,125 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:31:44,164 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:25:44Z
+2026-03-10 15:31:45,203 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:32:44,050 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:26:44Z
+2026-03-10 15:32:44,963 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:33:43,956 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:27:44Z
+2026-03-10 15:33:45,037 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:34:43,769 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:28:43Z
+2026-03-10 15:34:44,846 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:35:43,760 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:29:43Z
+2026-03-10 15:35:44,982 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:36:44,052 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:30:43Z
+2026-03-10 15:36:45,070 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:37:44,000 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:31:44Z
+2026-03-10 15:37:45,067 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:38:43,984 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:32:44Z
+2026-03-10 15:38:45,059 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:39:44,378 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:33:43Z
+2026-03-10 15:39:45,284 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:40:44,023 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:34:44Z
+2026-03-10 15:40:45,074 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:41:44,058 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:35:44Z
+2026-03-10 15:41:45,154 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:42:44,111 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:36:44Z
+2026-03-10 15:42:45,260 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:43:44,274 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:37:44Z
+2026-03-10 15:43:45,367 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:44:44,041 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:38:44Z
+2026-03-10 15:44:45,019 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:45:44,657 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:39:44Z
+2026-03-10 15:45:45,707 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:46:44,046 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:40:44Z
+2026-03-10 15:46:45,040 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:47:44,316 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:41:44Z
+2026-03-10 15:47:46,061 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:48:43,968 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:42:44Z
+2026-03-10 15:48:44,890 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:49:44,383 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:43:43Z
+2026-03-10 15:49:45,510 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:50:44,319 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:44:44Z
+2026-03-10 15:50:45,212 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:51:43,991 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:45:44Z
+2026-03-10 15:51:45,089 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:52:44,174 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:46:43Z
+2026-03-10 15:52:45,279 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:53:44,367 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:47:44Z
+2026-03-10 15:53:45,471 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:54:44,497 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:48:44Z
+2026-03-10 15:54:45,614 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:55:43,848 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:49:44Z
+2026-03-10 15:55:44,828 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:56:44,090 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:50:43Z
+2026-03-10 15:56:45,095 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:57:44,332 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:51:44Z
+2026-03-10 15:57:45,379 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:58:44,054 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:52:44Z
+2026-03-10 15:58:44,956 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 15:59:44,032 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:53:44Z
+2026-03-10 15:59:45,066 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:00:44,089 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:54:44Z
+2026-03-10 16:00:45,099 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:01:44,042 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:55:44Z
+2026-03-10 16:01:45,054 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:02:44,103 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:56:44Z
+2026-03-10 16:02:45,664 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:03:44,099 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:57:44Z
+2026-03-10 16:03:45,097 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:04:43,990 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:58:44Z
+2026-03-10 16:04:45,184 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:05:44,127 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T21:59:43Z
+2026-03-10 16:05:45,133 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:06:44,308 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:00:44Z
+2026-03-10 16:06:45,381 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:07:43,909 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:01:44Z
+2026-03-10 16:07:44,986 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:08:44,002 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:02:43Z
+2026-03-10 16:08:44,993 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:09:44,210 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:03:44Z
+2026-03-10 16:09:45,252 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:10:44,276 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:04:44Z
+2026-03-10 16:10:45,161 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:11:44,089 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:05:44Z
+2026-03-10 16:11:45,091 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:12:43,998 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:06:44Z
+2026-03-10 16:12:45,110 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:13:44,153 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:07:43Z
+2026-03-10 16:13:45,041 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:14:44,257 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:08:44Z
+2026-03-10 16:14:45,355 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:15:44,035 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:09:44Z
+2026-03-10 16:15:45,136 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:16:44,309 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:10:44Z
+2026-03-10 16:16:45,368 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:17:44,164 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:11:44Z
+2026-03-10 16:17:45,126 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:18:44,115 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:12:44Z
+2026-03-10 16:18:45,037 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:19:43,866 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:13:44Z
+2026-03-10 16:19:45,037 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:20:43,989 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:14:43Z
+2026-03-10 16:20:44,906 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:21:44,192 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:15:43Z
+2026-03-10 16:21:45,259 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:22:44,296 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:16:44Z
+2026-03-10 16:22:45,471 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:23:44,425 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:17:44Z
+2026-03-10 16:23:45,458 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:24:44,368 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:18:44Z
+2026-03-10 16:24:45,615 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:24:48,905 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 16:24:52,487 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:19:44Z
+2026-03-10 16:24:53,603 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:25:51,951 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:19:52Z
+2026-03-10 16:25:53,122 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:26:52,107 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:20:51Z
+2026-03-10 16:26:53,164 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:27:51,793 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:21:52Z
+2026-03-10 16:27:52,796 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:28:51,651 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:22:51Z
+2026-03-10 16:28:52,523 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:29:52,452 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:23:51Z
+2026-03-10 16:29:53,508 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:30:52,202 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:24:52Z
+2026-03-10 16:30:53,440 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:31:51,918 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:25:52Z
+2026-03-10 16:31:52,953 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:32:51,984 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:26:51Z
+2026-03-10 16:32:53,142 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:33:52,123 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:27:51Z
+2026-03-10 16:33:53,246 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:34:52,379 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:28:52Z
+2026-03-10 16:34:53,453 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:35:52,368 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:29:52Z
+2026-03-10 16:35:53,281 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:36:51,937 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:30:52Z
+2026-03-10 16:36:52,986 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:37:51,735 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:31:51Z
+2026-03-10 16:37:52,888 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:38:52,175 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:32:51Z
+2026-03-10 16:38:53,250 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:41:31,899 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 16:41:33,840 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 16:41:37,471 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:33:52Z
+2026-03-10 16:41:38,611 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:42:37,086 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:36:37Z
+2026-03-10 16:42:37,957 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:43:36,756 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:37:37Z
+2026-03-10 16:43:37,798 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:44:37,256 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:38:36Z
+2026-03-10 16:44:38,394 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:45:37,047 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:39:37Z
+2026-03-10 16:45:38,142 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:46:15,448 INFO [admin_disp.cxc.routes] Sync manual [mode=update_all] solicitado por roussbel.medina
+2026-03-10 16:46:18,500 INFO [admin_disp.cxc.service] Sync FORZADO: cargando TODOS los registros de SharePoint (manual)...
+2026-03-10 16:46:37,098 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:40:37Z
+2026-03-10 16:46:38,162 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:47:23,566 INFO [admin_disp.cxc.operations] fill_sucursal_from_empleados: 115 registros actualizados
+2026-03-10 16:47:23,567 INFO [admin_disp.cxc.service] fill_sucursal_from_empleados: 115 registros actualizados
+2026-03-10 16:47:23,568 INFO [admin_disp.cxc.service] Sync completado | SP: 10507 | Insertados: 0 | Actualizados: 10507 | Omitidos: 0
+2026-03-10 16:47:36,852 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:41:18Z
+2026-03-10 16:47:37,914 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:53:42,762 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 16:53:44,507 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.
+2026-03-10 16:53:47,982 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:42:36Z
+2026-03-10 16:53:49,146 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:54:47,413 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:48:47Z
+2026-03-10 16:54:48,403 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:55:47,875 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:49:47Z
+2026-03-10 16:55:48,879 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:56:47,426 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:50:47Z
+2026-03-10 16:56:48,339 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:57:47,658 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:51:47Z
+2026-03-10 16:57:48,683 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:58:47,777 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:52:47Z
+2026-03-10 16:58:48,847 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 16:59:47,335 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:53:47Z
+2026-03-10 16:59:48,206 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 17:00:47,424 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:54:47Z
+2026-03-10 17:00:48,437 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 17:01:47,742 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:55:47Z
+2026-03-10 17:01:48,821 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 17:02:47,588 INFO [admin_disp.cxc.service] Sync incremental desde 2026-03-10T22:56:47Z
+2026-03-10 17:02:48,454 INFO [admin_disp.cxc.service] Sync: sin registros nuevos en SP.
+2026-03-10 17:33:03,773 INFO [admin_disp.cxc.operations] ensure_lote_schema: schema verificado/creado correctamente.

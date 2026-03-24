@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}PROIMA - Dispositivos Eliminados{% endblock %}
+
+{% block page_title %}Dispositivos (Eliminados){% endblock %}
+
+{% block content %}
+<div class="button-group" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+    <div style="display:flex;gap:12px;">
+    <button class="btn btn-primary offset-btn" onclick="window.location.href='/devices/ui'">
+        <img src="{{ url_for('static', filename='img/backw.png') }}" alt="Volver" style="height:16px; vertical-align:middle; margin-right:8px;">
+        <span style="position:relative; top:2px; display:inline-block;">Volver</span>
+    </button>
+    </div>
+    <div style="display:flex;align-items:center;">
+      <input id="deletedDevicesSearch" class="global-table-search" placeholder="Buscar..." style="width:220px;" />
+    </div>
+</div>
+
+<style>
+  .sort-icon {
+    height:18px;
+    width:18px;
+    vertical-align:middle;
+    margin-left:8px;
+    transition: transform .15s ease, opacity .15s ease;
+    opacity: 0;
+    visibility: hidden;
+    transform: rotate(0deg);
+  }
+  .sort-icon.active { opacity:1; visibility:visible; }
+  
+  /* Cursor pointer para headers ordenables */
+  th[data-sortable] {
+    cursor: pointer;
+    user-select: none;
+  }
+  th[data-sortable]:hover {
+    background-color: rgba(0,0,0,0.05);
+  }
+  body.dark-mode th[data-sortable]:hover {
+    background-color: rgba(255,255,255,0.05);
+  }
+</style>
+
+<table id="deletedDevicesTable" class="table" role="grid">
+    <thead>
+        <tr>
+            <th data-sortable="categoria">Tipo <img id="sortIndicator_categoria" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+            <th data-sortable="numero_serie">No de Serie <img id="sortIndicator_numero_serie" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+            <th data-sortable="nombre_modelo">Modelo <img id="sortIndicator_nombre_modelo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+            <th data-sortable="nombre_marca">Marca <img id="sortIndicator_nombre_marca" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+            <th data-sortable="ip_asignada">Dirección IP <img id="sortIndicator_ip_asignada" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+            <th>Observaciones</th>
+            <th id="thActionsDeleted">Acciones</th>
+        </tr>
+    </thead>
+    <tbody id="deletedDevicesTbody">
+        <tr class="loading">
+            <td colspan="7" style="text-align: center; padding: 20px;">
+                <span class="spinner"></span> Cargando dispositivos eliminados...
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- Modal de confirmación para restaurar -->
+<div id="modalConfirmRestore" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Confirmar Restauración</h3>
+            <button class="modal-close" onclick="closeModal('modalConfirmRestore')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>¿Estás seguro que quieres restaurar este dispositivo?</p>
+            <p><span>Número de Serie:</span> <strong><span id="confirmDeviceSN"></span></strong></p>
+            <p><span>Marca:</span> <strong><span id="confirmDeviceMarca"></span></strong></p>
+            <p><span>Modelo:</span> <strong><span id="confirmDeviceModelo"></span></strong></p>
+        </div>
+            <div class="modal-footer">
+            <button class="btn btn-cancel" onclick="closeModal('modalConfirmRestore')">Cancelar</button>
+            <button id="btnConfirmRestore" class="btn btn-primary" onclick="confirmRestore()">Restaurar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let pendingRestoreId = null;
+
+function loadDeletedDevices() {
+    fetch('/devices/deleted/')
+        .then(response => response.json())
+        .then(devices => {
+            // cache devices to allow client-side sorting
+            try { window.__deletedDevicesCache = Array.isArray(devices) ? devices : []; } catch(e) { window.__deletedDevicesCache = devices; }
+            renderDeletedDevices();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const tbody = document.getElementById('deletedDevicesTbody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; color: #f44336; padding: 20px;">
+                        Error al cargar dispositivos eliminados
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+// Render (and sort) deleted devices from cache
+window.__deletedSortField = null;
+window.__deletedSortDir = 'asc';
+function renderDeletedDevices() {
+    const tbody = document.getElementById('deletedDevicesTbody');
+    const devices = Array.isArray(window.__deletedDevicesCache) ? window.__deletedDevicesCache.slice() : [];
+    if (!devices.length) {
+        tbody.innerHTML = `
+            <tr class="empty-state">
+                <td colspan="7">
+                    <p>✓ No hay dispositivos eliminados</p>
+                </td>
+            </tr>
+        `;
+        try { const q = (document.getElementById('deletedDevicesSearch') || {}).value || ''; if (typeof applyGlobalTableSearchFilter === 'function') applyGlobalTableSearchFilter(q); } catch(e) {}
+        return;
+    }
+
+    // apply sort if requested
+    try {
+        const field = window.__deletedSortField;
+        const dir = window.__deletedSortDir === 'asc' ? 1 : -1;
+        if (field) {
+            const parseIp = (s) => {
+                if (!s) return [-1,-1,-1,-1];
+                const parts = String(s).trim().split('.').map(p => parseInt(p,10));
+                if (parts.length !== 4 || parts.some(isNaN)) return parts;
+                return parts;
+            };
+            devices.sort((a,b) => {
+                const va = (a[field] || '').toString();
+                const vb = (b[field] || '').toString();
+                if (field === 'ip_asignada') {
+                    const pa = parseIp(va);
+                    const pb = parseIp(vb);
+                    for (let i=0;i<Math.max(pa.length,pb.length);i++) {
+                        const na = pa[i] === undefined ? -1 : pa[i];
+                        const nb = pb[i] === undefined ? -1 : pb[i];
+                        if (na === nb) continue;
+                        return (na - nb) * dir;
+                    }
+                    return 0;
+                }
+                // fallback: localeCompare for strings
+                return va.localeCompare(vb, undefined, { numeric: true }) * dir;
+            });
+        }
+    } catch(e) { /* ignore */ }
+
+    tbody.innerHTML = devices.map(device => `
+        <tr>
+            <td>${device.categoria || '-'}</td>
+            <td><code>${device.numero_serie || '-'}</code></td>
+            <td>${device.nombre_modelo || '-'}</td>
+            <td>${device.nombre_marca || '-'}</td>
+            <td>${device.ip_asignada || '-'}</td>
+            <td>${device.observaciones || ''}</td>
+            <td>
+                <button class="btn btn-restore" onclick="openRestoreModal(${device.id_dispositivo}, '${(device.numero_serie||'').replace(/'/g, "\\'")}', '${(device.nombre_marca||'').replace(/'/g, "\\'")}', '${(device.nombre_modelo||'').replace(/'/g, "\\'")}')">
+                    <img src="{{ url_for('static', filename='img/res.png') }}" alt="Restaurar" style="height:18px; width:18px; vertical-align:middle; margin-right:8px;">Restaurar
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
+    // set original index for DOM restore
+    try {
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.forEach((r,i) => { if (r.dataset.originalIndex === undefined) r.dataset.originalIndex = i; });
+    } catch(e) {}
+
+    // update sort icons
+    try {
+        document.querySelectorAll('#deletedDevicesTable .sort-icon').forEach(el => { el.classList.remove('active'); el.style.transform = 'rotate(0deg)'; });
+        if (window.__deletedSortField) {
+            const el = document.getElementById('sortIndicator_' + window.__deletedSortField);
+            if (el) {
+                el.classList.add('active');
+                el.style.transform = (window.__deletedSortDir === 'asc') ? 'rotate(0deg)' : 'rotate(180deg)';
+            }
+        }
+    } catch(e) {}
+
+    // reapply page search filter after rendering
+    try { const q = (document.getElementById('deletedDevicesSearch') || {}).value || ''; if (typeof applyGlobalTableSearchFilter === 'function') applyGlobalTableSearchFilter(q); } catch(e) {}
+}
+
+function toggleSortDeleted(field) {
+    if (!field) return;
+    if (window.__deletedSortField === field) {
+        window.__deletedSortDir = (window.__deletedSortDir === 'asc') ? 'desc' : 'asc';
+    } else {
+        window.__deletedSortField = field;
+        window.__deletedSortDir = 'asc';
+    }
+    renderDeletedDevices();
+}
+
+function openRestoreModal(deviceId, sn, marca, modelo) {
+    pendingRestoreId = deviceId;
+    document.getElementById('confirmDeviceSN').textContent = sn;
+    document.getElementById('confirmDeviceMarca').textContent = marca || '-';
+    document.getElementById('confirmDeviceModelo').textContent = modelo || '-';
+    // Preserve page scroll when opening restore confirmation to avoid jumping
+    openModal('modalConfirmRestore', true);
+}
+
+function confirmRestore() {
+    if (!pendingRestoreId) return;
+    const button = document.getElementById('btnConfirmRestore');
+    if (button) { button.disabled = true; button.textContent = 'Restaurando...'; }
+
+    fetch(`/devices/deleted/${pendingRestoreId}/restore`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            openGlobalSuccessModal('Dispositivo restaurado correctamente');
+            closeModal('modalConfirmRestore');
+            loadDeletedDevices();
+            pendingRestoreId = null;
+        } else {
+            showModalMessage(data.error || 'Error al restaurar dispositivo', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showModalMessage('Error al restaurar dispositivo', 'error');
+    })
+    .finally(() => {
+        if (button) { button.disabled = false; button.textContent = 'Restaurar'; }
+    });
+}
+
+// Cargar dispositivos eliminados al abrir la página
+document.addEventListener('DOMContentLoaded', loadDeletedDevices);
+
+// Bind local search input to shared filter
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const s = document.getElementById('deletedDevicesSearch');
+        if (s && !s._bound) {
+            s.addEventListener('input', () => {
+                const v = (s.value || '').trim();
+                try { if (typeof applyGlobalTableSearchFilter === 'function') applyGlobalTableSearchFilter(v); } catch(e) {}
+            });
+            s._bound = true;
+        }
+    } catch(e) {}
+});
+
+// Initialize shared sorting and Actions reset
+document.addEventListener('DOMContentLoaded', () => {
+    try { initTableSorting('#deletedDevicesTable', { iconPrefix: 'sortIndicator_' }); } catch(e) {}
+    try {
+        const thActions = document.getElementById('thActionsDeleted');
+        const table = document.getElementById('deletedDevicesTable');
+        if (thActions && !thActions._boundReset) {
+            thActions.style.cursor = 'pointer';
+            thActions.addEventListener('click', () => {
+                try { if (table && typeof table.clearSorting === 'function') table.clearSorting(); } catch(e) {}
+                try { const p = document.getElementById('deletedDevicesSearch'); if (p) p.value = ''; } catch(e) {}
+                try { if (typeof window.clearGlobalTableSearch === 'function') window.clearGlobalTableSearch(); } catch(e) {}
+                try { renderDeletedDevices(); } catch(e) {}
+            });
+            thActions._boundReset = true;
+        }
+    } catch(e) {}
+});
+
+// Recargar cada 30 segundos (opcional)
+// setInterval(loadDeletedDevices, 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,56 @@
+import os
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde archivo .env en la raíz del proyecto
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+
+class Config:
+    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-change-in-production')
+    SESSION_TYPE = 'filesystem'
+
+    # Base de datos principal (admin_disp)
+    DB_DRIVER = os.getenv('DB_DRIVER', 'ODBC Driver 17 for SQL Server')
+    DB_SERVER = os.getenv('DB_SERVER', 'SSPROIMA100')
+    DB_DATABASE = os.getenv('DB_DATABASE', 'admin_disp')
+    DB_USER = os.getenv('DB_USER', 'sa')
+    DB_PASSWORD = os.getenv('DB_PASSWORD', '')
+    DB_TRUSTED = os.getenv('DB_TRUSTED', 'false').lower() in ('1', 'true', 'yes')
+
+    # Base de datos empleados 
+    EMP_DRIVER = os.getenv('EMP_DRIVER', DB_DRIVER)
+    EMP_SERVER = os.getenv('EMP_SERVER', DB_SERVER)
+    EMP_DATABASE = os.getenv('EMP_DATABASE', 'empleados')
+    EMP_USER = os.getenv('EMP_USER', 'sa')
+    EMP_PASSWORD = os.getenv('EMP_PASSWORD', 'proima')
+    EMP_TRUSTED = os.getenv('EMP_TRUSTED', 'false').lower() in ('1', 'true', 'yes')
+
+    # Configuración SMTP para envío de emails
+    MAIL_SERVER = os.getenv('MAIL_SERVER', None)
+    MAIL_PORT = int(os.getenv('MAIL_PORT', '587'))
+    MAIL_USERNAME = os.getenv('MAIL_USERNAME', None)
+    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD', None)
+    MAIL_USE_TLS = os.getenv('MAIL_USE_TLS', 'true').lower() in ('1', 'true', 'yes')
+
+
+    # Microsoft Graph / SharePoint upload (opcional)
+    MS_GRAPH_CLIENT_ID = os.getenv('MS_GRAPH_CLIENT_ID', None)
+    MS_GRAPH_CLIENT_SECRET = os.getenv('MS_GRAPH_CLIENT_SECRET', None)
+    MS_GRAPH_TENANT_ID = os.getenv('MS_GRAPH_TENANT_ID', None)
+    # Example: site id or path; if using site id provide MS_GRAPH_SITE_ID, otherwise set MS_GRAPH_DRIVE_PATH_ROOT
+    MS_GRAPH_SITE_ID = os.getenv('MS_GRAPH_SITE_ID', None)
+    MS_GRAPH_DRIVE_PATH_ROOT = os.getenv('MS_GRAPH_DRIVE_PATH_ROOT', None)  # e.g. 'Documents/IT/Administracion de Dispositivos/2026'
+
+    # ── Base de datos CxC ────────────────────────────────────────────────────
+    # CxC usa el mismo servidor/credenciales que admin_disp (DB_*)
+    # apuntando a la base de datos 'cxc'.  No se necesita config adicional.
+
+    # ── SharePoint CxC ──────────────────────────────────────────────────────
+    CXC_SP_TENANT_ID     = os.getenv('CXC_SP_TENANT_ID',     '8161dffd-c3ab-459f-9acb-da27306f434b')
+    CXC_SP_CLIENT_ID     = os.getenv('CXC_SP_CLIENT_ID',     '54d529da-15c1-4f0a-8010-c35530e72a48')
+    CXC_SP_CLIENT_SECRET = os.getenv('CXC_SP_CLIENT_SECRET', 'REDACTED')
+    CXC_SP_SITE_HOSTNAME = os.getenv('CXC_SP_SITE_HOSTNAME', 'proimamericanos.sharepoint.com')
+    CXC_SP_SITE_PATH     = os.getenv('CXC_SP_SITE_PATH',     '/sites/PROIMADEV')
+    CXC_SP_LIST_NAME     = os.getenv('CXC_SP_LIST_NAME',     'PR6_CxC_Seguimiento')
+    # Optional: Basic HTTP credentials to access SharePoint-hosted images (use env vars)
+    CXC_SP_BASIC_USER    = os.getenv('CXC_SP_BASIC_USER', None)
+    CXC_SP_BASIC_PASSWORD= os.getenv('CXC_SP_BASIC_PASSWORD', None)

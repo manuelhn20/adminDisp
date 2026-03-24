@@ -1,0 +1,1887 @@
+/* ==========================================
+   VARIABLES Y TEMA OSCURO
+   ========================================== */
+:root {
+  /* Semantic tokens - light theme */
+  --bg: #ffffff;
+  --surface: #f8f9fb;
+  --card: #ffffff;
+  --input-bg: #f5f5f5;
+  --text: #1a1a1a;
+  --muted: #6b7280;
+  --border-color: #e6e9ef;
+
+  --primary-color: #0ea5e9;
+  --primary-light: #06b6d4;
+  --primary-dark: #0284c7;
+  --secondary-color: #94a3b8;
+  --success-color: #20c997;
+  --warning-color: #f59e0b;
+  --danger-color: #c82333;
+
+  /* Aliases used across the app; provide defaults for light mode */
+  --bg-card: var(--card);
+  --bg-darker: #f1f5f9;
+    /* In light mode we want --text-white to fall back to the normal text color
+      so components using --text-white remain readable; dark mode will override. */
+    --text-white: var(--text);
+}
+
+/* Dark theme overrides when html[data-dark-mode="true"] is present */
+html[data-dark-mode="true"] {
+  --bg: #0b0b0b;
+  --surface: #0f1724;
+  --card: #0b1120;
+  --input-bg: #0f1720;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --border-color: #1f2937;
+
+  --primary-color: #06b6d4;
+  --primary-light: #38bdf8;
+  --primary-dark: #0ea5e9;
+  --secondary-color: #64748b;
+  --success-color: #34d399;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+}
+
+/* ==========================================
+   RESETEOS Y ESTILOS GLOBALES
+   ========================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Transiciones suaves para el cambio de tema - OPTIMIZADO */
+/* Solo aplicar transiciones a las propiedades que cambian con el tema */
+html,
+body,
+.sidebar,
+.sidebar-header-preview,
+.sidebar-links,
+.modal,
+.modal-header,
+.modal-body,
+.modal-footer,
+.card,
+input,
+textarea,
+select,
+button,
+table,
+thead,
+tbody,
+tr,
+th,
+td {
+  transition: background-color 0.2s ease, 
+              color 0.2s ease, 
+              border-color 0.2s ease;
+}
+
+/* Evitar transiciones en imágenes y elementos que no cambian */
+img,
+svg,
+canvas,
+video {
+  transition: none;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* ==========================================
+   NAVEGACIÓN
+   ========================================== */
+nav {
+  background-color: var(--bg-darker);
+  border-bottom: 2px solid var(--primary-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 0.75rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-weight: 700;
+}
+
+.nav-logo {
+  height: 50px;
+  width: auto;
+  max-width: 180px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.nav-title {
+  color: var(--text-white);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0;
+}
+
+.nav-links li {
+  display: flex;
+  align-items: center;
+}
+
+  /* Modal-specific adjustments */
+  .modal .info-box {
+    margin-top: 0.1rem; /* reduced top spacing to sit closer under modal header */
+    margin-bottom: 1rem;
+    padding: 0.95rem 1rem;
+    border-radius: 10px;
+  }
+
+  .modal .modal-body form {
+    gap: 0.3rem; /* uniform vertical spacing between form fields inside modals */
+  }
+
+  .info-box-icon img {
+    width: 26px;
+    height: 26px;
+    display: block;
+  }
+
+.nav-links a {
+  color: var(--text-gray-dark);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+
+.nav-links a:hover {
+  color: var(--text-white);
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+.nav-user {
+  color: var(--text-gray-dark);
+  font-size: 0.9rem;
+  padding: 0.6rem 1rem;
+  font-weight: 500;
+}
+
+.logout-btn {
+  background-color: var(--danger-color);
+  color: var(--text-white) !important;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+}
+
+.logout-btn:hover {
+  background-color: #dc2626;
+  color: var(--text-white) !important;
+}
+
+/* ==========================================
+   CONTENEDOR PRINCIPAL
+   ========================================== */
+main {
+  background-color: var(--bg);
+  color: var(--text);
+  padding: 1.25rem 0;
+  min-height: calc(100vh - 100px);
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* ==========================================
+   ALERTAS Y MENSAJES
+   ========================================== */
+article[role="alert"] {
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 12px;
+  border-left: 4px solid;
+  font-weight: 500;
+}
+
+/* ==========================================
+   OFFSET BUTTON EFFECT (from tools/simple-hover-effects)
+   Add `offset-btn` alongside existing `btn` classes to apply the effect
+   This does not overwrite existing `.btn` styles; it composes on top.
+   ========================================== */
+.offset-btn {
+  --offset-color: #19bc8b;
+  --offset-hover: #2ed39b;
+  background: transparent !important;
+  color: #1a1a1a !important; /* black text in light mode */
+  border: 2px solid var(--offset-color) !important;
+  box-shadow: 0.3em 0.3em 0 0 var(--offset-color), inset 0.3em 0.3em 0 0 var(--offset-color);
+  transition: box-shadow 0.25s ease, color 0.25s ease, border-color 0.25s ease, transform 0.12s ease, background 0.25s ease;
+}
+.offset-btn:hover, .offset-btn:focus {
+  box-shadow: 0 0 0 0 var(--offset-hover), inset 6em 3.5em 0 0 var(--offset-hover);
+  color: #ffffff !important; /* white text on hover */
+  border-color: var(--offset-hover) !important;
+}
+.offset-btn:active {
+  transform: translateY(-0.08em);
+}
+
+/* Provide theme-aware variants: if needed, components can override --offset-color */
+html[data-dark-mode="true"] .offset-btn {
+  --offset-color: #34d399;
+  --offset-hover: #10b981;
+  color: #ffffff !important; /* white text in dark mode */
+}
+html[data-dark-mode="true"] .offset-btn:hover,
+html[data-dark-mode="true"] .offset-btn:focus {
+  color: #ffffff !important;
+}
+
+.alert-success {
+  background-color: rgba(32, 201, 151, 0.15);
+  border-color: var(--success-color);
+  color: #065f46;
+}
+
+.alert-error {
+  background-color: rgba(200, 35, 51, 0.15);
+  border-color: var(--danger-color);
+  color: #7f1d1d;
+}
+
+.alert-warning {
+  background-color: rgba(245, 158, 11, 0.15);
+  border-color: var(--warning-color);
+  color: #92400e;
+}
+
+.alert-info {
+  background-color: rgba(59, 130, 246, 0.15);
+  border-color: var(--primary-color);
+  color: #1e40af;
+}
+
+/* Reusable info box used for inline informational messages inside modals */
+  .info-box {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.85rem 0.9rem;
+  margin: 1.25rem 0 0.85rem;
+  background: linear-gradient(180deg, rgba(14,165,233,0.06) 0%, rgba(6,182,212,0.04) 100%);
+  border: 1px solid rgba(14,165,233,0.12);
+  border-radius: 8px;
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+  /* Badge that shows the number of devices assigned to an employee in the asignaciones table */
+  .device-count-badge {
+    display: inline-block;
+    min-width: 28px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    color: var(--text-white);
+    font-weight: 600;
+    text-align: center;
+    font-size: 0.9rem;
+    line-height: 1;
+  }
+
+  /* Slightly different contrast in light mode */
+  html:not([data-dark-mode="true"]) .device-count-badge {
+    background: rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.06);
+    color: var(--text);
+  }
+
+  /* Green background when there is at least one device assigned */
+  .device-count-badge.has-count {
+    background: #16a34a; /* green-600 */
+    border-color: #15803d;
+    color: #fff;
+  }
+
+  html:not([data-dark-mode="true"]) .device-count-badge.has-count {
+    background: #16a34a;
+    border-color: #15803d;
+    color: #fff;
+  }
+
+  /* Badge for inactive employees (shown left of device-count) */
+  .inactive-badge {
+    display:inline-block;
+    padding:4px 8px;
+    border-radius:6px;
+    background:#ef4444; /* red */
+    color:#fff;
+    font-size:0.75rem;
+    font-weight:700;
+    line-height:1;
+  }
+
+.info-box-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin-right: 0.6rem;
+  background: transparent; /* remove inner box */
+  border-radius: 0;
+  color: #0563b6;
+  font-weight: 700;
+}
+
+  .info-box-icon img {
+    width: 30px;
+    height: 30px;
+    display: block;
+    transform: translateY(0.5px); /* slight vertical nudge for centering */
+  }
+
+.info-box-text {
+  flex: 1 1 auto;
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Document preview card used in the documentation modal */
+.doc-preview {
+  border: 1px solid var(--border-color);
+  padding: 15px;
+  border-radius: 8px;
+  background-color: var(--card);
+  color: var(--text);
+}
+.doc-preview p { margin: 6px 0; }
+.doc-preview .doc-note { color: var(--muted); font-size: 0.92rem; margin-top:12px; }
+
+/* Descripción dentro de modales: caja gris adaptable para light/dark */
+.modal-description {
+  background-color: var(--surface);
+  color: var(--muted);
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border-color);
+}
+
+/* Dark-mode overrides: convertir cajas azul oscuro a gris oscuro */
+html[data-dark-mode="true"] .modal-description,
+html[data-dark-mode="true"] .doc-preview,
+html[data-dark-mode="true"] .info-box {
+  background-color: #111827 !important; /* gris oscuro */
+  border-color: #1f2937 !important;
+  color: var(--text) !important;
+}
+
+.hidden:not(.sidebar) { display: none !important; }
+
+/* Info box title and detail */
+.info-box-title {
+  display: block;
+  color: #000;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+  font-size: 0.98rem;
+}
+.info-box-detail {
+  display: block;
+  color: #1a1a1a;
+  font-weight: 500;
+  font-size: 0.88rem;
+  opacity: 1;
+}
+
+/* Make icon image slightly larger for better visibility */
+.info-box-icon img { width: 22px; height: 22px; display:block; }
+
+/* ==========================================
+   FORMULARIOS
+   ========================================== */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+fieldset {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem 1.5rem 1.5rem 0.2rem;
+  background-color: var(--bg-card);
+}
+
+legend {
+  color: #888888;
+  font-weight: 600;
+  padding: 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: #333333;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+/* Etiqueta read-only para mostrar valores en lugar de inputs */
+.form-label-value {
+  padding: 0.5rem 0.75rem;
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: var(--text-gray);
+  font-size: 1rem;
+  border-radius: 6px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.form-label-value:empty {
+  color: var(--text-gray-dark);
+  font-style: italic;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  background-color: var(--bg-input);
+  color: #222222;
+  transition: all 0.3s ease;
+}
+
+input[type="text"]::placeholder,
+input[type="password"]::placeholder,
+input[type="email"]::placeholder,
+input[type="number"]::placeholder,
+input[type="date"]::placeholder,
+textarea::placeholder {
+  color: var(--text-gray-dark);
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background-color: var(--bg-input);
+}
+
+/* ==========================================
+   BOTONES
+   ========================================== */
+button {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+/* Use a `.btn` utility class so buttons align icon + text vertically centered */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+/* Adjust Material Symbols to sit nicely beside text in buttons */
+.material-symbols-outlined {
+  vertical-align: middle;
+  line-height: 1;
+  font-variation-settings: 'FILL' 0, 'wght' 600, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+}
+
+button:hover {
+  background-color: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button[type="submit"] {
+  width: 100%;
+  align-self: stretch;
+}
+
+button.btn-danger {
+  background-color: var(--danger-color);
+  color: #ffffff;
+}
+
+button.btn-danger:hover {
+  background-color: #dc2626;
+}
+
+button.btn-secondary {
+  background-color: #6c757d;
+  color: #ffffff;
+}
+
+button.btn-secondary:hover {
+  background-color: #5a6268;
+  color: #ffffff;
+}
+
+button.btn-info {
+  background-color: #0ea5e9;
+  color: #ffffff;
+}
+
+button.btn-info:hover {
+  background-color: #06b6d4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+button.btn-success {
+  background-color: var(--success-color);
+  color: #ffffff;
+}
+
+button.btn-success:hover {
+  background-color: #10b981;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(32, 201, 151, 0.3);
+}
+
+button.btn-cancel {
+  background-color: #d97706;
+  border-color: #d97706;
+  color: #ffffff;
+}
+
+button.btn-cancel:hover {
+  background-color: #ea580c;
+  border-color: #ea580c;
+  color: #ffffff;
+}
+
+/* Small icon-style button used for '+' quick-add controls */
+/* removed custom btn-icon styles to restore original small button appearance */
+
+/* Small buttons for table actions */
+button.btn-small {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+/* Compact quick-add small icon/button used for '+' controls near selects */
+button.btn-quick {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.85rem;
+  min-height: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.6rem;
+  box-sizing: border-box;
+}
+
+/* ==========================================
+   TABLAS
+   ========================================== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.5rem;
+  background-color: var(--bg-card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+table thead {
+  background-color: rgba(11, 94, 215, 0.12);
+  border-bottom: 2px solid rgba(59, 130, 246, 0.12);
+}
+
+table th,
+table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  color: #222222;
+  vertical-align: middle;
+  height: auto;
+}
+
+table th {
+  font-weight: 600;
+  color: #0284c7;
+  white-space: nowrap;
+}
+
+table tbody tr:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+table a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+table a:hover {
+  color: var(--primary-light);
+}
+
+/* Page-level action button group: align with table cell content */
+.button-group {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0 0 1rem 0;
+  /* offset to match table cell inner padding (table th/td have 1rem) */
+  padding-left: 1rem;
+}
+
+/* Table actions cell: centered group with spacing */
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Sort indicator small arrow */
+.sort-indicator {
+  font-size: 0.8rem;
+  margin-left: 0.25rem;
+  color: var(--text-gray);
+}
+
+/* Center the last column header (Acciones) so it matches buttons below */
+table thead th:last-child,
+.table-container thead th:last-child {
+  text-align: center;
+}
+
+/* Ensure buttons in header groups don't get the full-width submit rule */
+.button-group button[type="submit"] {
+  width: auto;
+}
+
+/* ==========================================
+   MODALES
+   ========================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  /* Ensure modals appear above sidebar, nav and toggle button */
+  z-index: 12000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+  display: flex;
+  opacity: 1;
+}
+
+/* Align modal centered vertically */
+.modal-overlay.align-top {
+  align-items: center;
+  padding-top: 0;
+}
+
+.modal {
+  background-color: var(--bg-card);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  /* place modal above overlay children if needed */
+  z-index: 12001;
+  /* restore default smaller modal sizing */
+  max-width: 520px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+
+/* Improve spacing inside modal bodies and lists (fixes content glued to left edge) */
+.modal .modal-body {
+  padding: 18px 22px;
+  color: var(--text-color, #1f2a37);
+}
+.modal .modal-body p {
+  margin: 0 0 0.75rem 0;
+}
+.modal .modal-body ul {
+  margin: 0;
+  padding-left: 1.15rem; /* give bullets breathing room from modal edge */
+}
+.modal .modal-body ul li {
+  margin-bottom: 0.45rem;
+}
+
+/* Hide vertical scrollbar visually on modals while keeping scrolling functional */
+.modal {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.modal::-webkit-scrollbar {
+  width: 0; /* Safari and Chrome */
+  height: 0;
+}
+
+/* Transfer modal specific tweaks */
+#modalTransferDevices .modal {
+  /* allow transfer modal to be wider than default on large screens */
+  max-width: 1600px;
+  width: calc(100% - 48px);
+  padding: 8px 0;
+}
+#modalTransferDevices .modal .modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+}
+
+/* Table container inside modals - dynamically sized by JS */
+.table-container {
+  overflow: auto;
+  max-height: 75vh; /* larger fallback so modal appears bigger */
+  border-radius: 8px;
+  background: #fff;
+  padding-bottom: 8px;
+}
+
+.table-container table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto; /* allow natural column widths and wrapping */
+  min-width: 640px; /* ensure a sensible minimum */
+}
+.table-container th, .table-container td {
+  padding: 14px 18px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: normal; /* allow wrapping to avoid horizontal overflow */
+}
+.table-container thead th {
+  background: #eaf5ff;
+  color: #0b6fb2;
+  font-weight: 700;
+}
+
+/* make thead sticky inside the scrollable container */
+.table-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.transfer-notice {
+  margin: 0.075rem auto 0.25rem auto; /* half of previous gap, centered horizontally */
+  display: inline-block;
+  max-width: 72%;
+  width: auto;
+  padding: 6px 12px; /* smaller pill */
+  background: #f1f8ff;
+  color: #0b6fb2;
+  border-radius: 6px;
+  font-weight: 600;
+  text-align: center; /* center message text */
+  font-size: 0.95rem;
+}
+
+/* allow brand/model to wrap to avoid extremely narrow columns */
+.table-container td:nth-child(4), .table-container td:nth-child(5),
+.table-container th:nth-child(4), .table-container th:nth-child(5) {
+  white-space: normal;
+}
+.table-container td:first-child, .table-container th:first-child {
+  width: 56px; /* checkbox column - more comfortable touch target */
+  text-align: center;
+  white-space: nowrap;
+}
+.table-container td:nth-child(2), .table-container th:nth-child(2) {
+  width: 160px; /* Tipo */
+  white-space: nowrap;
+}
+.table-container td:nth-child(3), .table-container th:nth-child(3) {
+  width: 200px; /* Serie */
+  white-space: nowrap;
+}
+
+/* allow horizontal scrolling as fallback on very narrow screens */
+.table-container { overflow-x: auto; }
+
+@media (max-width: 1200px) {
+  #modalTransferDevices .modal { max-width: 96%; width: calc(100% - 32px); }
+  .table-container th, .table-container td { padding: 10px; }
+}
+
+/* Modal específico para listar dispositivos del empleado: tamaño moderado */
+#modalEmpleadoDevices .modal {
+  max-width: 1000px;
+  width: 96%;
+  max-height: 88vh;
+}
+#modalEmpleadoDevices .modal-body {
+  max-height: calc(88vh - 160px);
+  overflow: auto;
+}
+
+@media (max-width: 1200px) {
+  /* keep it comfortable on medium screens */
+  #modalEmpleadoDevices .modal { max-width: 1000px; width: 96%; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  color: #222222;
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: #888888;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+}
+
+.modal-close:hover {
+  color: #222222;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+/* Grid helper for 40-20-40 layout inside modals (uses fr units for proper scaling) */
+.grid-404040 {
+  display: grid;
+  grid-template-columns: 46% 4% 50%; /* left slightly smaller, right larger so Empresa shows */
+  gap: 4px; /* minimal horizontal gap */
+  align-items: start;
+  width: 100%;
+}
+.grid-404040 > div { min-width: 0; }
+.grid-404040 .label-title { display:block; margin-bottom:6px; }
+
+/* Ensure selects inside this modal size correctly and include padding in width calculations */
+#modalNewAsignacion .modal select, #modalNewAsignacion .modal input, #modalNewAsignacion .modal textarea {
+  box-sizing: border-box;
+}
+
+@media (max-width: 720px) {
+  .grid-404040 { grid-template-columns: 1fr !important; }
+}
+
+/* NewAsignacion specific tweaks to ensure Empresa doesn't touch modal edge and selects are readable */
+#modalNewAsignacion .modal .modal-body {
+  padding-left: 2rem; /* more breathing room from the modal border */
+  padding-right: 2rem;
+}
+
+#filterTipoDispositivo {
+  font-size: 0.95rem;
+  padding: 10px 12px;
+}
+
+#modalNewAsignacion select {
+  box-sizing: border-box;
+}
+
+/* Slight left nudge for the Empresa column contents */
+.grid-404040 > div:nth-child(3) { padding-left: 2px; }
+
+/* Make Empresa select slightly more prominent so its text fits */
+#selectEmpresaNew {
+  font-size: 0.98rem;
+  padding: 10px 12px;
+}
+
+/* Centered image preview inside modals */
+.preview-center {
+  margin-top: 0.5rem;
+  display: none; /* shown by JS when needed */
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.preview-center img {
+  max-width: 200px;
+  max-height: 120px;
+  width: auto;
+  height: auto;
+  margin: 0;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+.preview-center .btn-danger {
+  margin: 0;
+  display: inline-block;
+}
+
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.modal-footer button {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+/* ==========================================
+   CHECKBOX
+   ========================================== */
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+/* ==========================================
+   GRID UTILITIES
+   ========================================== */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .form-row,
+  .form-row-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================
+   UTILIDADES
+   ========================================== */
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.mt-4 { margin-top: 2rem; }
+
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+.mb-4 { margin-bottom: 2rem; }
+
+.gap-1 { gap: 0.5rem; }
+.gap-2 { gap: 1rem; }
+.gap-3 { gap: 1.5rem; }
+
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-left { text-align: left; }
+
+.text-white { color: #222222; }
+.text-gray { color: #666666; }
+.text-primary { color: var(--primary-color); }
+.text-success { color: var(--success-color); }
+.text-danger { color: var(--danger-color); }
+.text-warning { color: var(--warning-color); }
+.text-secondary { color: #222222; }
+
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-medium { font-weight: 500; }
+
+.p-2 { padding: 0.5rem; }
+.p-3 { padding: 1rem; }
+.p-4 { padding: 1.5rem; }
+
+/* Evita el quiebre de línea en textos cortos como 'CONFIRMAR' */
+.no-break {
+  white-space: nowrap;
+}
+
+/* Confirmación en modales: entrada compacta y botones claros */
+.confirmation-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.confirmation-row .confirmation-input {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-input);
+  color: var(--text-white);
+  width: 180px;
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.btn-confirm {
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.btn-confirm.green {
+  background-color: var(--success-color);
+  color: #ffffff;
+}
+
+.btn-confirm.red {
+  background-color: var(--danger-color);
+  color: #ffffff;
+}
+
+/* Global message modal tweaks */
+#globalMessageModal .modal { max-width: 520px; }
+#globalMessageIcon { font-size: 44px; }
+
+/* Mejoras en estilos de labels con asteriscos a la derecha */
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  color: var(--text-white);
+  font-weight: 500;
+  font-size: 0.95rem;
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+/* Contenedor del título del label y asterisco en la misma línea */
+.label-title {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+/* Hacer que texto y asterisco estén en la misma línea */
+label > span:first-of-type {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+/* Asteriscos en labels requeridos */
+label > span.required {
+  color: red;
+  margin-left: 0.2rem;
+}
+
+/* Checkboxes alineados horizontalmente - sobrescribir grid */
+label.checkbox-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+label.checkbox-label input[type="checkbox"] {
+  margin: 0;
+  width: auto;
+  height: auto;
+}
+
+/* Espacio debajo de inputs y campos en labels */
+label > input,
+label > select,
+label > textarea,
+label > div.form-label-value {
+  margin-bottom: 1rem;
+}
+   EMPTY STATE
+   ========================================== */
+.empty-state {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  text-align: center;
+  color: var(--text-gray);
+  display: inline-block;
+  margin-top: 1rem;
+}
+
+/* ==========================================
+   HEADINGS
+   ========================================== */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-white);
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.1rem; }
+h6 { font-size: 1rem; }
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  main {
+    padding: 1rem 0;
+  }
+
+  .container {
+    padding: 0 1rem;
+  }
+
+  table {
+    font-size: 0.9rem;
+  }
+
+  table th,
+  table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .modal {
+    width: 95%;
+  }
+}
+
+/* ==========================================
+   DARK MODE STYLES
+   ========================================== */
+body.dark-mode {
+  --bg-dark: #1a1a1a;
+  --bg-darker: #0f0f0f;
+  --bg-card: #0f0f0f;
+  --bg-input: #3a3a3a;
+  --text-white: #e5e7eb;
+  --text-gray: #b0b0b0;
+  --text-gray-dark: #d0d0d0;
+  --border-color: #ffffff;
+}
+
+body.dark-mode {
+  background-color: var(--bg-dark);
+  color: var(--text-white);
+}
+
+body.dark-mode nav {
+  background-color: var(--bg-darker);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .nav-links a {
+  color: var(--text-gray-dark);
+}
+
+body.dark-mode .nav-links a:hover {
+  color: var(--text-white);
+  background-color: rgba(14, 165, 233, 0.15);
+}
+
+body.dark-mode main {
+  background-color: var(--bg-dark);
+}
+
+body.dark-mode .container {
+  background-color: var(--bg-dark);
+}
+
+body.dark-mode article[role="alert"] {
+  border-color: var(--primary-color);
+}
+
+body.dark-mode .alert-success {
+  background-color: rgba(32, 201, 151, 0.1);
+  color: #6ee7b7;
+}
+
+body.dark-mode .alert-error {
+  background-color: rgba(200, 35, 51, 0.1);
+  color: #fca5a5;
+}
+
+/* Mejoras específicas para modales en modo oscuro */
+body.dark-mode .modal {
+  background-color: var(--bg-card) !important;
+  color: var(--text-white) !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.75) !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+body.dark-mode .modal .modal-body {
+  color: var(--text-white) !important;
+}
+
+body.dark-mode .modal-header h3 {
+  color: var(--text-white) !important;
+}
+
+body.dark-mode .modal-close {
+  color: var(--text-gray-dark) !important;
+}
+
+body.dark-mode .modal-footer {
+  border-top: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+/* Info box oscuro dentro de modales para mantener contraste */
+body.dark-mode .info-box {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%);
+  border: 1px solid rgba(255,255,255,0.03);
+  color: var(--text-white);
+}
+
+/* Asegura que overlay no atenúe el contenido del modal (solo el fondo) */
+body.dark-mode .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Botones en footer del modal: altos contraste */
+body.dark-mode .modal-footer button {
+  color: var(--text-white) !important;
+}
+
+
+body.dark-mode .alert-warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #fcd34d;
+}
+
+body.dark-mode .alert-info {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #93c5fd;
+}
+
+body.dark-mode .modal {
+  background-color: #0f0f0f;
+  color: #e5e7eb;
+  border-color: var(--border-color);
+}
+
+body.dark-mode .modal-header {
+  border-bottom-color: var(--border-color);
+  background-color: #1f1f1f;
+}
+
+body.dark-mode .modal-header h2,
+body.dark-mode .modal-header h3 {
+  color: #ffffff;
+}
+
+body.dark-mode .modal-close {
+  color: #e5e7eb;
+}
+
+body.dark-mode .modal-body {
+  background-color: #2d2d2d;
+  color: #e5e7eb;
+}
+
+/* ==========================================
+   RESPONSIVE STYLES FOR DEVICE DETAILS MODAL
+   ========================================== */
+
+/* Mobile-first responsive adjustments for modalDeviceDetails */
+#modalDeviceDetails .modal {
+  max-width: 600px;
+  width: 95%;
+  max-height: 90vh;
+  border-radius: 16px;
+}
+
+#modalDeviceDetails .modal-body {
+  padding: 16px 16px;
+}
+
+/* Tablet and smaller screens (iPad mini, Galaxy A06 landscape) */
+@media (max-width: 768px) {
+  #modalDeviceDetails .modal {
+    max-width: 95%;
+    width: 95%;
+    max-height: 95vh;
+    border-radius: 12px;
+    margin: 0 auto;
+  }
+  
+  #modalDeviceDetails .modal-body {
+    padding: 14px 14px;
+    font-size: 0.95rem;
+  }
+}
+
+/* Small phones (Galaxy A06 portrait, iPhone SE) */
+@media (max-width: 480px) {
+  #modalDeviceDetails .modal {
+    max-width: 98vw;
+    width: 98vw;
+    max-height: 98vh;
+    border-radius: 10px;
+    margin: 0 auto;
+  }
+  
+  #modalDeviceDetails .modal-body {
+    padding: 12px 12px;
+    font-size: 0.9rem;
+  }
+  
+  #modalDeviceDetails .modal-header {
+    padding: 12px 12px;
+  }
+  
+  #modalDeviceDetails .modal-header h3 {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+  
+  #modalDeviceDetails .modal-footer {
+    padding: 10px 12px;
+  }
+  
+  #modalDeviceDetails .modal-footer button {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    height: 36px;
+  }
+}
+
+/* Very small screens (small Android phones) */
+@media (max-width: 360px) {
+  #modalDeviceDetails .modal {
+    max-width: 100vw;
+    width: 100vw;
+    max-height: 100vh;
+    border-radius: 8px;
+    margin: 0;
+  }
+  
+  #modalDeviceDetails .modal-body {
+    padding: 10px 10px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Center modal on all screen sizes with flexbox */
+#modalDeviceDetails {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 12000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+#modalDeviceDetails.active {
+  display: flex;
+  opacity: 1;
+}
+
+body.dark-mode .modal-body p {
+  color: #e5e7eb;
+}
+
+body.dark-mode .modal-body span {
+  color: #e5e7eb;
+}
+
+body.dark-mode .modal-body strong {
+  color: #ffffff;
+}
+
+body.dark-mode .modal-body input,
+body.dark-mode .modal-body textarea,
+body.dark-mode .modal-body select {
+  background-color: #3a3a3a;
+  color: #e5e7eb;
+  border-color: #505050;
+}
+
+body.dark-mode .modal-body select option {
+  background-color: #3a3a3a;
+  color: #e5e7eb;
+}
+
+body.dark-mode .modal-body input::placeholder,
+body.dark-mode .modal-body textarea::placeholder {
+  color: #999999;
+}
+
+body.dark-mode .modal-footer {
+  border-top-color: var(--border-color);
+  background-color: var(--bg-darker);
+}
+
+body.dark-mode table {
+  border-collapse: collapse;
+}
+
+body.dark-mode table thead {
+  background-color: var(--bg-darker);
+  color: var(--text-white);
+}
+
+body.dark-mode table tbody tr {
+  border-color: var(--border-color);
+  background-color: var(--bg-card);
+}
+
+body.dark-mode table tbody tr:hover {
+  background-color: var(--bg-darker);
+}
+
+body.dark-mode table thead th,
+body.dark-mode table tbody td {
+  border-color: var(--border-color);
+  color: var(--text-white);
+}
+
+/* Specific styling for Transfer Devices modal table */
+body.dark-mode #modalTransferDevices table {
+  width: 100%;
+}
+
+body.dark-mode #modalTransferDevices table thead th {
+  background-color: #0f0f0f;
+  color: #ffffff;
+  border: none;
+  border-bottom: 1px solid #ffffff;
+  padding: 12px 16px;
+  font-weight: 600;
+}
+
+body.dark-mode #modalTransferDevices table tbody tr {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid #ffffff;
+}
+
+body.dark-mode #modalTransferDevices table tbody tr:hover {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode #modalTransferDevices table tbody td {
+  color: #e5e7eb;
+  border: none;
+  padding: 12px 16px;
+}
+
+body.dark-mode .btn {
+  background-color: var(--primary-color);
+  color: #fff;
+  border: 1px solid var(--primary-color);
+}
+
+body.dark-mode .btn:hover {
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+body.dark-mode .btn-secondary {
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+}
+
+body.dark-mode .btn-secondary:hover {
+  background-color: #64748b;
+  border-color: #64748b;
+}
+
+body.dark-mode .btn-cancel {
+  background-color: #d97706;
+  border-color: #d97706;
+  color: #ffffff;
+}
+
+body.dark-mode .btn-cancel:hover {
+  background-color: #ea580c;
+  border-color: #ea580c;
+  color: #ffffff;
+}
+
+body.dark-mode .btn-danger {
+  background-color: var(--danger-color);
+  border-color: var(--danger-color);
+}
+
+body.dark-mode .btn-danger:hover {
+  background-color: #a81224;
+  border-color: #a81224;
+}
+
+/* Resaltar mensaje "Plan ya vinculado" dentro del modal Editar Plan en modo oscuro */
+body.dark-mode #modalEditPlane .info-box {
+  background: linear-gradient(180deg, rgba(249,115,22,0.04) 0%, rgba(0,0,0,0.15) 100%);
+  border: 1px solid rgba(255,255,255,0.95); /* contorno blanco solicitado */
+  box-shadow: 0 6px 18px rgba(249,115,22,0.12), 0 0 0 4px rgba(249,115,22,0.06), 0 0 0 1px rgba(255,255,255,0.12);
+  color: #fff;
+}
+
+body.dark-mode #modalEditPlane .info-box .info-box-title,
+body.dark-mode #modalEditPlane .info-box .info-box-detail {
+  color: #fff;
+}
+
+body.dark-mode #modalEditPlane .info-box .info-box-icon img {
+  filter: drop-shadow(0 2px 6px rgba(249,115,22,0.2));
+}
+
+
+body.dark-mode .form-group label {
+  color: var(--text-white);
+}
+
+body.dark-mode .form-group input,
+body.dark-mode .form-group textarea,
+body.dark-mode .form-group input,
+body.dark-mode .form-group textarea,
+body.dark-mode .form-group select {
+  background-color: #3a3a3a;
+  color: #e5e7eb;
+  border-color: #505050;
+}
+
+body.dark-mode select,
+body.dark-mode input[type="text"],
+body.dark-mode input[type="email"],
+body.dark-mode input[type="password"],
+body.dark-mode input[type="number"],
+body.dark-mode input[type="date"],
+body.dark-mode textarea {
+  background-color: #3a3a3a !important;
+  color: #e5e7eb !important;
+  border-color: #505050 !important;
+}
+
+body.dark-mode select option {
+  background-color: #3a3a3a;
+  color: #e5e7eb;
+}
+
+body.dark-mode .form-group input::placeholder,
+body.dark-mode .form-group textarea::placeholder {
+  color: #999999;
+}
+
+/* Notification panel styling for dark mode */
+body.dark-mode #sidebarNotifPanel {
+  background-color: #0f0f0f !important;
+  border: 1px solid #ffffff !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.3) !important;
+}
+
+body.dark-mode #sidebarNotifPanel button {
+  color: #e5e7eb !important;
+}
+
+body.dark-mode .notif-tab-content {
+  background-color: #0f0f0f !important;
+}
+
+body.dark-mode #sidebarNotifList {
+  background-color: #0f0f0f;
+}
+
+body.dark-mode #sidebarNotifList div {
+  color: #e5e7eb;
+  border-color: #ffffff;
+}
+
+body.dark-mode #sidebarNotifPanel a {
+  color: #0e9d7f;
+}
+
+body.dark-mode #sidebarNotifPanel a:hover {
+  color: #10b981;
+}
+
+body.dark-mode .info-box {
+  background-color: var(--bg-darker);
+  border-left-color: var(--primary-color);
+}
+
+body.dark-mode .label-title {
+  color: var(--text-white);
+}
+
+body.dark-mode .required {
+  color: var(--danger-color);
+}
+
+/* Global select styling for dark mode - ensures all selects are visible */
+body.dark-mode select {
+  background-color: #3a3a3a !important;
+  color: #e5e7eb !important;
+  border: 1px solid #505050 !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+}
+
+body.dark-mode select option {
+  background-color: #3a3a3a;
+  color: #e5e7eb;
+  padding: 8px;
+}
+
+body.dark-mode select:hover {
+  border-color: #606060 !important;
+}
+
+body.dark-mode select:focus {
+  outline: none;
+  border-color: #0e9d7f !important;
+  box-shadow: 0 0 0 3px rgba(14, 157, 127, 0.1);
+}
+
+/* Table container styling for dark mode */
+body.dark-mode .table-container {
+  background-color: #0f0f0f;
+  border-radius: 8px;
+}
+
+body.dark-mode .table-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+body.dark-mode .table-container th,
+body.dark-mode .table-container td {
+  padding: 14px 18px;
+  color: #e5e7eb;
+  border: 1px solid #ffffff;
+}
+
+body.dark-mode .table-container thead th {
+  background-color: #0f0f0f;
+  color: #ffffff;
+  font-weight: 700;
+  border-color: #ffffff;
+}
+
+body.dark-mode .table-container tbody td {
+  background-color: #0f0f0f;
+  border-color: #ffffff;
+}
+
+body.dark-mode .table-container tbody tr:hover td {
+  background-color: #1a1a1a;
+}
+
+/* Notification panel styling for dark mode */
+body.dark-mode #sidebarNotifPanel {
+  background-color: #0f0f0f !important;
+  color: #e5e7eb !important;
+  border: 1px solid #ffffff;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5) !important;
+}
+
+/* Tab buttons in dark mode - específico */
+body.dark-mode .notif-tab-btn {
+  color: #999 !important;
+  border-bottom-color: transparent !important;
+}
+
+body.dark-mode .notif-tab-btn.active {
+  color: #ffffff !important;
+  border-bottom-color: #0e9d7f !important;
+}
+
+body.dark-mode .notif-tab-btn:hover {
+  color: #b3b3b3 !important;
+}
+
+/* Tab border in dark mode */
+body.dark-mode #sidebarNotifPanel > div:first-of-type {
+  border-bottom-color: #ffffff !important;
+  background-color: #0f0f0f !important;
+}
+
+/* Notif list items - textos de planes */
+body.dark-mode #sidebarNotifList {
+  background-color: #0f0f0f;
+}
+
+body.dark-mode #sidebarPrinterList {
+  background-color: #0f0f0f;
+}
+
+/* Headers y footers específicos */
+body.dark-mode #tabContentPlanes > div:first-child,
+body.dark-mode #tabContentImpresoras > div:first-child {
+  border-bottom-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode #tabContentPlanes > div:last-child,
+body.dark-mode #tabContentImpresoras > div:last-child {
+  border-top-color: #ffffff !important;
+  color: #e5e7eb !important;
+}
+
+/* Textos dentro de las listas */
+body.dark-mode #sidebarNotifList > div,
+body.dark-mode #sidebarPrinterList > div {
+  color: #e5e7eb !important;
+  border-color: #ffffff !important;
+}
+
+/* Títulos de planes/impresoras (texto grande) */
+body.dark-mode #sidebarNotifList > div > div:first-child,
+body.dark-mode #sidebarPrinterList > div > div:first-child {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+/* Descripciones/fechas (texto pequeño) */
+body.dark-mode #sidebarNotifList > div > div:last-child,
+body.dark-mode #sidebarPrinterList > div > div:last-child {
+  color: #d0d0d0 !important;
+}
+
+/* Botones dentro del panel */
+body.dark-mode #btnIrARenovar,
+body.dark-mode #btnRevisarImpresoras {
+  background-color: #0e9d7f !important;
+  color: #fff !important;
+}
+
+body.dark-mode #btnIrARenovar:hover,
+body.dark-mode #btnRevisarImpresoras:hover {
+  background-color: #10b981 !important;
+}
+
+/* Badge de avisos */
+body.dark-mode #sidebarNotifPanelAgo {
+  background-color: rgba(14, 157, 127, 0.2) !important;
+  color: #0e9d7f !important;
+}
+
+/* Tab content */
+body.dark-mode .notif-tab-content {
+  background-color: #1a1a1a !important;
+}
+

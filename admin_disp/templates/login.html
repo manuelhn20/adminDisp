@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="es" id="htmlRoot" data-dark-mode="true">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PROIMA - Iniciar Sesión</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16x16.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/neumorphism-login.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+  </head>
+
+  <body>
+    <div class="main">
+      <!-- Formulario de login -->
+      <div class="container b-container is-txl is-z200" id="b-container">
+        <form class="form" id="b-form" method="post" action="{{ url_for('auth.login') }}" onsubmit="return iniciarSesion(event)">
+          <h2 class="form_title title">Iniciar sesión</h2>
+          <div class="form__icons"></div>
+          <span class="form__span">Introduzca sus credenciales para acceder</span>
+          <input class="form__input" type="text"     name="username" placeholder="Usuario o correo" required autocomplete="username">
+          <div class="password-wrapper">
+            <input id="password" class="form__input" type="password" name="password" placeholder="Contraseña" required autocomplete="current-password">
+            <span class="toggle-password material-icons" data-target="password">visibility</span>
+          </div>
+          <a class="form__link" id="forgotPasswordLink" style="cursor:pointer;">¿Olvidó su contraseña?</a>
+          <button class="form__button button submit fillup" type="submit">INICIAR SESIÓN</button>
+        </form>
+      </div>
+
+      <div class="switch is-txr" id="switch-cnt">
+        <div class="switch__circle is-txr"></div>
+        <div class="switch__circle switch__circle--t is-txr"></div>
+        <div class="switch__container" id="switch-c2">
+          <img src="{{ url_for('static', filename='img/proimabg.png') }}" alt="PROIMA" style="height:50px; margin-bottom:15px;">
+          <h2 class="switch__title title" style="font-size:28px; line-height:1.4; text-align:center;">¿Sin acceso?</h2>
+          <p class="switch__description description" style="text-align:center;">Contacta con el departamento de TI para obtener tus credenciales de acceso a PROIMA.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de autenticación -->
+    <div class="authent-modal" id="authentModal">
+      <img src="{{ url_for('static', filename='img/cg.png') }}" alt="Autenticando">
+      <p>AUTENTICANDO...</p>
+    </div>
+
+    <!-- Modal: Código temporal -->
+    <div class="modal-overlay" id="modalCodigo">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Código Temporal de Acceso</h3>
+          <button class="modal-close" onclick="closeModalCodigo()" aria-label="Cerrar">×</button>
+        </div>
+        <div class="modal-body">
+          <p style="margin-bottom:20px; color:#999; text-align:center;">
+            Ingrese el código de 6 dígitos proporcionado por el departamento de TI:
+          </p>
+          <input type="text" id="codigoInput" class="form-input codigo-input"
+                 placeholder="000000" maxlength="6" pattern="[0-9]{6}" autocomplete="off">
+          <input type="hidden" id="tempUsername" value="{{ temp_username or '' }}">
+          <div id="codigoError" class="error-text"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="validarCodigo()">Validar Código</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Código inválido -->
+    <div class="modal-overlay" id="modalError">
+      <div class="modal">
+        <div class="modal-header"><h3>Código Inválido</h3></div>
+        <div class="modal-body" style="text-align:center;">
+          <img src="{{ url_for('static', filename='img/fail.png') }}" alt="Error"
+               style="width:80px; height:80px; display:block; margin:0 auto 20px;">
+          <p  id="mensajeError"    style="font-size:1.1rem; color:#e8e8e8;">El código ingresado no es válido</p>
+          <p  id="submensajeError" style="margin-top:15px; color:#999; font-size:.95rem;">Por favor, verifique e intente nuevamente.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" style="background:#ef4444;" onclick="closeModalError()">Aceptar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Establecer contraseña -->
+    <div class="modal-overlay" id="modalPassword">
+      <div class="modal">
+        <div class="modal-header"><h3>Establecer Contraseña</h3></div>
+        <div class="modal-body">
+          <p style="margin-bottom:20px; color:#999;">Cree una contraseña segura para su cuenta:</p>
+          <div style="margin-bottom:15px;">
+            <label style="display:block; margin-bottom:6px; font-weight:500; color:#e8e8e8;">Nueva contraseña</label>
+                 <div class="password-wrapper">
+              <input type="password" id="newPassword" class="form-input"
+                placeholder="Ingrese su contraseña" minlength="8" maxlength="24"
+                oninput="validarFortalezaPassword()" autocomplete="new-password">
+              <span class="toggle-password material-icons" data-target="newPassword">visibility</span>
+                 </div>
+          </div>
+          <div style="margin-bottom:15px;">
+            <label style="display:block; margin-bottom:6px; font-weight:500; color:#e8e8e8;">Confirmar contraseña</label>
+                 <div class="password-wrapper">
+              <input type="password" id="confirmPassword" class="form-input"
+                placeholder="Confirme su contraseña" minlength="8" maxlength="24"
+                autocomplete="new-password">
+              <span class="toggle-password material-icons" data-target="confirmPassword">visibility</span>
+                 </div>
+          </div>
+          <div class="password-strength">
+            <div class="strength-label" id="strengthLabel">
+              <span id="strengthText">Fortaleza de contraseña</span>
+            </div>
+            <div class="strength-bar">
+              <div class="strength-fill" id="strengthFill"></div>
+            </div>
+            <div class="password-requirements">
+              <p style="margin:0 0 8px 0; font-weight:500; color:#e8e8e8;">Composición de contraseña:</p>
+              <p style="margin:3px 0; font-size:.8rem; color:#999;">
+                Asegúrese de que su contraseña sea lo suficientemente larga y contenga varios tipos de caracteres.
+              </p>
+              <div class="requirement" id="req-length">   <span class="check"></span><span>Al menos 8 caracteres</span></div>
+              <div class="requirement" id="req-lowercase"><span class="check"></span><span>Minúscula</span></div>
+              <div class="requirement" id="req-uppercase"><span class="check"></span><span>Mayúscula</span></div>
+              <div class="requirement" id="req-symbol">  <span class="check"></span><span>Símbolos (?#≠...)</span></div>
+              <div class="requirement" id="req-number">  <span class="check"></span><span>Números</span></div>
+            </div>
+          </div>
+          <div id="passwordError" class="error-text"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="establecerPassword()">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Éxito al establecer contraseña -->
+    <div class="modal-overlay" id="modalExito">
+      <div class="modal">
+        <div class="modal-header"><h3>Contraseña Establecida</h3></div>
+        <div class="modal-body" style="text-align:center;">
+          <img src="{{ url_for('static', filename='img/chk.png') }}" alt="Éxito"
+               style="width:80px; height:80px; display:block; margin:0 auto 20px;">
+          <p style="font-size:1.1rem; color:#e8e8e8;">Su contraseña ha sido establecida exitosamente</p>
+          <p style="margin-top:15px; color:#999; font-size:.95rem;">Ahora puede iniciar sesión con sus nuevas credenciales.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="closeModalExito()">Aceptar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Sin código asignado -->
+    <div class="modal-overlay" id="modalSinCodigo">
+      <div class="modal">
+        <div class="modal-header"><h3>Código No Asignado</h3></div>
+        <div class="modal-body" style="text-align:center;">
+          <img src="{{ url_for('static', filename='img/war.png') }}" alt="Alerta"
+               style="width:80px; height:80px; display:block; margin:0 auto 20px;">
+          <p style="font-size:1.1rem; color:#e8e8e8; margin-bottom:15px;">Usuario sin código de acceso asignado</p>
+          <p style="margin-top:15px; color:#999; font-size:.95rem;">
+            Por favor, contacte con el <strong style="color:#2260ff;">Departamento de TI</strong>
+            para que le generen un código temporal de acceso.
+          </p>
+          <p style="margin-top:10px; color:#999; font-size:.85rem;">
+            Una vez que tenga su código, podrá establecer su contraseña e iniciar sesión.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="closeModalSinCodigo()">Aceptar</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/neumorphism-login.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
+
+    <!-- Detectar primer acceso (flag de servidor) -->
+    {% if primer_acceso %}
+    <script>
+      window.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('modalCodigo').classList.add('active');
+        document.getElementById('codigoInput').focus();
+      });
+    </script>
+    {% endif %}
+
+    <!-- Toggle mostrar/ocultar contraseña -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.toggle-password').forEach(el => {
+          el.addEventListener('click', function () {
+            const targetId = el.getAttribute('data-target');
+            const input = document.getElementById(targetId) || document.querySelector(`input[name="${targetId}"]`);
+            if (!input) return;
+            if (input.type === 'password') {
+              input.type = 'text';
+              el.textContent = 'visibility_off';
+            } else {
+              input.type = 'password';
+              el.textContent = 'visibility';
+            }
+          });
+
+          const targetId = el.getAttribute('data-target');
+          const input = document.getElementById(targetId) || document.querySelector(`input[name="${targetId}"]`);
+          if (!input) return;
+
+          const updateVisibility = () => {
+            try {
+              if ((input.value || '').length >= 1) el.classList.add('show'); else el.classList.remove('show');
+            } catch(e) {}
+          };
+
+          updateVisibility();
+          input.addEventListener('input', updateVisibility);
+          input.addEventListener('paste', () => setTimeout(updateVisibility, 0));
+        });
+      });
+
+      (function () {
+        try {
+          const originalTitle = document.title || 'PROIMA - Iniciar Sesión';
+          const hiddenTitle = 'PROIMA - Te esperamos';
+          const iconLink = document.querySelector('link[rel*="icon"]');
+          const activeHref = iconLink ? iconLink.href : null;
+
+          document.addEventListener('visibilitychange', function () {
+            try {
+              document.title = document.hidden ? hiddenTitle : originalTitle;
+            } catch (e) {}
+          });
+        } catch (e) {}
+      })();
+    </script>
+  </body>
+</html>

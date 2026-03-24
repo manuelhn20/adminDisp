@@ -1,0 +1,755 @@
+{% extends 'base.html' %}
+{% block title %}PROIMA - Reclamos{% endblock %}
+{% block page_title %}Reclamos de Seguro{% endblock %}
+{% block content %}
+<div class="button-group" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+  <div style="display:flex;gap:12px;">
+    <button class="btn btn-primary offset-btn" onclick="openModal('modalNewReclamo')">Nuevo reclamo</button>
+  </div>
+  <div style="display:flex;align-items:center;">
+    <input id="reclamosPageSearch" class="global-table-search" placeholder="Buscar..." style="width:220px;" />
+  </div>
+</div>
+
+<style>
+  .sort-icon { 
+    height:18px; 
+    width:18px; 
+    vertical-align:middle; 
+    margin-left:8px; 
+    transition: transform .15s ease, opacity .15s ease; 
+    opacity:0; 
+    visibility:hidden; 
+    transform:rotate(0deg); 
+  }
+  .sort-icon.active { opacity:1; visibility:visible; }
+  
+  /* Cursor pointer para headers ordenables */
+  th[data-sortable] {
+    cursor: pointer;
+    user-select: none;
+  }
+  th[data-sortable]:hover {
+    background-color: rgba(0,0,0,0.05);
+  }
+  body.dark-mode th[data-sortable]:hover {
+    background-color: rgba(255,255,255,0.05);
+  }
+</style>
+
+<table role="grid" id="reclamosTable">
+  <thead>
+    <tr>
+      <th data-sortable="empleado">Empleado <img id="sortIndicator_reclamos_empleado" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+      <th data-sortable="empresa">Empresa <img id="sortIndicator_reclamos_empresa" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+      <th data-sortable="serie">Serie <img id="sortIndicator_reclamos_serie" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+      <th data-sortable="marca">Marca <img id="sortIndicator_reclamos_marca" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+      <th data-sortable="modelo">Modelo <img id="sortIndicator_reclamos_modelo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+      <th data-sortable="estado">Estado <img id="sortIndicator_reclamos_estado" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
+      <th id="thActionsReclamos">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if reclamos and reclamos|length > 0 %}
+      {% for r in reclamos %}
+      <tr>
+        <td>{{ r.empleado_nombre or r.fk_id_empleado }}</td>
+        <td>{{ r.empresa or '-' }}</td>
+        <td>{{ r.numero_serie or '-' }}</td>
+        <td>{{ r.nombre_marca or '-' }}</td>
+        <td>{{ r.nombre_modelo or '-' }}</td>
+        <td>
+          <span class="text-{{ 'success' if r.estado_proceso else 'warning' }}">
+            {{ 'Completado' if r.estado_proceso else 'En proceso' }}
+          </span>
+        </td>
+        <td class="table-actions">
+          <button class="btn btn-primary btn-small" onclick="openEditReclamoModal({{ r.id_reclamo }})" title="Editar reclamo" style="width:44px;height:44px;border-radius:10px;background:transparent;border:none;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;position:relative;"><div style="width:42px;height:42px;border-radius:50%;background:#06a7e6;position:absolute;"></div><img src="/static/img/edi.png" alt="Editar" style="width:32px;height:32px;position:relative;z-index:1;"></button>
+          <button class="btn btn-danger btn-small" onclick='openGlobalDeleteModal(`/devices/reclamo/{{ r.id_reclamo }}`, "Confirmar eliminación", {{ r.id_reclamo | tojson }})' title="Eliminar reclamo" style="width:44px;height:44px;border-radius:10px;background:transparent;border:none;display:inline-flex;align-items:center;justify-content:center;position:relative;"><div style="width:42px;height:42px;border-radius:50%;background:#e04343;position:absolute;"></div><img src="/static/img/del.png" alt="Eliminar" style="width:32px;height:32px;position:relative;z-index:1;"></button>
+        </td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="7" class="text-center text-muted">No hay reclamos registrados todavía. Usa el botón "Nuevo reclamo" para crear el primero.</td>
+      </tr>
+    {% endif %}
+  </tbody>
+</table>
+
+<div id="modalNewReclamo" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nuevo reclamo de seguro</h3>
+      <button class="modal-close" onclick="closeModal('modalNewReclamo')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formNewReclamo" onsubmit="handleSubmitNewReclamo(event)" enctype="multipart/form-data">
+        <label>
+          <span class="label-title">Empresa</span>
+          <select id="selectReclamoEmpresa">
+            <option value="">Seleccionar empresa</option>
+          </select>
+        </label>
+        <label>
+          <span class="label-title">Asignación<span class="required">*</span></span>
+          <select name="fk_id_asignacion" id="selectReclamoAsignacion" required>
+            <option value="">Seleccionar asignación</option>
+            {% for asig in asignaciones_options %}
+              {% if (asig.categoria or '').lower() == 'celular' %}
+                <option value="{{ asig.id_asignacion }}" data-brand="{{ asig.nombre_marca or '' }}" data-model="{{ asig.nombre_modelo or '' }}" data-serial="{{ asig.numero_serie or '' }}" data-empresa="{{ asig.empresa | default('') }}">{{ asig.empleado_nombre }} - {{ asig.numero_serie or '' }} — {{ asig.nombre_marca or '-' }} {{ asig.nombre_modelo or '' }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+          <div id="reclamoDevicePreview" style="margin-top:0.5rem; color:var(--text-gray);">Nº Serie: <span id="previewSerial">-</span> — Marca: <span id="previewMarca">-</span> — Modelo: <span id="previewModelo">-</span></div>
+        </label>
+        <label>
+          <span class="label-title">Fecha de la incidencia<span class="required">*</span></span>
+          <input type="date" name="fecha_incidencia" id="inputFechaIncidencia" required>
+        </label>
+        <!-- Fecha inicio del reclamo (mostrada al crear) -->
+        <label>
+          <span class="label-title">Fecha inicio del reclamo<span class="required">*</span></span>
+          <input type="date" name="fecha_inicio_reclamo" id="inputFechaInicioReclamo" required>
+        </label>
+        <label>
+          <span class="label-title">Lugar de la incidencia</span>
+          <input type="text" name="lugar_incidencia" placeholder="Ingrese el lugar del incidente">
+        </label>
+        <label>
+          <span class="label-title">Lugar del reclamo (ciudad)<span class="required">*</span></span>
+          <select name="lugar_reclamo" required>
+            <option value="Tegucigalpa">Tegucigalpa</option>
+            <option value="San Pedro Sula">San Pedro Sula</option>
+            <option value="La Ceiba">La Ceiba</option>
+            <option value="Choluteca">Choluteca</option>
+            <option value="Comayagua">Comayagua</option>
+            <option value="Other">Otra</option>
+          </select>
+        </label>
+        <label>
+          Estado del proceso
+          <select name="estado_proceso">
+            <option value="0">En proceso</option>
+            <option value="1">Completado</option>
+          </select>
+        </label>
+        <!-- Fecha fin del reclamo removida del formulario de creación (no requerida) -->
+        <label>
+          Evidencia (Imagen)
+          <input type="file" name="img_evidencia" id="newReclamoImgEvidencia" accept="image/*">
+        </label>
+        <label>
+          Formulario (Imagen)
+          <input type="file" name="img_form" id="newReclamoImgForm" accept="image/*">
+        </label>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button type="button" class="btn btn-secondary btn-small" id="btnNewReclamoPreviewEvidencia">Ver evidencia (PDF)</button>
+          <button type="button" class="btn btn-secondary btn-small" id="btnNewReclamoPreviewForm">Ver formulario (PDF)</button>
+          <button type="button" class="btn btn-secondary btn-small" id="btnNewReclamoPreviewBoth">Ver ambas (PDF)</button>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeModal('modalNewReclamo')">Cancelar</button>
+      <button type="submit" form="formNewReclamo" class="btn btn-primary">Guardar reclamo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal edición reclamo -->
+<div id="modalEditReclamo" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Editar reclamo</h3>
+      <button class="modal-close" onclick="closeEditReclamoModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formEditReclamo" enctype="multipart/form-data">
+        <input type="hidden" id="editReclamoId">
+        <label>
+          Asignación
+          <div id="editReclamoAsignacion" class="form-label-value"></div>
+        </label>
+        <label>
+          <span class="label-title">Incidencia</span>
+          <textarea id="editIncidencia" name="incidencia" placeholder="Describe la incidencia ocurrida"></textarea>
+        </label>
+        <label>
+          <span class="label-title">Lugar del reclamo</span>
+          <select id="editReclamoLugar">
+            <option value="Tegucigalpa">Tegucigalpa</option>
+            <option value="San Pedro Sula">San Pedro Sula</option>
+            <option value="La Ceiba">La Ceiba</option>
+            <option value="Choluteca">Choluteca</option>
+            <option value="Comayagua">Comayagua</option>
+            <option value="Other">Otra</option>
+          </select>
+        </label>
+        <label>
+          Estado del proceso
+          <select id="editReclamoEstado">
+            <option value="0">En proceso</option>
+            <option value="1">Completado</option>
+          </select>
+        </label>
+        <label>
+          Evidencia (Imagen)
+          <input type="file" id="editReclamoEvidencia" accept="image/*">
+          <div id="previewEditEvidencia" class="preview-center">
+            <img id="imgPreviewEvidencia" src="" alt="Evidencia" />
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="button" class="btn btn-danger btn-small" id="btnRemoveEvidencia">Eliminar evidencia</button>
+              <button type="button" class="btn btn-secondary btn-small" id="btnEditReclamoPreviewEvidencia">Ver evidencia (PDF)</button>
+            </div>
+          </div>
+          <input type="hidden" id="removeImgEvidenciaHidden" name="remove_img_evidencia" value="0">
+        </label>
+        <label>
+          Formulario (Imagen)
+          <input type="file" id="editReclamoForm" accept="image/*">
+          <div id="previewEditForm" class="preview-center">
+            <img id="imgPreviewForm" src="" alt="Formulario" />
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="button" class="btn btn-danger btn-small" id="btnRemoveForm">Eliminar formulario</button>
+              <button type="button" class="btn btn-secondary btn-small" id="btnEditReclamoPreviewForm">Ver formulario (PDF)</button>
+            </div>
+          </div>
+          <input type="hidden" id="removeImgFormHidden" name="remove_img_form" value="0">
+        </label>
+        <label style="margin-top:0.75rem;">
+          <span class="label-title">Verificación (escribe<strong>&nbsp;CONFIRMAR</strong>)<span class="required">*</span></span>
+          <input type="text" id="editReclamoConfirm" placeholder="Escribe CONFIRMAR para aplicar" autocomplete="off">
+        </label>
+        <div id="editReclamoError" style="display:none; color:#b00020; font-weight:600; margin-top:0.5rem;"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" onclick="closeEditReclamoModal()">Cancelar</button>
+      <button type="button" id="btnSaveReclamo" class="btn btn-primary" disabled>Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<script>
+async function openEditReclamoModal(id) {
+  document.getElementById('editReclamoError').style.display = 'none';
+  document.getElementById('editReclamoConfirm').value = '';
+  document.getElementById('btnSaveReclamo').disabled = true;
+  try {
+    const r = await fetch(`/devices/reclamo/${id}`);
+    if (!r.ok) throw new Error('No encontrado');
+    const data = await r.json();
+    document.getElementById('editReclamoId').value = id;
+    document.getElementById('editReclamoAsignacion').textContent = `${data.empleado_nombre || data.fk_id_empleado} - ${data.numero_serie || ''} — ${data.nombre_marca || ''} ${data.nombre_modelo || ''}`;
+    // Fecha y lugar de incidencia (campos de solo lectura)
+    const editFechaInc = document.getElementById('editFechaIncidencia');
+    const editFechaInicio = document.getElementById('editFechaInicioReclamo');
+    const editLugarInc = document.getElementById('editLugarIncidencia');
+    if (editFechaInc) editFechaInc.value = data.fecha_incidencia || '';
+    if (editFechaInicio) editFechaInicio.value = data.fecha_inicio_reclamo || '';
+    if (editLugarInc) editLugarInc.value = data.lugar_incidencia || '';
+    // Lugar del reclamo (editable select)
+    const editLugarSelect = document.getElementById('editReclamoLugar');
+    if (editLugarSelect) editLugarSelect.value = data.lugar_reclamo || '';
+    document.getElementById('editReclamoEstado').value = data.estado_proceso ? '1' : '0';
+    // Image previews: evidence / form
+    try {
+      const previewE = document.getElementById('previewEditEvidencia');
+      const imgE = document.getElementById('imgPreviewEvidencia');
+      const removeEHidden = document.getElementById('removeImgEvidenciaHidden');
+      if (data.has_img_evidencia) {
+        imgE.src = `/devices/reclamo/${id}/evidencia?ts=${Date.now()}`;
+        previewE.style.display = '';
+        removeEHidden.value = '0';
+      } else {
+        imgE.src = '';
+        previewE.style.display = 'none';
+        removeEHidden.value = '0';
+      }
+    } catch (e) { /* ignore */ }
+    try {
+      const previewF = document.getElementById('previewEditForm');
+      const imgF = document.getElementById('imgPreviewForm');
+      const removeFHidden = document.getElementById('removeImgFormHidden');
+      if (data.has_img_form) {
+        imgF.src = `/devices/reclamo/${id}/form?ts=${Date.now()}`;
+        previewF.style.display = '';
+        removeFHidden.value = '0';
+      } else {
+        imgF.src = '';
+        previewF.style.display = 'none';
+        removeFHidden.value = '0';
+      }
+    } catch (e) { /* ignore */ }
+    openModal('modalEditReclamo', true);
+  } catch (err) {
+    showModalMessage('error', 'Error', 'No se pudo cargar el reclamo');
+  }
+}
+
+// No fecha_fin_reclamo in edit modal anymore
+
+function closeEditReclamoModal() {
+  closeModal('modalEditReclamo');
+}
+
+function refreshReclamoSaveState() {
+  const confirmText = document.getElementById('editReclamoConfirm').value.trim();
+  const lugarEl = document.getElementById('editReclamoLugar');
+  const lugar = lugarEl ? lugarEl.value.trim() : '';
+  document.getElementById('btnSaveReclamo').disabled = !(confirmText === 'CONFIRMAR' && lugar.length>0);
+}
+
+['editReclamoConfirm','editReclamoLugar'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', refreshReclamoSaveState);
+});
+
+document.getElementById('btnSaveReclamo').addEventListener('click', async () => {
+  const id = document.getElementById('editReclamoId').value;
+  
+  // Validación: si se intenta finalizar el reclamo (estado=1) o hay una fecha fin, exige confirmación
+  const confirmTextCheck = document.getElementById('editReclamoConfirm') ? document.getElementById('editReclamoConfirm').value.trim() : '';
+  const estadoValCheck = document.getElementById('editReclamoEstado') ? document.getElementById('editReclamoEstado').value : '0';
+  const fechaFinEl = document.getElementById('editReclamoFechaFin');
+  const fechaFinValCheck = fechaFinEl ? (fechaFinEl.value || '').trim() : '';
+  if ((estadoValCheck === '1' || fechaFinValCheck) && confirmTextCheck !== 'CONFIRMAR') {
+    showModalMessage('warning', 'Atención', 'Antes de marcar el reclamo como finalizado, escribe CONFIRMAR en el campo de verificación.');
+    return;
+  }
+
+  // Crear FormData para enviar archivos
+  const formData = new FormData();
+  formData.append('lugar_reclamo', document.getElementById('editReclamoLugar').value.trim());
+  // Include editable dates and original incidencia fields if present
+  const editFechaIncEl = document.getElementById('editFechaIncidencia');
+  const editFechaInicioEl = document.getElementById('editFechaInicioReclamo');
+  const editLugarIncEl = document.getElementById('editLugarIncidencia');
+  if (editFechaIncEl) formData.append('fecha_incidencia', editFechaIncEl.value || '');
+  if (editFechaInicioEl) formData.append('fecha_inicio_reclamo', editFechaInicioEl.value || '');
+  if (editLugarIncEl) formData.append('lugar_incidencia', editLugarIncEl.value || '');
+  formData.append('estado_proceso', document.getElementById('editReclamoEstado').value);
+  // fecha_fin_reclamo removed from edit form; server will set fecha_fin if estado=1 when appropriate
+  
+  // Agregar imágenes si existen
+  const fileEvidencia = document.getElementById('editReclamoEvidencia').files[0];
+  if (fileEvidencia) {
+    formData.append('img_evidencia', fileEvidencia);
+  }
+  
+  const fileForm = document.getElementById('editReclamoForm').files[0];
+  if (fileForm) {
+    formData.append('img_form', fileForm);
+  }
+  // Append removal flags for images
+  const removeE = document.getElementById('removeImgEvidenciaHidden').value === '1';
+  const removeF = document.getElementById('removeImgFormHidden').value === '1';
+  if (removeE) formData.append('remove_img_evidencia', '1');
+  if (removeF) formData.append('remove_img_form', '1');
+  
+  try {
+    const r = await fetch(`/devices/reclamo/${id}`, { method: 'PUT', body: formData });
+    const data = await r.json().catch(()=>({}));
+    if (r.ok && data.success) {
+      closeEditReclamoModal();
+      openGlobalSuccessModal(data.message || 'Reclamo actualizado');
+      if (typeof reloadReclamosTable === 'function') await reloadReclamosTable();
+      try { if (typeof refreshAsignacionesOptions === 'function') await refreshAsignacionesOptions(); } catch(e) {}
+    } else {
+      document.getElementById('editReclamoError').textContent = data.message || 'No se pudo actualizar el reclamo';
+      document.getElementById('editReclamoError').style.display = 'block';
+    }
+  } catch (err) {
+    document.getElementById('editReclamoError').textContent = 'No se pudo actualizar el reclamo';
+    document.getElementById('editReclamoError').style.display = 'block';
+  }
+});
+
+// Manejar envío de formulario de nuevo reclamo
+async function handleSubmitNewReclamo(e) {
+  e.preventDefault();
+  // Asegurar que `fk_id_asignacion` y `fecha_inicio_reclamo` estén presentes.
+  const formEl = document.getElementById('formNewReclamo');
+  const asignVal = (document.getElementById('selectReclamoAsignacion') && document.getElementById('selectReclamoAsignacion').value) ? document.getElementById('selectReclamoAsignacion').value : '';
+  // Preferir el valor explícito de 'fecha_inicio_reclamo' mostrado; si no se provee, usar fecha_incidencia
+  const fechaIncEl = document.getElementById('inputFechaIncidencia');
+  const fechaInicioEl = document.getElementById('inputFechaInicioReclamo');
+  // Si fecha inicio está vacía pero hay fecha de incidencia, auto-copiamos
+  if (fechaInicioEl && (!fechaInicioEl.value || fechaInicioEl.value === '') && fechaIncEl && fechaIncEl.value) {
+    fechaInicioEl.value = fechaIncEl.value;
+  }
+  const fechaInicioVal = (fechaInicioEl && fechaInicioEl.value) ? fechaInicioEl.value : '';
+
+  if (!asignVal) {
+    showModalMessage('error', 'Error', 'La asignación es obligatoria para crear un reclamo.');
+    return;
+  }
+  if (!fechaInicioVal) {
+    showModalMessage('error', 'Error', 'La Fecha de la incidencia es obligatoria y se usa como fecha de inicio del reclamo.');
+    return;
+  }
+
+  const formData = new FormData(formEl);
+  try {
+    const resp = await fetch('/devices/reclamo/new', { method: 'POST', body: formData });
+    if (resp.ok) {
+      const data = await resp.json().catch(() => ({}));
+      closeModal('modalNewReclamo');
+      document.getElementById('formNewReclamo').reset();
+      // Recargar la tabla dinámicamente
+      if (typeof reloadReclamosTable === 'function') {
+        await reloadReclamosTable();
+      }
+      try { if (typeof refreshAsignacionesOptions === 'function') await refreshAsignacionesOptions(); } catch(e) {}
+      openGlobalSuccessModal(data.message || 'Reclamo creado exitosamente');
+    } else {
+      const data = await resp.json().catch(() => ({}));
+      showModalMessage('error', 'Error', data.message || 'No se pudo crear el reclamo');
+    }
+  } catch (err) {
+    showModalMessage('error', 'Error', 'No se pudo crear el reclamo');
+  }
+}
+
+// Removed Fecha fin field and its visibility handling from the creation modal
+
+// Mostrar vista previa de dispositivo seleccionado (marca, modelo, número de serie)
+const selectReclamoAsig = document.getElementById('selectReclamoAsignacion');
+const previewMarcaEl = document.getElementById('previewMarca');
+const previewModeloEl = document.getElementById('previewModelo');
+const previewSerialEl = document.getElementById('previewSerial');
+function updateReclamoPreview() {
+  if (!selectReclamoAsig) return;
+  const opt = selectReclamoAsig.selectedOptions[0];
+  if (!opt || !opt.value) {
+    if (previewMarcaEl) previewMarcaEl.textContent = '-';
+    if (previewModeloEl) previewModeloEl.textContent = '-';
+    if (previewSerialEl) previewSerialEl.textContent = '-';
+    return;
+  }
+  const brand = opt.dataset.brand || '-';
+  const model = opt.dataset.model || '-';
+  const serial = opt.dataset.serial || '-';
+  if (previewMarcaEl) previewMarcaEl.textContent = brand;
+  if (previewModeloEl) previewModeloEl.textContent = model;
+  if (previewSerialEl) previewSerialEl.textContent = serial;
+}
+if (selectReclamoAsig) {
+  selectReclamoAsig.addEventListener('change', updateReclamoPreview);
+  // initialize preview in case an option is preselected
+  updateReclamoPreview();
+}
+// Empresa filtering for reclamos modal
+const selectReclamoEmpresa = document.getElementById('selectReclamoEmpresa');
+function populateReclamoEmpresaOptions() {
+  if (!selectReclamoEmpresa || !selectReclamoAsig) return;
+  const seen = new Set();
+  const opts = Array.from(selectReclamoAsig.options);
+  // Clear existing options except the placeholder
+  while (selectReclamoEmpresa.options.length > 1) {
+    selectReclamoEmpresa.remove(1);
+  }
+  opts.forEach(o => {
+    const e = (o.dataset.empresa || '').toString().trim();
+    if (e && !seen.has(e)) {
+      seen.add(e);
+      const no = document.createElement('option'); no.value = e; no.textContent = e; selectReclamoEmpresa.appendChild(no);
+    }
+  });
+}
+if (selectReclamoEmpresa) {
+  populateReclamoEmpresaOptions();
+  selectReclamoEmpresa.addEventListener('change', (ev) => {
+    const val = (ev.target.value || '').toString();
+    if (!selectReclamoAsig) return;
+    const opts = Array.from(selectReclamoAsig.options);
+    const prev = selectReclamoAsig.value;
+    opts.forEach(o => {
+      const e = (o.dataset.empresa || '').toString();
+      if (!val || e === val) { o.style.display = ''; } else { o.style.display = 'none'; }
+    });
+    const curOpt = selectReclamoAsig.querySelector(`option[value="${prev}"]`);
+    if (curOpt && curOpt.style.display === 'none') {
+      selectReclamoAsig.value = '';
+      updateReclamoPreview();
+    }
+  });
+}
+// Auto-copy incidencia date to fecha inicio field while user edits incidencia
+const fechaIncInput = document.getElementById('inputFechaIncidencia');
+const fechaInicioInput = document.getElementById('inputFechaInicioReclamo');
+if (fechaIncInput && fechaInicioInput) {
+  fechaIncInput.addEventListener('change', function(){
+    if (!fechaInicioInput.value) fechaInicioInput.value = fechaIncInput.value;
+  });
+}
+
+// Custom validation messages for date fields
+if (fechaIncInput) {
+  fechaIncInput.setCustomValidity('');
+  fechaIncInput.addEventListener('invalid', function(e){
+    e.target.setCustomValidity('Por favor indique la fecha de la incidencia');
+  });
+  fechaIncInput.addEventListener('input', function(e){ e.target.setCustomValidity(''); });
+}
+if (fechaInicioInput) {
+  fechaInicioInput.setCustomValidity('');
+  fechaInicioInput.addEventListener('invalid', function(e){
+    e.target.setCustomValidity('Por favor indique la fecha de inicio del reclamo');
+  });
+  fechaInicioInput.addEventListener('input', function(e){ e.target.setCustomValidity(''); });
+}
+
+// Helper: open a print window with given image URLs or File objects
+function openImagesInPrintWindow(sources, title) {
+  // sources: array of {url: string, filename?:string, typeLabel?:string}
+  if (!sources || sources.length === 0) {
+    openGlobalMessageModal('info', 'Info', 'No hay imágenes para mostrar');
+    return;
+  }
+  const w = window.open('', '_blank');
+  if (!w) return openGlobalMessageModal('error','Error','No se pudo abrir la ventana de impresión');
+  const htmlParts = [];
+  // compute combined header/title including type labels so the browser print header shows them
+  let titleText = title || 'Imágenes reclamo';
+  try {
+    const typeLabels = Array.from(new Set((sources.map(s => s.typeLabel || '')).filter(Boolean)));
+    if (typeLabels.length) titleText += ' (' + typeLabels.join(', ') + ')';
+  } catch (e) { /* ignore */ }
+  htmlParts.push('<!doctype html><html><head><title>' + titleText + '</title>');
+  htmlParts.push('<style>body{margin:0;padding:20px;font-family:sans-serif;} .img-wrap{page-break-after:always;text-align:center;margin-bottom:20px;} .img-caption{margin-bottom:6px;font-size:1rem;color:#222;text-align:center;} img{max-width:100%;height:auto;display:block;margin:0 auto;}</style>');
+  htmlParts.push('</head><body>');
+  sources.forEach(s => {
+    htmlParts.push('<div class="img-wrap">');
+    htmlParts.push('<img src="' + s.url + '" alt="' + (s.filename||s.typeLabel||'') + '" />');
+    htmlParts.push('</div>');
+  });
+  htmlParts.push('</body></html>');
+  w.document.open();
+  w.document.write(htmlParts.join('\n'));
+  w.document.close();
+  // wait images to load then print
+  w.onload = function() {
+    setTimeout(() => { try { w.print(); } catch(e){} }, 300);
+  };
+}
+
+// New reclamo: preview selected files as PDF
+function showNewReclamoFilesPDF(type) {
+  const files = [];
+  const evInput = document.getElementById('newReclamoImgEvidencia');
+  const formInput = document.getElementById('newReclamoImgForm');
+  if ((type === 'evidencia' || type === 'both') && evInput && evInput.files && evInput.files.length) {
+    for (let f of evInput.files) {
+      files.push({ url: URL.createObjectURL(f), filename: f.name, typeLabel: 'Evidencia' });
+    }
+  }
+  if ((type === 'form' || type === 'both') && formInput && formInput.files && formInput.files.length) {
+    for (let f of formInput.files) {
+      files.push({ url: URL.createObjectURL(f), filename: f.name, typeLabel: 'Formulario' });
+    }
+  }
+  openImagesInPrintWindow(files, 'Imágenes reclamo');
+}
+
+// Edit reclamo: preview existing preview images (server URLs)
+function showEditReclamoImagePDF(which) {
+  const sources = [];
+  if (which === 'evidencia' || which === 'both') {
+    const imgE = document.getElementById('imgPreviewEvidencia');
+    if (imgE && imgE.src) sources.push({ url: imgE.src, typeLabel: 'Evidencia' });
+  }
+  if (which === 'form' || which === 'both') {
+    const imgF = document.getElementById('imgPreviewForm');
+    if (imgF && imgF.src) sources.push({ url: imgF.src, typeLabel: 'Formulario' });
+  }
+  openImagesInPrintWindow(sources, 'Imágenes reclamo');
+}
+
+// Wire up buttons for new and edit modals
+document.getElementById('btnNewReclamoPreviewEvidencia')?.addEventListener('click', () => showNewReclamoFilesPDF('evidencia'));
+document.getElementById('btnNewReclamoPreviewForm')?.addEventListener('click', () => showNewReclamoFilesPDF('form'));
+document.getElementById('btnNewReclamoPreviewBoth')?.addEventListener('click', () => showNewReclamoFilesPDF('both'));
+document.getElementById('btnEditReclamoPreviewEvidencia')?.addEventListener('click', () => showEditReclamoImagePDF('evidencia'));
+document.getElementById('btnEditReclamoPreviewForm')?.addEventListener('click', () => showEditReclamoImagePDF('form'));
+
+// Edit modal: preview file input handlers and remove buttons
+const editEvidInput = document.getElementById('editReclamoEvidencia');
+const editFormInput = document.getElementById('editReclamoForm');
+const btnRemoveEvid = document.getElementById('btnRemoveEvidencia');
+const btnRemoveForm = document.getElementById('btnRemoveForm');
+const imgPreviewE = document.getElementById('imgPreviewEvidencia');
+const imgPreviewF = document.getElementById('imgPreviewForm');
+const previewEContainer = document.getElementById('previewEditEvidencia');
+const previewFContainer = document.getElementById('previewEditForm');
+if (editEvidInput) {
+  editEvidInput.addEventListener('change', function() {
+    const file = this.files[0];
+    const removeHidden = document.getElementById('removeImgEvidenciaHidden');
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      imgPreviewE.src = e.target.result;
+      previewEContainer.style.display = '';
+      if (removeHidden) removeHidden.value = '0';
+    };
+    reader.readAsDataURL(file);
+  });
+}
+if (editFormInput) {
+  editFormInput.addEventListener('change', function() {
+    const file = this.files[0];
+    const removeHidden = document.getElementById('removeImgFormHidden');
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      imgPreviewF.src = e.target.result;
+      previewFContainer.style.display = '';
+      if (removeHidden) removeHidden.value = '0';
+    };
+    reader.readAsDataURL(file);
+  });
+}
+if (btnRemoveEvid) btnRemoveEvid.addEventListener('click', function() {
+  const removeHidden = document.getElementById('removeImgEvidenciaHidden');
+  if (editEvidInput) editEvidInput.value = '';
+  if (imgPreviewE) imgPreviewE.src = '';
+  if (previewEContainer) previewEContainer.style.display = 'none';
+  if (removeHidden) removeHidden.value = '1';
+});
+if (btnRemoveForm) btnRemoveForm.addEventListener('click', function() {
+  const removeHidden = document.getElementById('removeImgFormHidden');
+  if (editFormInput) editFormInput.value = '';
+  if (imgPreviewF) imgPreviewF.src = '';
+  if (previewFContainer) previewFContainer.style.display = 'none';
+  if (removeHidden) removeHidden.value = '1';
+});
+
+// Recargar opciones del select de asignaciones desde API
+async function refreshAsignacionesOptions() {
+  try {
+    const resp = await fetch('/devices/asignaciones/active');
+    if (!resp.ok) return;
+    const data = await resp.json().catch(()=>null);
+    if (!data || !data.success) return;
+    const asigns = data.asignaciones || [];
+    const select = document.getElementById('selectReclamoAsignacion');
+    if (!select) return;
+    // Preserve the placeholder option
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = '-- Seleccionar --';
+    select.innerHTML = '';
+    select.appendChild(placeholder);
+    // Only include celulares (match server-side rendering filter)
+    asigns.forEach(a => {
+      const tipo = (a.categoria || '').toLowerCase();
+      if (tipo !== 'celular') return;
+      const opt = document.createElement('option');
+      opt.value = a.id_asignacion;
+      opt.dataset.brand = a.nombre_marca || '';
+      opt.dataset.model = a.nombre_modelo || '';
+      opt.dataset.serial = a.numero_serie || '';
+      opt.dataset.empresa = a.empresa || '';
+      const empleado = a.empleado_nombre || a.fk_id_empleado || '';
+      const marca = a.nombre_marca || '-';
+      const modelo = a.nombre_modelo || '';
+      const displayText = `${empleado} - ${a.numero_serie || ''} — ${marca} ${modelo}`;
+      opt.textContent = displayText;
+      select.appendChild(opt);
+    });
+    // refresh preview in case selection changed
+    try { updateReclamoPreview(); } catch(e) {}
+    // Repopulate empresa filter with new data
+    try { populateReclamoEmpresaOptions(); } catch(e) {}
+  } catch (e) {
+    // ignore errors silently
+  }
+}
+
+// Función para recargar tabla de reclamos
+async function reloadReclamosTable() {
+  try {
+    const table = document.querySelector('table');
+    if (table) showTableLoader(table.parentElement || table);
+    const resp = await fetch('/devices/reclamos/tbody');
+    if (!resp.ok) {
+      if (table) hideTableLoader(table.parentElement || table);
+      return;
+    }
+    const html = await resp.text();
+    const tbody = document.querySelector('table tbody');
+      if (tbody) {
+      tbody.innerHTML = html;
+      try {
+        const q = (document.getElementById('reclamosPageSearch') || {}).value || '';
+        const table = document.getElementById('reclamosTable') || document.querySelector('table');
+            if (typeof applyTableSearchFilter === 'function') applyTableSearchFilter(q, table);
+      } catch(e) {}
+    }
+    if (table) hideTableLoader(table.parentElement || table);
+  } catch (err) {
+    const table = document.querySelector('table');
+    if (table) hideTableLoader(table.parentElement || table);
+    console.error('Error recargando tabla:', err);
+  }
+}
+</script>
+
+<script>
+// Bind local search input to shared filter for reclamos page
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const s = document.getElementById('reclamosPageSearch');
+    const table = document.getElementById('reclamosTable') || document.querySelector('table');
+    if (s && !s._bound) {
+      s.addEventListener('input', () => {
+        const v = (s.value || '').trim();
+        try { if (typeof applyTableSearchFilter === 'function') applyTableSearchFilter(v, table); } catch(e) {}
+      });
+      s._bound = true;
+    }
+    // bind acciones header to clear filters + sorting
+    const act = document.getElementById('thActionsReclamos');
+    if (act && !act._boundReset) {
+      act.style.cursor = 'pointer';
+      act.addEventListener('click', () => {
+        try { const p = document.getElementById('reclamosPageSearch'); if (p) p.value = ''; } catch(e) {}
+        try { if (typeof applyTableSearchFilter === 'function') applyTableSearchFilter('', table); } catch(e) {}
+        try {
+          if (table && typeof table.clearSorting === 'function') table.clearSorting();
+          else {
+            window.__reclamosSortField = null; window.__reclamosSortDir = 'asc';
+            document.querySelectorAll('#reclamosTable .sort-icon').forEach(el => { el.classList.remove('active'); el.style.transform='rotate(0deg)'; });
+            const tbody = table.querySelector('tbody');
+            if (tbody) {
+              const rows = Array.from(tbody.querySelectorAll('tr'));
+              rows.sort((a,b) => (parseInt(a.dataset.originalIndex||0) - parseInt(b.dataset.originalIndex||0)));
+              rows.forEach(r => tbody.appendChild(r));
+            }
+          }
+        } catch(e) {}
+      });
+      act._boundReset = true;
+    }
+
+    // Initialize shared sorting helper for this table
+    try { initTableSorting('#reclamosTable', { iconPrefix: 'sortIndicator_reclamos_' }); } catch(e) {}
+
+    // Load asignaciones options when modal is opened
+    const modalNewReclamo = document.getElementById('modalNewReclamo');
+    if (modalNewReclamo) {
+      const observer = new MutationObserver(() => {
+        if (modalNewReclamo.style.display === 'flex') {
+          try { refreshAsignacionesOptions(); } catch(e) { console.warn('Error loading asignaciones:', e); }
+        }
+      });
+      observer.observe(modalNewReclamo, { attributes: true, attributeFilter: ['style'] });
+    }
+
+  } catch(e) {}
+});
+</script>
+
+{% endblock %}

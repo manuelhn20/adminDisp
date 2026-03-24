@@ -1,0 +1,247 @@
+/* ============================================================ */
+/* dispositivos.css - Estilos extraídos de dispositivos.html   */
+/* ============================================================ */
+
+.sort-icon {
+    height:18px;
+    width:18px;
+    vertical-align:middle;
+    margin-left:8px;
+    transition: transform .15s ease, opacity .15s ease;
+    opacity: 0;
+    visibility: hidden;
+    transform: rotate(0deg);
+  }
+  .sort-icon.active {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  /* Cursor pointer para headers ordenables */
+  th[data-sortable] {
+    cursor: pointer;
+    user-select: none;
+  }
+  th[data-sortable]:hover {
+    background-color: rgba(0,0,0,0.05);
+  }
+  body.dark-mode th[data-sortable]:hover {
+    background-color: rgba(255,255,255,0.05);
+  }
+  
+  /* Estilos para links de empleados en tabla de celulares */
+  #celularesTable a.empleado-link {
+    color: #2DD4BF;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  #celularesTable a.empleado-link:hover {
+    color: #5EEAD4;
+  }
+  
+  /* HTMX Loading Indicator */
+  .htmx-indicator {
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+  }
+  .htmx-request .htmx-indicator,
+  .htmx-request.htmx-indicator {
+    opacity: 1;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  /* search styles moved to base.html as shared utilities */
+  
+  .empresa-radio-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+  }
+  .empresa-radio-option {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    margin: 0;
+  }
+  .empresa-radio-option input[type="radio"] {
+    cursor: pointer;
+    flex-shrink: 0;
+    margin: 0;
+  }
+  .empresa-radio-option span {
+    display: inline-block;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+/* ---- */
+
+/* Scoped styles for docs preview */
+        #docsPreviewGrid{
+          display:grid;
+          grid-template-columns:repeat(auto-fit,minmax(180px,220px));
+          gap:22px;
+          justify-content:center;
+          align-items:start;
+        }
+        .docs-card{
+          background:#f0f0f0;
+          border-radius:8px;
+          width:220px;
+          min-width:180px;
+          height:220px;
+          box-sizing:border-box;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          justify-content:center; /* center content vertically */
+          position:relative;
+          padding:16px 12px;
+          box-shadow:0 8px 20px rgba(0,0,0,0.08);
+        }
+        .docs-card .badge{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.7);display:flex;align-items:center;justify-content:center;font-size:20px;color:#95a0a6}
+        .docs-card img.pdf-icon{width:45px;height:45px;object-fit:contain}
+        .docs-card .label{
+          display:block;
+          width:100%;
+          box-sizing:border-box;
+          padding:0 10px;
+          margin-top:12px;
+          text-align:center;
+          color:var(--text-gray);
+          font-size:13px;
+          overflow:hidden;
+          white-space:nowrap;
+          text-overflow:ellipsis;
+        }
+        .docs-card .chkwrap{margin-top:10px;text-align:center}
+        .docs-card .chkwrap{position:absolute;bottom:8px;left:0;right:0;text-align:center}
+        .docs-card input[type=checkbox]{transform:scale(1.15)}
+        .docs-preview-footer{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:18px}
+        .docs-preview-terms{display:flex;align-items:center;gap:10px}
+        .docs-preview-terms label{font-size:0.95rem;color:var(--text-gray)}
+
+/* ---- */
+
+/* Alineación consistente para los campos Marca / Modelo en el modal de edición */
+            #modalEditDevice .modal-body fieldset label {
+              display: flex;
+              flex-direction: column;
+              gap: 0.35rem;
+              margin-bottom: 0.5rem;
+            }
+            #modalEditDevice .modal-body fieldset label > .label-title {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+            }
+            #modalEditDevice .modal-body fieldset label > div {
+              margin-top: 0 !important;
+              display: flex;
+              align-items: center;
+            }
+            #modalEditDevice .modal-body fieldset select {
+              box-sizing: border-box;
+            }
+
+/* ---- */
+
+/* Improve table layout: slightly wider modal and tuned columns for better alignment */
+            #componentsTable { border-collapse: collapse; width:100%; table-layout: auto; }
+            #componentsTable thead th, #componentsTable tbody td {
+              padding: 14px 14px;
+              text-align: left;
+              vertical-align: middle;
+              box-sizing: border-box;
+              white-space: normal;
+            }
+            /* Table colors use CSS variables to respect dark mode */
+            #componentsTable thead th { background-color: var(--table-head-bg, #eaf4fb); color: var(--table-head-color, #1177c9); font-weight:600; white-space: nowrap; }
+            #componentsTable tbody td { background-color: transparent; color: var(--text-primary, #111); border-bottom: 1px solid var(--table-row-border, rgba(0,0,0,0.06)); }
+            #componentsTable tbody tr:nth-child(even) td { background-color: var(--table-row-alt-bg, rgba(0,0,0,0.03)); }
+            #componentsTable tbody tr:hover td { background-color: var(--table-row-hover, rgba(0,0,0,0.04)); }
+            /* Ensure modal panel background and text follow theme variables (dark-mode friendly)
+              Use --text-on-panel when available, otherwise fall back to existing --text-primary. */
+            #modalComponents .modal { background-color: var(--panel-bg, #fff); color: var(--text-on-panel, var(--text-primary, #111)); }
+
+            /* Make table header and cells inherit modal text color so text is visible on dark backgrounds */
+            #modalComponents #componentsTable thead th { color: inherit; }
+            #modalComponents #componentsTable tbody td { color: inherit; }
+
+            /* If header bg is dark, ensure contrast: fallback header bg variable defaults to light, but use rgba overlay for dark themes */
+            #modalComponents #componentsTable thead th { background-color: var(--table-head-bg, #eaf4fb); }
+
+            /* Adjusted column width hints to reduce wrapping and leave space for action buttons */
+            #componentsTable td:nth-child(1), #componentsTable th:nth-child(1) { max-width: 140px; }
+            #componentsTable td:nth-child(2), #componentsTable th:nth-child(2) { max-width: 120px; min-width: 60px; }
+            #componentsTable td:nth-child(3), #componentsTable th:nth-child(3) { max-width: 220px; }
+            #componentsTable td:nth-child(4), #componentsTable th:nth-child(4) { max-width: 120px; }
+            #componentsTable td:nth-child(5), #componentsTable th:nth-child(5) { max-width: 160px; }
+            #componentsTable td:nth-child(6), #componentsTable th:nth-child(6) { max-width: 120px; }
+            #componentsTable td:nth-child(7), #componentsTable th:nth-child(7) { max-width: 140px; }
+            #componentsTable td:nth-child(8), #componentsTable th:nth-child(8) { max-width: 180px; }
+
+            /* Reserve space for actions: center header title, keep body actions right-aligned */
+            #componentsTable thead th:last-child {
+              text-align: center;
+              white-space: nowrap;
+              min-width: 140px;
+            }
+            #componentsTable tbody td:last-child {
+              text-align: center;
+              white-space: nowrap;
+              min-width: 140px;
+            }
+            /* Ensure action buttons are centered and evenly spaced */
+            #componentsTable tbody td.table-actions { display:flex !important; justify-content:center !important; align-items:center !important; gap:8px !important; padding-left:0 !important; padding-right:0 !important; }
+            #componentsTable thead th:last-child, #componentsTable tbody td.table-actions { width:140px !important; min-width:140px !important; }
+            #componentsTable tbody td.table-actions .btn { margin:0 !important; padding:0 !important; }
+
+            /* Badge for incomplete components so user can spot and edit them quickly */
+            #modalComponents .comp-incomplete {
+              display:inline-block;
+              background:#fff3cd;
+              color:#856404;
+              padding:4px 8px;
+              border-radius:6px;
+              font-weight:600;
+              margin-right:8px;
+              font-size:0.9rem;
+              vertical-align:middle;
+            }
+
+            /* Input error highlight for duplicate/conflict fields */
+            .input-error {
+              border: 1px solid #d32f2f !important;
+              box-shadow: 0 0 0 3px rgba(211,47,47,0.08) !important;
+            }
+
+            /* Two-column responsive layout for the component form */
+            #modalComponents form fieldset { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; }
+            #modalComponents form fieldset legend { width:100%; margin-bottom:6px; }
+            #modalComponents form fieldset label { box-sizing: border-box; flex: 0 0 48%; min-width: 180px; }
+            /* Certain labels should take full width (legend or big controls) */
+            #modalComponents form fieldset label.full-width { flex-basis:100%; }
+            /* Make inputs/selects expand to label width */
+            #modalComponents form fieldset label select,
+            #modalComponents form fieldset label input,
+            #modalComponents form fieldset label textarea { width:100%; }
+            /* Hide/visible toggles remain controlled inline; ensure hidden elements don't occupy space */
+            #modalComponents form fieldset label[style*="display:none"] { display:none !important; }
+            /* Small screens: stack to single column */
+            @media (max-width: 640px) {
+              #modalComponents form fieldset label { flex-basis:100%; }
+            }
+
+            /* Narrow modal variant used for celulares (applied via JS).
+               Use !important to override inline styles placed on the modal element. */
+            #modalComponents .modal.modal--small-celular {
+              max-width: 720px !important;
+              width: calc(100% - 40px) !important;
+            }
