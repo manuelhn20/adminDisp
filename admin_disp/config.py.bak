@@ -45,9 +45,9 @@ class Config:
     # apuntando a la base de datos 'cxc'.  No se necesita config adicional.
 
     # ── SharePoint CxC ──────────────────────────────────────────────────────
-    CXC_SP_TENANT_ID     = os.getenv('CXC_SP_TENANT_ID',     '8161dffd-c3ab-459f-9acb-da27306f434b')
-    CXC_SP_CLIENT_ID     = os.getenv('CXC_SP_CLIENT_ID',     '54d529da-15c1-4f0a-8010-c35530e72a48')
-    CXC_SP_CLIENT_SECRET = os.getenv('CXC_SP_CLIENT_SECRET', 'OA38Q~mSs3Z7PyUcfut5x-OmeH3vNo-8J9-jIdun')
+    CXC_SP_TENANT_ID     = os.getenv('CXC_SP_TENANT_ID')
+    CXC_SP_CLIENT_ID     = os.getenv('CXC_SP_CLIENT_ID')
+    CXC_SP_CLIENT_SECRET = os.getenv('CXC_SP_CLIENT_SECRET')
     CXC_SP_SITE_HOSTNAME = os.getenv('CXC_SP_SITE_HOSTNAME', 'proimamericanos.sharepoint.com')
     CXC_SP_SITE_PATH     = os.getenv('CXC_SP_SITE_PATH',     '/sites/PROIMADEV')
     CXC_SP_LIST_NAME     = os.getenv('CXC_SP_LIST_NAME',     'PR6_CxC_Seguimiento')

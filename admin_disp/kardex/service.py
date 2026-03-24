@@ -40,11 +40,11 @@ class KardexSPConfig:
 
     @staticmethod
     def from_env(filename: str) -> "KardexSPConfig":
-        tenant_id = os.getenv("MS_TENANT_ID", "8161dffd-c3ab-459f-9acb-da27306f434b")
-        client_id = os.getenv("MS_CLIENT_ID", "54d529da-15c1-4f0a-8010-c35530e72a48")
-        client_secret = os.getenv("MS_CLIENT_SECRET", "REDACTED")
-        if not client_secret:
-            raise RuntimeError("Falta MS_CLIENT_SECRET en variables de entorno.")
+        tenant_id = os.getenv("MS_TENANT_ID")
+        client_id = os.getenv("MS_CLIENT_ID")
+        client_secret = os.getenv("MS_CLIENT_SECRET")
+        if not all([tenant_id, client_id, client_secret]):
+            raise RuntimeError("Faltan variables de entorno requeridas: MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET")
 
         site_hostname = os.getenv("SP_SITE_HOSTNAME", "proimamericanos.sharepoint.com")
         site_path = os.getenv("SP_SITE_PATH", "/sites/ERPNext-Reportes")

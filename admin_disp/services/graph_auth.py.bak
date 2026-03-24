@@ -12,9 +12,9 @@ import requests
 logger = logging.getLogger("admin_disp.services.graph_auth")
 
 # Credenciales centralizadas
-TENANT_ID = os.getenv("MS_TENANT_ID", "8161dffd-c3ab-459f-9acb-da27306f434b")
-CLIENT_ID = os.getenv("MS_CLIENT_ID", "54d529da-15c1-4f0a-8010-c35530e72a48")
-CLIENT_SECRET = os.getenv("MS_CLIENT_SECRET", "OA38Q~mSs3Z7PyUcfut5x-OmeH3vNo-8J9-jIdun")
+TENANT_ID = os.getenv("MS_TENANT_ID")
+CLIENT_ID = os.getenv("MS_CLIENT_ID")
+CLIENT_SECRET = os.getenv("MS_CLIENT_SECRET")
 
 # Cache para site_id (evita llamadas repetidas)
 _cached_site_id: Optional[str] = None
