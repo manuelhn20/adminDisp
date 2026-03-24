@@ -60,3 +60,4 @@ tools/
 # Archivos temporales
 *.tmp
 .tmp/
+~$*

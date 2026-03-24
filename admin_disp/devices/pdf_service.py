@@ -35,7 +35,6 @@ class PDFGeneratorService:
         candidates = [
             "PRO-TI-CE-001-CORRELATIVO CERTIFICADO DE COMPROMISO Y ENTREGA DE TELEFONO CORPORATIVO.docx",
             "PRO-TI-CE-003-CORRELATIVO CERTIFICADO DE COMPROMISO Y ENTREGA DE TABLET.docx",
-            "PRO-TI-CE-003-###### ENTREGA DE TELEFONO.docx",
         ]
         for name in candidates:
             candidate = base_dir / name
