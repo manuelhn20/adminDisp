@@ -7,3 +7,5 @@
 - Resultado RED: 4 fallos (Celular, Laptop, Tablet, Mouse) por rutas con ###### que no existen en disco.
 - Implementado fix: resolución de plantillas con prioridad a CORRELATIVO y fallback a ######.
 - Fase GREEN: pruebas unitarias ejecutadas en verde (1 test OK).
+- Analizado traceback de producción: ImportError libodbc.so.2 al importar pyodbc en admin_disp/core/db.py.
+- Agregados archivos de despliegue: Dockerfile y .dockerignore, instalando unixodbc y msodbcsql18 para entorno Linux.
