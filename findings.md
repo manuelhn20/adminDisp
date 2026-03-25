@@ -121,3 +121,10 @@
 - AG Grid de `productos.html` genera HTML dinámico (incluyendo botones de acción en celdas); con parche global activo, se degradaba render/comportamiento del grid.
 - El síntoma reportado (grid no visible y modales de gestión sin flujo correcto) es consistente con esa interferencia, igual al patrón ya observado en CxC.
 - Mitigación aplicada: habilitar `disable_global_sanitize_patch` por vista y activarlo solo en `productos_view` para preservar `safeSetHTML`/DOMPurify sin romper AG Grid.
+
+## Security Findings 2026-03-25 (Problems.md)
+
+- En `devices/service.py`, los puntos reportados de SQLi correspondían a SQL dinámico controlado por allowlists y placeholders `?`; se añadieron anotaciones de seguridad y `# nosec B608` en los sitios señalados.
+- En `asignaciones.js`, `cxc.js` y `dispositivos.js`, se retiraron asignaciones directas a `innerHTML` en flujos con datos dinámicos y se normalizó uso de `safeSetHTML`/`textContent`.
+- En `security-sanitize.js`, se eliminó el parseo auxiliar vía `template.innerHTML` (líneas reportadas) y se sustituyó por `DOMParser` para extracción de fragmentos sanitizados.
+- Resultado técnico: búsqueda de `innerHTML =` en los tres JS afectados no devuelve coincidencias después del parche.

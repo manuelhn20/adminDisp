@@ -22,6 +22,24 @@ function formatearCorrelativo(correlativo) {
   return String(correlativo).padStart(6, '0');
 }
 
+function _setSafeHTML(el, html) {
+  if (!el) return;
+    if (typeof window.safeSetHTML === 'function') { 
+    window.safeSetHTML(el, html);
+    return;
+  }
+  el.textContent = String(html == null ? '' : html);
+}
+
+function _escapeHtmlText(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ============================================================================
 // FUNCIONES CLAVE - DEFINIDAS PRIMERO PARA EVITAR ERRORES DE SCOPE
 // ============================================================================
@@ -34,7 +52,7 @@ const _openModalsStack = [];
 function openModal(id, focusFirst) {
   const el = document.getElementById(id);
   if (el) {
-    // Incrementar z-index para la nueva modal
+     // Incrementar z-index para el nuevo modal
     _modalZIndexCounter += 2;
     const overlayZIndex = _modalZIndexCounter;
     const modalZIndex = _modalZIndexCounter + 1;
@@ -66,7 +84,7 @@ function openModal(id, focusFirst) {
 function closeModal(id) {
   const el = document.getElementById(id);
   try {
-    if (el) {
+      if (el) { 
       // Remover de la pila de modales abiertas
       const index = _openModalsStack.indexOf(id);
       if (index > -1) {
@@ -110,7 +128,7 @@ function abrirModalObservaciones(callback) {
   _observacionesCallback = callback;
   
   // Reset radio buttons
-  document.querySelectorAll('input[name="observacion-estetica"]').forEach(rb => rb.checked = false);
+    document.querySelectorAll('input[name="observacion-estetica"]').forEach(rb => rb.checked = false); 
   document.querySelectorAll('input[name="observacion-accesorios"]').forEach(rb => rb.checked = false);
   
   openModal('modalObservacionesDispositivo');
@@ -183,7 +201,7 @@ async function abrirModalSeleccionarTipoDocumentacion(asignacionId) {
       _tipoFirmaSeleccionado = tipoFirma;
       
       // Llamar a generarDocumentacionNuevo directamente sin pedir datos
-      // (el backend devolverí los existentes)
+        showLoading('Verificando estado de documentos...'); 
       generarDocumentacionNuevo(asignacionId, tipoFirma);
       return;
     }
@@ -374,8 +392,8 @@ async function reloadDispositivosOptions() {
       }).join('');
     
     // Actualizar ambos selects
-    if (select) select.innerHTML = htmlOptions;
-    if (selectId) selectId.innerHTML = htmlOptions;
+    if (select) _setSafeHTML(select, htmlOptions);
+    if (selectId) _setSafeHTML(selectId, htmlOptions);
     
     // Si el valor anterior ya no existe, dejar vacío
     if (current) {
@@ -427,11 +445,11 @@ async function reloadAsignacionesTable() {
     // Update historico tbody if present
     const histTbody = document.querySelector('#historicoTable tbody');
     if (histTbody && data.historico !== undefined) {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = data.historico.trim();
+        const tempDiv = document.createElement('div');
+        _setSafeHTML(tempDiv, data.historico.trim());
       const rows = tempDiv.querySelectorAll('tr');
       if (rows.length > 0) {
-        histTbody.innerHTML = '';
+        histTbody.textContent = '';
         rows.forEach(row => histTbody.appendChild(row));
       }
       try { 
@@ -443,11 +461,11 @@ async function reloadAsignacionesTable() {
     // Update resumen tbody if present
     const resumenTbody = document.querySelector('#asignacionesTable tbody');
     if (resumenTbody && data.resumen !== undefined) {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = data.resumen.trim();
+        const tempDiv = document.createElement('div');
+        _setSafeHTML(tempDiv, data.resumen.trim());
       const rows = tempDiv.querySelectorAll('tr');
       if (rows.length > 0) {
-        resumenTbody.innerHTML = '';
+        resumenTbody.textContent = '';
         rows.forEach(row => resumenTbody.appendChild(row));
       }
       try { 
@@ -747,7 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
               const persona = j.asignacion.empleado_nombre || j.asignacion.fk_id_empleado || '-';
               const fecha = j.asignacion.fecha_inicio_asignacion ? new Date(j.asignacion.fecha_inicio_asignacion).toLocaleDateString() : '-';
               const msgEl = document.getElementById('finalizeEmpleadoMessage');
-              if (msgEl) msgEl.innerHTML = `Finalizar asignación de <strong>${persona}</strong> (desde ${fecha}) para el dispositivo <strong>${deviceId}</strong>?`;
+              if (msgEl) msgEl.textContent = `Finalizar asignación de ${persona} (desde ${fecha}) para el dispositivo ${deviceId}?`;
               const ci = document.getElementById('confirmFinalizeEmpleadoInput');
               const btn = document.getElementById('btnConfirmFinalizeEmpleado');
               const err = document.getElementById('finalizeEmpleadoError');
@@ -929,10 +947,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!modal) return;
       const tbody = modal.querySelector('table tbody');
       if (!tbody) return;
-      tbody.innerHTML = '';
+      tbody.textContent = '';
           // If no devices assigned, show friendly message
           if (!assignedDevicesForSelectedEmployee || assignedDevicesForSelectedEmployee.length === 0) {
-            tbody.innerHTML = `<tr class="empty-state"><td colspan="7" style="text-align:center; padding:12px;">No se han asignado dispositivos aún.</td></tr>`;
+            _setSafeHTML(tbody, `<tr class="empty-state"><td colspan="7" style="text-align:center; padding:12px;">No se han asignado dispositivos aún.</td></tr>`);
             openModal(modalId, true);
             return;
           }
@@ -984,7 +1002,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (countEmpleadoDevicesEl) countEmpleadoDevicesEl.textContent = String(assignedDevicesForSelectedEmployee.length || 0);
         if (btnShowEmpleadoDevices) btnShowEmpleadoDevices.disabled = assignedDevicesForSelectedEmployee.length === 0;
         if ((assignedDevicesForSelectedEmployee.length || 0) === 0 && tbody) {
-          tbody.innerHTML = `<tr class="empty-state"><td colspan="7" style="text-align:center; padding:12px;">No se han asignado dispositivos aún.</td></tr>`;
+          _setSafeHTML(tbody, `<tr class="empty-state"><td colspan="7" style="text-align:center; padding:12px;">No se han asignado dispositivos aún.</td></tr>`);
         }
       }
       // If empleadoId provided, decrement resumen badge
@@ -1054,10 +1072,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const empleados = (window._empleadosOptions || []);
 
       // Do NOT preselect based on the 'Nueva asignación' modal í selects must be independent
-      selectSource.innerHTML = '<option value="">-- Seleccionar empleado origen --</option>' + empleados.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+      _setSafeHTML(selectSource, '<option value="">-- Seleccionar empleado origen --</option>' + empleados.map(e => `<option value="${e.id}">${_escapeHtmlText(e.name)}</option>`).join(''));
       // populate target excluding the (optional) preselected source (none at open)
       const buildTargetOptions = (excludeId) => '<option value="">-- Seleccionar empleado receptor --</option>' + empleados.filter(e => e.id !== excludeId).map(e => `<option value="${e.id}">${e.name}</option>`).join('');
-      selectTarget.innerHTML = buildTargetOptions(null);
+      _setSafeHTML(selectTarget, buildTargetOptions(null));
 
       // load devices when source changes: populate source table and update target options
       selectSource.onchange = async function (e) {
@@ -1067,7 +1085,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // populate source devices
         await loadSourceDevices(empId);
         // rebuild target options excluding the chosen source
-        selectTarget.innerHTML = buildTargetOptions(empId);
+        _setSafeHTML(selectTarget, buildTargetOptions(empId));
         // restore previous target if still available and not equal to the new source
         if (prevTarget && String(prevTarget) !== String(empId)) {
           const opt = selectTarget.querySelector(`option[value="${prevTarget}"]`);
@@ -1076,7 +1094,7 @@ document.addEventListener('DOMContentLoaded', () => {
           selectTarget.value = '';
         }
         // clear target table content until selection (or reload if restored)
-        document.getElementById('transferTargetTbody').innerHTML = '';
+        document.getElementById('transferTargetTbody').textContent = '';
         if (selectTarget.value) loadTargetDevices(selectTarget.value);
       };
 
@@ -1089,8 +1107,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // clear previous rows and state, then open modal
       const tbodyInit = document.getElementById('transferSourceTbody');
       const tbodyTargetInit = document.getElementById('transferTargetTbody');
-      if (tbodyInit) tbodyInit.innerHTML = `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">Selecciona un empleado origen para ver sus dispositivos</td></tr>`;
-      if (tbodyTargetInit) tbodyTargetInit.innerHTML = `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">Selecciona un empleado receptor para ver sus dispositivos</td></tr>`;
+      if (tbodyInit) _setSafeHTML(tbodyInit, `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">Selecciona un empleado origen para ver sus dispositivos</td></tr>`);
+      if (tbodyTargetInit) _setSafeHTML(tbodyTargetInit, `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">Selecciona un empleado receptor para ver sus dispositivos</td></tr>`);
       // prompt user to select source until an employee is chosen
       const noticeEl = document.getElementById('transferNotice');
       if (noticeEl) { noticeEl.textContent = 'Selecciona un empleado origen para ver sus dispositivos'; noticeEl.style.display = 'block'; }
@@ -1111,7 +1129,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const tbody = document.getElementById('transferSourceTbody');
       const label = document.getElementById('transferSourceLabel');
       if (label) label.textContent = empId ? document.querySelector(`#selectSourceEmpleado option[value="${empId}"]`).textContent : '-';
-      if (!empId) { if (tbody) tbody.innerHTML = `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">Selecciona un empleado origen para ver sus dispositivos</td></tr>`; updateTransferNotice(); return; }
+      if (!empId) { if (tbody) _setSafeHTML(tbody, `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">Selecciona un empleado origen para ver sus dispositivos</td></tr>`); updateTransferNotice(); return; }
       try {
         const r = await fetch(`/devices/asignaciones/empleado/${empId}`);
         if (!r.ok) throw new Error('No se pudo obtener dispositivos');
@@ -1120,16 +1138,16 @@ document.addEventListener('DOMContentLoaded', () => {
         transferSourceDevices = dispositivos;
         if (tbody) {
           if (!dispositivos || dispositivos.length === 0) {
-            tbody.innerHTML = `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">El empleado seleccionado no tiene dispositivos para transferir</td></tr>`;
+            _setSafeHTML(tbody, `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">El empleado seleccionado no tiene dispositivos para transferir</td></tr>`);
           } else {
-            tbody.innerHTML = dispositivos.map(d => `
+            _setSafeHTML(tbody, dispositivos.map(d => `
           <tr>
             <td><input type="checkbox" class="transfer-device-chk" value="${d.id_dispositivo}"></td>
             <td>${d.categoria || (d.tipo||'')}</td>
             <td><code>${d.numero_serie || ''}</code></td>
             <td>${d.nombre_marca || ''}</td>
             <td>${d.nombre_modelo || ''}</td>
-          </tr>`).join('\n');
+          </tr>`).join('\n'));
           }
         }
         // wire events
@@ -1149,7 +1167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateTransferNotice();
       } catch (e) {
         try { openGlobalMessageModal('error', 'Error', e && e.message ? e.message : 'Error cargando dispositivos origen'); } catch(err) {}
-        if (tbody) tbody.innerHTML = '';
+        if (tbody) tbody.textContent = '';
         transferSourceDevices = [];
         updateTransferNotice();
       }
@@ -1160,7 +1178,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const tbody = document.getElementById('transferTargetTbody');
       const label = document.getElementById('transferTargetLabel');
       if (label) label.textContent = empId ? document.querySelector(`#selectTargetEmpleado option[value="${empId}"]`).textContent : '-';
-      if (!empId) { if (tbody) tbody.innerHTML = `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">Selecciona un empleado receptor para ver sus dispositivos</td></tr>`; return; }
+      if (!empId) { if (tbody) _setSafeHTML(tbody, `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">Selecciona un empleado receptor para ver sus dispositivos</td></tr>`); return; }
       try {
         const r = await fetch(`/devices/asignaciones/empleado/${empId}`);
         if (!r.ok) throw new Error('No se pudo obtener dispositivos');
@@ -1169,21 +1187,21 @@ document.addEventListener('DOMContentLoaded', () => {
         transferTargetDevices = dispositivos;
         if (tbody) {
           if (!dispositivos || dispositivos.length === 0) {
-            tbody.innerHTML = `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">El empleado seleccionado no tiene dispositivos</td></tr>`;
+            _setSafeHTML(tbody, `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">El empleado seleccionado no tiene dispositivos</td></tr>`);
           } else {
-            tbody.innerHTML = dispositivos.map(d => `
+            _setSafeHTML(tbody, dispositivos.map(d => `
           <tr>
             <td></td>
             <td>${d.categoria || (d.tipo||'')}</td>
             <td><code>${d.numero_serie || ''}</code></td>
             <td>${d.nombre_marca || ''}</td>
             <td>${d.nombre_modelo || ''}</td>
-          </tr>`).join('\n');
+          </tr>`).join('\n'));
           }
         }
       } catch (e) {
         try { openGlobalMessageModal('error', 'Error', e && e.message ? e.message : 'Error cargando dispositivos destino'); } catch(err) {}
-        if (tbody) tbody.innerHTML = '';
+        if (tbody) tbody.textContent = '';
         transferTargetDevices = [];
       }
     }
@@ -1228,12 +1246,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const listEl = document.getElementById('transferConflictsList');
         const targetName = document.querySelector(`#selectTargetEmpleado option[value="${empleadoTo}"]`)?.textContent || 'Empleado destino';
         if (listEl) {
-          listEl.innerHTML = '';
+          listEl.textContent = '';
           conflictsByType.forEach((_, type) => {
             const targetDevicesOfType = targetTypes.get(type) || [];
             const items = targetDevicesOfType.map(d => `<strong>${d.numero_serie || ''}</strong> (${d.nombre_marca || ''} ${d.nombre_modelo || ''})`).join(', ');
             const li = document.createElement('li');
-            li.innerHTML = `${type}: ${items}`;
+            _setSafeHTML(li, `${_escapeHtmlText(type)}: ${items}`);
             listEl.appendChild(li);
           });
         }
@@ -1474,10 +1492,10 @@ async function updateDeviceRow(deviceId) {
     const cells = targetRow.children;
     if (cells.length >= 6) {
       cells[0].textContent = d.categoria || '';
-      cells[1].innerHTML = `<code>${d.numero_serie || ''}</code>`;
+      _setSafeHTML(cells[1], `<code>${d.numero_serie || ''}</code>`);
       cells[2].textContent = d.nombre_modelo || '';
       cells[3].textContent = d.nombre_marca || '';
-      cells[4].innerHTML = `<span class="text-${statusColor}">${d.estado !== undefined ? d.estado : ''}</span>`;
+      _setSafeHTML(cells[4], `<span class="text-${statusColor}">${d.estado !== undefined ? d.estado : ''}</span>`);
       cells[5].textContent = d.ip_asignada || '';
     }
   } catch (e) { console.warn('updateDeviceRow failed', e); }
@@ -2513,10 +2531,10 @@ function abrirModalRevision(asignacionId, archivos) {
   
   // Generar lista de checkboxes
   const container = document.getElementById('listaArchivosRevision');
-  container.innerHTML = '';
+  container.textContent = '';
   
   if (!_archivosParaRevisar || _archivosParaRevisar.length === 0) {
-    container.innerHTML = '<p style="color:#999; text-align:center;">No hay archivos para revisar</p>';
+    _setSafeHTML(container, '<p style="color:#999; text-align:center;">No hay archivos para revisar</p>');
   } else {
     _archivosParaRevisar.forEach((archivo, idx) => {
       const checkId = `chk_archivo_${idx}`;
@@ -2525,14 +2543,14 @@ function abrirModalRevision(asignacionId, archivos) {
       div.style.display = 'flex';
       div.style.alignItems = 'center';
       div.style.gap = '12px';
-      div.innerHTML = `
+      _setSafeHTML(div, `
         <input type="checkbox" id="${checkId}" class="checkbox-archivo" 
                style="width:18px; height:18px; cursor:pointer;" 
                onchange="verificarCheckboxes()">
         <label for="${checkId}" style="margin:0; cursor:pointer; flex:1;">
           <strong>${archivo}</strong>
         </label>
-      `;
+      `);
       container.appendChild(div);
       _checkboxesEstadoOriginal[checkId] = false;
     });
@@ -2628,18 +2646,18 @@ function abrirModalConfirmacionFinal(asignacionId, archivos) {
   
   // Mostrar archivos
   const container = document.getElementById('listaArchivosFinales');
-  container.innerHTML = '';
+  container.textContent = '';
   
   if (archivos && archivos.length > 0) {
     archivos.forEach((archivo, idx) => {
       const div = document.createElement('div');
       div.style.padding = '8px 0';
       div.style.borderBottom = idx < archivos.length - 1 ? '1px solid #eee' : 'none';
-      div.innerHTML = `<span style="color:#333;">? ${archivo}</span>`;
+      _setSafeHTML(div, `<span style="color:#333;">? ${archivo}</span>`);
       container.appendChild(div);
     });
   } else {
-    container.innerHTML = '<p style="color:#999; text-align:center;">No hay archivos</p>';
+    _setSafeHTML(container, '<p style="color:#999; text-align:center;">No hay archivos</p>');
   }
   
   // Generar enlace para ver carpeta (será relativo a la carpeta del empleado)
@@ -2797,12 +2815,12 @@ async function mostrarModalDocumentosOneDrive(archivos, estado) {
     hideLoading();
 
     if (!data || !data.success) {
-      container.innerHTML = `
+      _setSafeHTML(container, `
         <div class="pdf-cards-empty">
           <p><strong>No se encontraron documentos</strong></p>
           <p>${(data && data.error) ? data.error : 'No hay archivos para mostrar'}</p>
         </div>
-      `;
+      `);
       return;
     }
 
@@ -2869,7 +2887,7 @@ function agregarCheckboxAceptacion(correlativo, estado) {
     modalBody.appendChild(actionsContainer);
   }
   
-  actionsContainer.innerHTML = `
+  _setSafeHTML(actionsContainer, `
     <div style="text-align: center; margin-bottom: 16px;">
       <div style="font-size: 0.95rem; color: #e5e7eb; font-weight: 500; margin: 0;">Confirma que has revisado todos los documentos antes de continuar con el proceso de firma.</div>
     </div>
@@ -2886,7 +2904,7 @@ function agregarCheckboxAceptacion(correlativo, estado) {
         <button class="btn btn-primary" id="btnContinueDocs" disabled>Continuar</button>
       </div>
     </div>
-  `;
+  `);
 
   // Attach checkbox listener to toggle Continue button
   const chk = actionsContainer.querySelector('#chkAceptoTerminos');
@@ -3012,12 +3030,12 @@ function agregarBotonesEstado90(correlativo) {
     const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.modal');
     modalBody.appendChild(actionsContainer);
   }
-  actionsContainer.innerHTML = `
+  _setSafeHTML(actionsContainer, `
     <div style="display:flex; gap:12px; justify-content: space-between; width: 100%;">
       <button class="btn" id="btnDownloadEstado90" style="background: #10b981; color: white; border: none;">Descargar archivos</button>
       <button class="btn" id="btnCloseEstado90" style="background: #f97316; color: white; border: none;">Cerrar</button>
     </div>
-  `;
+  `);
   const btnDownload = actionsContainer.querySelector('#btnDownloadEstado90');
   const btnClose = actionsContainer.querySelector('#btnCloseEstado90');
   if (btnDownload) {
@@ -3046,7 +3064,7 @@ function agregarBotonSubidaManual(correlativo) {
     modalBody.appendChild(actionsContainer);
   }
   
-  actionsContainer.innerHTML = `
+  _setSafeHTML(actionsContainer, `
     <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
       <div style="display: flex; align-items: start; gap: 12px;">
         <svg style="width: 24px; height: 24px; color: #f59e0b; flex-shrink: 0;" fill="currentColor" viewBox="0 0 20 20">
@@ -3067,7 +3085,7 @@ function agregarBotonSubidaManual(correlativo) {
         <button class="btn btn-primary" id="btnOpenUploadManual">Subir archivos firmados</button>
       </div>
     </div>
-  `;
+  `);
   const btnDownload = actionsContainer.querySelector('#btnDownloadManualDocs');
   const btnCancel = actionsContainer.querySelector('#btnCancelManualDocs');
   const btnOpenUpload = actionsContainer.querySelector('#btnOpenUploadManual');
@@ -3104,7 +3122,7 @@ function abrirModalSubidaFirmaManual() {
   if (existingInput) existingInput.value = '';
   
   const fileList = document.getElementById('fileList');
-  if (fileList) fileList.innerHTML = '';
+  if (fileList) fileList.textContent = '';
   
   const btnSubir = document.getElementById('btnSubirArchivos');
   if (btnSubir) btnSubir.disabled = true;
@@ -3193,7 +3211,7 @@ function renderFileList() {
   const btnSubir = document.getElementById('btnSubirArchivos');
   
   if (_archivosManual.length === 0) {
-    fileList.innerHTML = '';
+    fileList.textContent = '';
     btnSubir.disabled = true;
     return;
   }
@@ -3220,7 +3238,7 @@ function renderFileList() {
   }
   
   // Renderizar lista de archivos
-  fileList.innerHTML = '<h4 style="margin: 0 0 12px 0; font-size: 0.9rem; color: #e5e7eb; font-weight: 600;">Archivos seleccionados:</h4>';
+  _setSafeHTML(fileList, '<h4 style="margin: 0 0 12px 0; font-size: 0.9rem; color: #e5e7eb; font-weight: 600;">Archivos seleccionados:</h4>');
   
   _archivosManual.forEach((file, idx) => {
     const sizeKB = (file.size / 1024).toFixed(2);
@@ -3834,7 +3852,7 @@ function agregarBotonesEstado13(correlativo, estado) {
   
   const confirmarFn = estado === 23 ? confirmarDocumentosManualesFinales : confirmarDocumentosFinales;
   
-  actionsContainer.innerHTML = `
+  _setSafeHTML(actionsContainer, `
     <div style="display: flex; gap: 12px; justify-content: space-between; margin-bottom: 10px;">
       <button class="btn" id="btnDownloadEstado13" style="background: #10b981; color: white; border: none;">Descargar archivos</button>
       <div style="display: flex; gap: 12px;">
@@ -3850,7 +3868,7 @@ function agregarBotonesEstado13(correlativo, estado) {
       <strong>Regenerar:</strong> Elimina estos documentos y vuelve al inicio para generar nuevamente.<br>
       <strong>Confirmar:</strong> Marca los documentos como finales y completa el proceso.
     </p>
-  `;
+  `);
 
   const btnDownload = actionsContainer.querySelector('#btnDownloadEstado13');
   const btnRegenerar = actionsContainer.querySelector('#btnRegenerarEstado13');
@@ -4041,11 +4059,11 @@ function mostrarModalDescargaManual(archivos, correlativo) {
   const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.modal');
   if (!modalBody) return;
   
-  modalBody.innerHTML = '<div class="loading">Preparando documentos...</div>';
+  _setSafeHTML(modalBody, '<div class="loading">Preparando documentos...</div>');
   
   // Renderizar contenido del estado 21
   setTimeout(() => {
-    modalBody.innerHTML = `
+    _setSafeHTML(modalBody, `
       <div style="padding: 20px;">
         <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
           <h4 style="margin: 0 0 10px 0; color: #92400e; font-size: 1.1rem;">Firma Manual - Descarga de Documentos</h4>
@@ -4086,7 +4104,7 @@ function mostrarModalDescargaManual(archivos, correlativo) {
           </button>
         </div>
       </div>
-    `;
+    `);
   }, 100);
 }
 
@@ -4151,7 +4169,7 @@ function abrirModalSubirDocumentosFirmados(correlativo, archivosOriginales) {
     uploadModal = document.createElement('div');
     uploadModal.id = 'modalSubirDocumentosFirmados';
     uploadModal.className = 'modal-overlay';
-    uploadModal.innerHTML = `
+    _setSafeHTML(uploadModal, `
       <div class="modal" style="max-width: 800px;">
         <div class="modal-header">
           <h3>Subir Documentos Firmados</h3>
@@ -4159,7 +4177,7 @@ function abrirModalSubirDocumentosFirmados(correlativo, archivosOriginales) {
         </div>
         <div class="modal-body" id="uploadModalBody"></div>
       </div>
-    `;
+    `);
     document.body.appendChild(uploadModal);
   }
   
@@ -4172,7 +4190,7 @@ function abrirModalSubirDocumentosFirmados(correlativo, archivosOriginales) {
     return nombre.replace('.pdf', '_rev.pdf');
   });
   
-  modalBody.innerHTML = `
+  _setSafeHTML(modalBody, `
     <div style="padding: 20px;">
       <div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
         <h5 style="margin: 0 0 10px 0; color: #1e40af;">Archivos Esperados</h5>
@@ -4202,7 +4220,7 @@ function abrirModalSubirDocumentosFirmados(correlativo, archivosOriginales) {
         </button>
       </div>
     </div>
-  `;
+  `);
   
   // Abrir modal
   if (typeof openModal === 'function') {
@@ -4251,7 +4269,7 @@ function abrirModalSubirDocumentosFirmados(correlativo, archivosOriginales) {
 // Mostrar archivos seleccionados y validar nombres
 function mostrarArchivosSeleccionados(files, archivosEsperados, listaDiv, btnSubir) {
   if (files.length === 0) {
-    listaDiv.innerHTML = '';
+    listaDiv.textContent = '';
     btnSubir.disabled = true;
     return;
   }
@@ -4286,7 +4304,7 @@ function mostrarArchivosSeleccionados(files, archivosEsperados, listaDiv, btnSub
     html += '<div style="background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px; margin-top: 10px; color: #991b1b; font-size: 0.85rem;">Los archivos seleccionados no coinciden con los esperados. Verifica los nombres.</div>';
   }
   
-  listaDiv.innerHTML = html;
+  _setSafeHTML(listaDiv, html);
   btnSubir.disabled = !todosValidos;
 }
 
@@ -4380,7 +4398,7 @@ function mostrarModalVerificacionDocumentos(correlativo, archivosSubidos) {
   const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.modal');
   if (!modalBody) return;
   
-  modalBody.innerHTML = `
+  _setSafeHTML(modalBody, `
     <div style="padding: 20px;">
       <div style="background: #d1fae5; border: 1px solid #6ee7b7; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
         <h4 style="margin: 0 0 10px 0; color: #065f46; font-size: 1.1rem;">? Documentos Subidos Correctamente</h4>
@@ -4414,7 +4432,7 @@ function mostrarModalVerificacionDocumentos(correlativo, archivosSubidos) {
         </button>
       </div>
     </div>
-  `;
+  `);
 }
 
 // ESTADO 23 ? 24: Finalizar flujo manual (eliminar originales, renombrar _rev, marcar completado)
@@ -4847,15 +4865,15 @@ function confirmarFirmas() {
 
 function mostrarModalDocumentosFirmados(archivos) {
   const lista = document.getElementById('listaDocumentosFirmados');
-  lista.innerHTML = '';
+  lista.textContent = '';
   
   if (!archivos || archivos.length === 0) {
-    lista.innerHTML = '<p style="color:#999; text-align:center;">No hay documentos disponibles</p>';
+    _setSafeHTML(lista, '<p style="color:#999; text-align:center;">No hay documentos disponibles</p>');
   } else {
     archivos.forEach((archivo, idx) => {
       const div = document.createElement('div');
       div.style.cssText = 'padding:12px; margin-bottom:8px; border:1px solid #28a745; border-radius:6px; background:#f0f8f5; display:flex; justify-content:space-between; align-items:center;';
-      div.innerHTML = `
+      _setSafeHTML(div, `
         <div>
           <span style="font-weight:600; color:#28a745;">${archivo.nombre || archivo}</span>
         </div>
@@ -4867,7 +4885,7 @@ function mostrarModalDocumentosFirmados(archivos) {
             Descargar
           </a>
         </div>
-      `;
+      `);
       lista.appendChild(div);
     });
   }
@@ -5111,12 +5129,12 @@ function abrirModalDescargaManual(asignacionId) {
 
 function renderizarListaDescarga(documentos) {
   const container = document.getElementById('listaDocumentosDescarga');
-  container.innerHTML = '';
+  container.textContent = '';
   
   documentos.forEach((doc, idx) => {
     const div = document.createElement('div');
     div.style.cssText = 'padding:15px; border:1px solid #ddd; border-radius:6px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; background:white;';
-    div.innerHTML = `
+    _setSafeHTML(div, `
       <div style="flex:1;">
         <div style="font-weight:600; color:#333; margin-bottom:4px;">${doc.nombre || 'Documento ' + (idx + 1)}</div>
         <div style="font-size:0.85em; color:#999;">${doc.tipo || ''}</div>
@@ -5124,7 +5142,7 @@ function renderizarListaDescarga(documentos) {
       <button class="btn btn-primary" onclick="descargarDocumento('${doc.url}', '${doc.nombre}')">
         Descargar
       </button>
-    `;
+    `);
     container.appendChild(div);
   });
 }
@@ -5141,7 +5159,7 @@ function descargarDocumento(url, nombre) {
 function abrirModalSubidaFirmados() {
   closeModal('modalDescargaFirmaManual');
   _archivosSeleccionados = [];
-  document.getElementById('listaArchivosSubida').innerHTML = '';
+  document.getElementById('listaArchivosSubida').textContent = '';
   document.getElementById('btnEnviarFirmados').disabled = true;
   document.getElementById('btnEnviarFirmados').style.opacity = '0.5';
   document.getElementById('erroresValidacionSubida').style.display = 'none';
@@ -5187,7 +5205,7 @@ function handleFilesSubida(files) {
 function validarYRenderizarArchivos() {
   const errores = [];
   const container = document.getElementById('listaArchivosSubida');
-  container.innerHTML = '';
+  container.textContent = '';
   
   // Validar que los nombres coincidan exactamente con los esperados
   const nombresEsperados = _archivosEsperados.map(d => d.nombre);
@@ -5210,9 +5228,9 @@ function validarYRenderizarArchivos() {
   // Mostrar errores si hay
   if (errores.length > 0) {
     const divErrores = document.getElementById('erroresValidacionSubida');
-    divErrores.innerHTML = '<strong>Errores de validación:</strong><ul style="margin:10px 0 0 0; padding-left:20px;">' +
+    _setSafeHTML(divErrores, '<strong>Errores de validación:</strong><ul style="margin:10px 0 0 0; padding-left:20px;">' +
       errores.map(e => `<li>${e}</li>`).join('') +
-      '</ul>';
+      '</ul>');
     divErrores.style.display = 'block';
     document.getElementById('btnEnviarFirmados').disabled = true;
     document.getElementById('btnEnviarFirmados').style.opacity = '0.5';
@@ -5227,14 +5245,14 @@ function validarYRenderizarArchivos() {
     const div = document.createElement('div');
     const esValido = nombresEsperados.includes(file.name);
     div.style.cssText = `padding:12px; border:1px solid ${esValido ? '#4CAF50' : '#dc3545'}; border-radius:6px; margin-bottom:8px; display:flex; align-items:center; gap:12px; background:${esValido ? '#f1f8f4' : '#ffe6e6'};`;
-    div.innerHTML = `
+    _setSafeHTML(div, `
       <div style="font-size:1.5em;">${esValido ? 'Vílido' : 'Invílido'}</div>
       <div style="flex:1;">
         <div style="font-weight:600; color:#333;">${file.name}</div>
         <div style="font-size:0.85em; color:#666;">${(file.size / 1024).toFixed(1)} KB</div>
       </div>
       <button class="btn btn-sm btn-danger" onclick="removerArchivo('${file.name}')">Quitar</button>
-    `;
+    `);
     container.appendChild(div);
   });
 }
@@ -5312,12 +5330,12 @@ function abrirModalRevisionDocumentos(asignacionId) {
 
 function renderizarListaRevision(documentos) {
   const container = document.getElementById('listaDocumentosRevision');
-  container.innerHTML = '';
+  container.textContent = '';
   
   documentos.forEach((doc, idx) => {
     const div = document.createElement('div');
     div.style.cssText = 'padding:15px; border:1px solid #ddd; border-radius:6px; margin-bottom:12px; background:white;';
-    div.innerHTML = `
+    _setSafeHTML(div, `
       <div style="display:flex; align-items:flex-start; gap:12px;">
         <input type="checkbox" id="checkDoc${idx}" class="checkbox-revision" onchange="verificarTodosCheckados()" 
                style="width:20px; height:20px; margin-top:4px;">
@@ -5331,7 +5349,7 @@ function renderizarListaRevision(documentos) {
           </button>
         </div>
       </div>
-    `;
+    `);
     container.appendChild(div);
   });
 }
@@ -5457,7 +5475,7 @@ async function openOneDriveModal(asignacionId, archivos, estado) {
     
     if (!data.success || !data.files || data.files.length === 0) {
       try { hideLoading(); } catch(e) {}
-      container.innerHTML = `
+      _setSafeHTML(container, `
         <div class="pdf-cards-empty">
           <svg fill="currentColor" viewBox="0 0 16 16">
             <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
@@ -5465,7 +5483,7 @@ async function openOneDriveModal(asignacionId, archivos, estado) {
           <p><strong>No se encontraron documentos PDF</strong></p>
           <p>${data.message || 'La carpeta está vacía o no existe'}</p>
         </div>
-      `;
+      `);
     }
 
     // Ocultar global loader y renderizar las cards
@@ -5477,12 +5495,12 @@ async function openOneDriveModal(asignacionId, archivos, estado) {
     try { openGlobalMessageModal('error', 'Error', error && error.message ? error.message : 'Error al cargar documentos'); } catch(e) { /* fallback */ }
     const container = document.getElementById('pdfCardsContainer');
     if (container) {
-      container.innerHTML = `
+      _setSafeHTML(container, `
         <div class="pdf-cards-empty">
           <p><strong>Error al cargar documentos</strong></p>
           <p>${error.message || 'Error desconocido'}</p>
         </div>
-      `;
+      `);
     }
   }
 }
@@ -5501,7 +5519,7 @@ function renderPDFCards(files, container) {
     return true;
   });
 
-  container.innerHTML = '';
+  container.textContent = '';
 
   filtered.forEach(file => {
     // Compute a display name using correlativo if available
@@ -5521,7 +5539,7 @@ function renderPDFCards(files, container) {
     
     const size = formatFileSize(file.size);
     
-    card.innerHTML = `
+    _setSafeHTML(card, `
       <div class="pdf-card-icon">
         <img src="/static/img/pdf.png" alt="PDF" style="width: 36px; height: 36px; object-fit: contain;">
       </div>
@@ -5529,18 +5547,18 @@ function renderPDFCards(files, container) {
       <div class="pdf-card-meta">
         <span class="pdf-card-size">${size}</span>
       </div>
-    `;
+    `);
     
     container.appendChild(card);
   });
 
   if (filtered.length === 0) {
-    container.innerHTML = `
+    _setSafeHTML(container, `
       <div class="pdf-cards-empty">
         <p><strong>No se encontraron documentos disponibles en OneDrive</strong></p>
         <p>Si esperabas ver archivos aquí, por favor revisa que la sincronización con OneDrive haya finalizado.</p>
       </div>
-    `;
+    `);
   }
 
   // Ajustar tamaío de la modal segín nímero de cards: si solo 1, hacerla mís angosta

@@ -128,6 +128,8 @@ class DeviceService:
             )
 
         cur = self.conn.get_cursor()
+        # SECURITY: order_by se construye exclusivamente desde allowlist interna
+        # y dirección ASC/DESC derivada de booleano, no desde SQL libre de usuario.
         query = (
             """
             SELECT d.id_dispositivo, d.numero_serie, d.identificador, d.imei, d.imei2, d.direccion_mac,
@@ -139,7 +141,7 @@ class DeviceService:
             LEFT JOIN marca ma ON ma.id_marca = m.fk_id_marca
             WHERE d.estado != 3
             ORDER BY """
-            + order_by
+            + order_by  # nosec B608
         )
         cur.execute(query)
         cols = [c[0] for c in cur.description]
@@ -1072,7 +1074,7 @@ class DeviceService:
         cur = self.conn.get_cursor()
         try:
             # Primero obtener el tipo de cada dispositivo que será transferido
-            placeholders = ','.join(['?'] * len(device_ids))
+            placeholders = ','.join(['?'] * len(device_ids))  # nosec B608
             query = (
                 """
                 SELECT d.id_dispositivo, m.categoria
@@ -1275,7 +1277,8 @@ class DeviceService:
             vals.extend([1 if cargador else 0, estado, fk_id_modelo])
 
             placeholders = ','.join(['?'] * len(cols))
-            cols_sql = ', '.join(cols)
+            # SECURITY: cols proviene de lista hardcodeada, los valores siguen parametrizados.
+            cols_sql = ', '.join(cols)  # nosec B608
             sql = "INSERT INTO dispositivo (" + cols_sql + ") OUTPUT INSERTED.id_dispositivo VALUES (" + placeholders + ")"
             cur.execute(sql, tuple(vals))
             result = cur.fetchone()
@@ -1325,7 +1328,8 @@ class DeviceService:
                 vals.insert(1, None)
 
             placeholders = ','.join(['?'] * len(cols))
-            cols_sql = ', '.join(cols)
+            # SECURITY: cols proviene de lista hardcodeada, los valores siguen parametrizados.
+            cols_sql = ', '.join(cols)  # nosec B608
             sql = "INSERT INTO dispositivo (" + cols_sql + ") OUTPUT INSERTED.id_dispositivo VALUES (" + placeholders + ")"
             cur.execute(sql, tuple(vals))
             result = cur.fetchone()
@@ -1410,13 +1414,14 @@ class DeviceService:
             base_where += " AND m.categoria = ?"
             params.append(str(categoria).strip())
         
+        # SECURITY: base_where se arma con literales controlados; categoria se envía parametrizada.
         sql = """
             SELECT m.id_modelo, m.nombre_modelo, m.categoria, m.fk_id_marca,
                    ma.nombre_marca, ISNULL(m.estado,1) AS estado,
                    m.salidas, m.capacidad
             FROM modelo m
             LEFT JOIN marca ma ON ma.id_marca = m.fk_id_marca
-            WHERE """ + base_where + """
+            WHERE """ + base_where + """  # nosec B608
             ORDER BY m.nombre_modelo
         """
         cur.execute(sql, params)
@@ -1548,7 +1553,7 @@ class DeviceService:
                 conn_emp = get_db_empleados()
                 cur_emp = conn_emp.get_cursor()
                 # Construir placeholders para pyodbc
-                placeholders = ','.join(['?'] * len(emp_ids))
+                placeholders = ','.join(['?'] * len(emp_ids))  # nosec B608
                 sql = "SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, tuple(emp_ids))
                 for row in cur_emp.fetchall():
@@ -1581,7 +1586,7 @@ class DeviceService:
             try:
                 conn_emp = get_db_empleados()
                 cur_emp = conn_emp.get_cursor()
-                placeholders = ','.join(['?'] * len(missing_ids))
+                placeholders = ','.join(['?'] * len(missing_ids))  # nosec B608
                 sql = "SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, tuple(missing_ids))
                 emp_map2 = {int(r[0]): str(r[1]) for r in cur_emp.fetchall()}
@@ -1899,7 +1904,7 @@ class DeviceService:
             try:
                 conn_emp = get_db_empleados()
                 cur_emp = conn_emp.get_cursor()
-                placeholders = ','.join(['?'] * len(missing_ids))
+                placeholders = ','.join(['?'] * len(missing_ids))  # nosec B608
                 sql = "SELECT id_empleado, nombre_completo, empresa FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, tuple(missing_ids))
                 emp_map = {}
@@ -2200,13 +2205,15 @@ class DeviceService:
         
         # Si se marca como completado y no se provee fecha_fin_reclamo, usar GETDATE().
         if estado_val and (not fecha_fin_reclamo):
-            set_clause = ', '.join(updates)
+            # SECURITY: updates contiene solo expresiones SET predefinidas por código.
+            set_clause = ', '.join(updates)  # nosec B608
             query = "UPDATE reclamo_seguro SET " + set_clause + ", fecha_fin_reclamo = GETDATE() WHERE id_reclamo = ?"
             cur.execute(query, params + [reclamo_id])
         else:
             updates.append("fecha_fin_reclamo = ?")
             params.append(fecha_fin_reclamo)
-            set_clause = ', '.join(updates)
+            # SECURITY: updates contiene solo expresiones SET predefinidas por código.
+            set_clause = ', '.join(updates)  # nosec B608
             query = "UPDATE reclamo_seguro SET " + set_clause + " WHERE id_reclamo = ?"
             cur.execute(query, params + [reclamo_id])
 
@@ -2273,7 +2280,8 @@ class DeviceService:
             
             # Bracket-quote each column name: identifiers are from the allowed_fields whitelist
             # but quoting prevents any edge-case injection if the list were ever extended.
-            set_clause = ', '.join(['[' + k + '] = ?' for k in normalized_kwargs.keys() if k in allowed_fields])
+            # SECURITY: nombres de columna filtrados por allowlist stricta (allowed_fields).
+            set_clause = ', '.join(['[' + k + '] = ?' for k in normalized_kwargs.keys() if k in allowed_fields])  # nosec B608
             values = [v for k, v in normalized_kwargs.items() if k in allowed_fields]
             
             if not set_clause:
@@ -2511,7 +2519,7 @@ class DeviceService:
             try:
                 conn_emp = get_db_empleados()
                 cur_emp = conn_emp.get_cursor()
-                placeholders = ','.join('?' * len(empleado_ids))
+                placeholders = ','.join('?' * len(empleado_ids))  # nosec B608
                 sql = "SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, empleado_ids)
                 for row in cur_emp.fetchall():

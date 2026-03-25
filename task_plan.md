@@ -43,3 +43,4 @@ Agregar configuración de despliegue en contenedor con dependencias ODBC de Linu
 - [complete] 27. Corregir bloqueo de Continuar en modal de documentos de Asignaciones
 - [complete] 28. Revertir liquidación LIQ-00026 y restaurar cobros asociados
 - [complete] 29. Corregir AG Grid de Kardex Productos y modales de gestión
+- [complete] 30. Remediar hallazgos de seguridad Problems #1/#2/#3

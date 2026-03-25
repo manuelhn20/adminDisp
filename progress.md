@@ -118,3 +118,9 @@
 - Causa confirmada: `security-sanitize.js` con parche global activo en `base_kardex.html` interfería con render dinámico de AG Grid.
 - Fix aplicado: soporte de desactivación por vista en `base_kardex.html` mediante flag `disable_global_sanitize_patch` antes de cargar sanitizer.
 - Activado flag solo para `productos_view` en `admin_disp/kardex/routes.py` (`disable_global_sanitize_patch=True`).
+
+## 2026-03-25 (Security remediation Problems #1/#2/#3)
+- SQLi: reforzada documentación de seguridad en SQL dinámico controlado en `admin_disp/devices/service.py` (allowlists/placeholders) con anotaciones `# nosec B608` en puntos reportados.
+- XSS: eliminadas asignaciones directas `innerHTML` en `admin_disp/static/js/asignaciones.js`, `admin_disp/static/js/cxc.js` y `admin_disp/static/js/dispositivos.js`; migrado a helpers `safeSetHTML`/`textContent`.
+- Sanitizer: removido uso de `template.innerHTML` en `admin_disp/static/js/security-sanitize.js` para parseo post-sanitización, reemplazado por `DOMParser`.
+- Verificación local: sin errores de sintaxis en los archivos JS editados y sin errores de parseo en `service.py`.

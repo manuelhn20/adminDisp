@@ -11,6 +11,15 @@ function showModalMessage(message, type = 'error') {
   openGlobalMessageModal(type, title, message);
 }
 
+function setSafeHTML(el, html) {
+  if (!el) return;
+  if (typeof window.safeSetHTML === 'function') {
+    window.safeSetHTML(el, html);
+    return;
+  }
+  el.textContent = String(html == null ? '' : html);
+}
+
 // Page-scoped modal helpers that also clear IP validation state to prevent persistent native bubbles
 function closeModal(modalId) {
   const el = document.getElementById(modalId);
@@ -123,10 +132,10 @@ async function updateDeviceRow(deviceId) {
     if (cells.length >= 8) {
       cells[0].textContent = d.categoria || '';
       cells[1].textContent = d.identificador || '';
-      cells[2].innerHTML = `<code>${d.numero_serie || ''}</code>`;
+      setSafeHTML(cells[2], `<code>${d.numero_serie || ''}</code>`);
       cells[3].textContent = d.nombre_modelo || '';
       cells[4].textContent = d.nombre_marca || '';
-      cells[5].innerHTML = `<span class="text-${statusColor}">${getEstadoText(d.estado)}</span>`;
+      setSafeHTML(cells[5], `<span class="text-${statusColor}">${getEstadoText(d.estado)}</span>`);
       cells[6].textContent = d.ip_asignada || '';
       if (window.__DEV_LOGS) console.log('[updateDeviceRow] Row updated successfully. New estado:', d.estado, 'Color:', statusColor);
     } else {
@@ -317,16 +326,16 @@ async function openDocsPreviewModal(employeeCode){
     // default params
     const year = 2026; const month = 1; const code = employeeCode || 'P-EM-000125';
     const grid = document.getElementById('docsPreviewGrid');
-    grid.innerHTML = '<div class="loading">Buscando archivos...</div>';
+    setSafeHTML(grid, '<div class="loading">Buscando archivos...</div>');
     // open modal
     openModal('modalDocsPreview', true);
     // fetch list
     const resp = await fetch(`/documents/list/${year}/${month}/${encodeURIComponent(code)}`);
-    if(!resp.ok){ grid.innerHTML = '<div class="loading">No se pudo obtener la lista de documentos.</div>'; return; }
+    if(!resp.ok){ setSafeHTML(grid, '<div class="loading">No se pudo obtener la lista de documentos.</div>'); return; }
     const j = await resp.json().catch(()=>({success:false, files:[]}));
     const files = (j && j.success) ? (j.files || []) : [];
-    if(!files.length){ grid.innerHTML = '<div class="loading">No hay PDFs en la carpeta indicada.</div>'; return; }
-    grid.innerHTML = '';
+    if(!files.length){ setSafeHTML(grid, '<div class="loading">No hay PDFs en la carpeta indicada.</div>'); return; }
+    grid.textContent = '';
     files.forEach((f, idx)=>{
       const c = document.createElement('div'); c.className='docs-card';
       const b = document.createElement('div'); b.className='badge';
@@ -354,7 +363,7 @@ async function openDocsPreviewModal(employeeCode){
     updateConfirmState();
   }catch(e){
     console.error('openDocsPreviewModal', e);
-    const grid = document.getElementById('docsPreviewGrid'); if(grid) grid.innerHTML = '<div class="loading">Error cargando documentos.</div>';
+    const grid = document.getElementById('docsPreviewGrid'); if(grid) setSafeHTML(grid, '<div class="loading">Error cargando documentos.</div>');
   }
 }
 
@@ -705,32 +714,32 @@ document.addEventListener('DOMContentLoaded', function(){
 
 async function openDeviceHistoryModal(deviceId) {
   const tbody = document.getElementById('deviceHistoryTbody');
-  tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:12px;">Cargando...</td></tr>';
+  setSafeHTML(tbody, '<tr><td colspan="3" style="text-align:center; padding:12px;">Cargando...</td></tr>');
   openModal('modalDeviceHistory', true);
   try {
     const resp = await fetch(`/devices/${deviceId}/asignaciones/device`);
     if (!resp.ok) {
-      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#b00020;">Error cargando historial</td></tr>`;
+      setSafeHTML(tbody, `<tr><td colspan="3" style="text-align:center; color:#b00020;">Error cargando historial</td></tr>`);
       return;
     }
     const j = await resp.json();
     if (!j || !j.success) {
-      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#b00020;">No se pudo obtener historial</td></tr>`;
+      setSafeHTML(tbody, `<tr><td colspan="3" style="text-align:center; color:#b00020;">No se pudo obtener historial</td></tr>`);
       return;
     }
     const rows = j.asignaciones || [];
     if (rows.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;">No hay historial</td></tr>`;
+      setSafeHTML(tbody, `<tr><td colspan="3" style="text-align:center;">No hay historial</td></tr>`);
       return;
     }
-    tbody.innerHTML = rows.map(a => {
+    setSafeHTML(tbody, rows.map(a => {
       const nombre = a.empleado_nombre || a.fk_id_empleado || '-';
       const inicio = a.fecha_inicio_asignacion ? new Date(a.fecha_inicio_asignacion).toLocaleDateString() : '-';
       const fin = a.fecha_fin_asignacion ? new Date(a.fecha_fin_asignacion).toLocaleDateString() : '-';
       return `<tr><td>${nombre}</td><td>${inicio}</td><td>${fin}</td></tr>`;
-    }).join('');
+    }).join(''));
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#b00020;">Error: ${err && err.message ? err.message : err}</td></tr>`;
+    setSafeHTML(tbody, `<tr><td colspan="3" style="text-align:center; color:#b00020;">Error: ${err && err.message ? err.message : err}</td></tr>`);
   }
 }
 
@@ -1548,7 +1557,7 @@ function renderSuggestionCards(suggestions) {
   const container = document.getElementById('suggestionCardsContainer');
   if (!container) return;
   
-  container.innerHTML = suggestions.map(dev => {
+  setSafeHTML(container, suggestions.map(dev => {
     const categoria = dev.categoria || '-';
     const marca = dev.nombre_marca || '-';
     const modelo = dev.nombre_modelo || '-';
@@ -1617,7 +1626,7 @@ function renderSuggestionCards(suggestions) {
         ${componentesHtml}
       </div>
     `;
-  }).join('');
+  }).join(''));
   
   // Store suggestions data for later use
   window.__deviceSuggestions = suggestions;
@@ -2090,11 +2099,7 @@ async function reloadDevicesTable() {
     const html = await response.text();
     const tbody = document.querySelector('#devicesTable tbody');
     if (tbody) {
-      if (typeof window.safeSetHTML === 'function') {
-        window.safeSetHTML(tbody, html);
-      } else {
-        tbody.innerHTML = html;
-      }
+      setSafeHTML(tbody, html);
     }
     
     if (table) hideTableLoader(table.parentElement || table);
@@ -2574,23 +2579,35 @@ let currentDeviceForComponents = null;
     async function populateCompModelos(){
       const sel = document.getElementById('compModelo');
       if (!sel) return;
-      sel.innerHTML = '<option value="">-- Cargando modelos --</option>';
+      setSafeHTML(sel, '<option value="">-- Cargando modelos --</option>');
       try {
         const resp = await fetch('/devices/modelo/?estado=2');
         const data = await resp.json().catch(()=>[]);
         const marcaSel = document.getElementById('compMarca')?.value || '';
         const modelos = Array.isArray(data) ? data : [];
         const filtered = marcaSel ? modelos.filter(m => String(m.fk_id_marca) === String(marcaSel)) : modelos;
-        sel.innerHTML = '<option value="">-- Seleccionar modelo --</option>' + filtered.map(m => `<option value="${String(m.id_modelo)}">${m.nombre_modelo}</option>`).join('');
+        sel.textContent = '';
+        {
+          const baseOpt = document.createElement('option');
+          baseOpt.value = '';
+          baseOpt.textContent = '-- Seleccionar modelo --';
+          sel.appendChild(baseOpt);
+          filtered.forEach((m) => {
+            const opt = document.createElement('option');
+            opt.value = String(m.id_modelo);
+            opt.textContent = m.nombre_modelo;
+            sel.appendChild(opt);
+          });
+        }
       } catch (e){
-        sel.innerHTML = '<option value="">-- Error cargando modelos --</option>';
+        setSafeHTML(sel, '<option value="">-- Error cargando modelos --</option>');
       }
     }
 
     async function populateEditCompModelos(){
       const sel = document.getElementById('editCompModelo');
       if (!sel) return;
-      sel.innerHTML = '<option value="">-- Cargando modelos --</option>';
+      setSafeHTML(sel, '<option value="">-- Cargando modelos --</option>');
       try {
         const tipo = document.getElementById('editCompTipo')?.value || '';
         let url = '/devices/modelo/?estado=2';
@@ -2602,9 +2619,21 @@ let currentDeviceForComponents = null;
         const marcaSel = document.getElementById('editCompMarca')?.value || '';
         const modelos = Array.isArray(data) ? data : [];
         const filtered = marcaSel ? modelos.filter(m => String(m.fk_id_marca) === String(marcaSel)) : modelos;
-        sel.innerHTML = '<option value="">-- Seleccionar modelo --</option>' + filtered.map(m => `<option value="${String(m.id_modelo)}">${m.nombre_modelo}</option>`).join('');
+        sel.textContent = '';
+        {
+          const baseOpt = document.createElement('option');
+          baseOpt.value = '';
+          baseOpt.textContent = '-- Seleccionar modelo --';
+          sel.appendChild(baseOpt);
+          filtered.forEach((m) => {
+            const opt = document.createElement('option');
+            opt.value = String(m.id_modelo);
+            opt.textContent = m.nombre_modelo;
+            sel.appendChild(opt);
+          });
+        }
       } catch (e){
-        sel.innerHTML = '<option value="">-- Error cargando modelos --</option>';
+        setSafeHTML(sel, '<option value="">-- Error cargando modelos --</option>');
       }
     }
 
@@ -2653,7 +2682,7 @@ let currentDeviceForComponents = null;
         const resp = await fetch(`/devices/${deviceId}/componentes`);
         const j = await resp.json();
         const tbody = document.querySelector('#componentsTable tbody');
-        tbody.innerHTML = '';
+        tbody.textContent = '';
         if (!j.success) return;
         const isCel = (currentDeviceTypeForComponents || '').toString() === 'Celular' || (currentDeviceTypeForComponents || '').toString() === 'Tablet';
         // build header
@@ -2661,13 +2690,13 @@ let currentDeviceForComponents = null;
         if (thead) {
             if (isCel) {
             // For celulares/tablet: show Tipo, Capacidad, Tipo memoria, Acciones
-            thead.innerHTML = `<tr><th>Tipo</th><th>Capacidad (GB)</th><th>Tipo memoria</th><th>Acciones</th></tr>`;
+            setSafeHTML(thead, `<tr><th>Tipo</th><th>Capacidad (GB)</th><th>Tipo memoria</th><th>Acciones</th></tr>`);
             // hide add button and hide Tipo label/input in add form and hide legend
             try { document.getElementById('btnAddComponente').style.display = 'none'; } catch(e){}
             try { const compTipoEl = document.getElementById('compTipo'); if (compTipoEl && compTipoEl.closest) compTipoEl.closest('label').style.display = 'none'; } catch(e){}
             try { const legendNew = document.querySelector('#formNewComponente fieldset legend'); if (legendNew) legendNew.style.display = 'none'; } catch(e){}
             } else {
-              thead.innerHTML = `<tr><th>Tipo</th><th>No. Serie</th><th>Frecuencia</th><th>Tipo memoria</th><th>Capacidad (GB)</th><th>Tipo disco</th><th>Marca</th><th>Acciones</th></tr>`;
+              setSafeHTML(thead, `<tr><th>Tipo</th><th>No. Serie</th><th>Frecuencia</th><th>Tipo memoria</th><th>Capacidad (GB)</th><th>Tipo disco</th><th>Marca</th><th>Acciones</th></tr>`);
             try { document.getElementById('btnAddComponente').style.display = ''; } catch(e){}
             try { const compTipoEl = document.getElementById('compTipo'); if (compTipoEl && compTipoEl.closest) compTipoEl.closest('label').style.display = ''; } catch(e){}
             try { const legendNew = document.querySelector('#formNewComponente fieldset legend'); if (legendNew) legendNew.style.display = ''; } catch(e){}
@@ -2789,8 +2818,8 @@ let currentDeviceForComponents = null;
       const tipoMem = document.getElementById('compTipoMemoria');
       if (!frec || !tipoMem) return;
       // clear
-      frec.innerHTML = '<option value="">-- Seleccionar --</option>';
-      tipoMem.innerHTML = '<option value="">-- Seleccionar --</option>';
+      setSafeHTML(frec, '<option value="">-- Seleccionar --</option>');
+      setSafeHTML(tipoMem, '<option value="">-- Seleccionar --</option>');
       // common frequencies (MHz) - modern ranges (exclude very low legacy values)
       const frecs = [2400,2666,2933,3000,3200,3600,3733,4000,4266,4800,5200,5600];
       frecs.forEach(f=>{ const o=document.createElement('option'); o.value=f; o.textContent=f; frec.appendChild(o); });
@@ -2843,30 +2872,30 @@ let currentDeviceForComponents = null;
       // If RAM selected, populate memory-specific options and adjust factor options by device
       if (isRam){
         const tipoMemEl = document.getElementById('compTipoMemoria');
-        if (tipoMemEl) tipoMemEl.innerHTML = '<option value="">-- Seleccionar --</option>';
+        if (tipoMemEl) setSafeHTML(tipoMemEl, '<option value="">-- Seleccionar --</option>');
         const factorEl = document.getElementById('compTipoModulo');
         const capEl = document.getElementById('compCapacidad');
         if (isLaptopOrDesktop){
           ['DDR3','DDR4','DDR5'].forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; if (tipoMemEl) tipoMemEl.appendChild(o); });
           const frec = document.getElementById('compFrecuencia');
           if (frec) {
-            frec.innerHTML = '<option value="">-- Seleccionar --</option>';
+            setSafeHTML(frec, '<option value="">-- Seleccionar --</option>');
             [2400,2666,2933,3000,3200,3600,3733,4000,4266,4800,5200,5600].forEach(f=>{ const o=document.createElement('option'); o.value=f; o.textContent=f; frec.appendChild(o); });
           }
-          if (capEl) { capEl.innerHTML = '<option value="">-- Seleccionar --</option>'; [4,8,16,32,64,128,256].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; capEl.appendChild(o); }); }
-          if (factorEl){ factorEl.innerHTML = '<option value="">-- Seleccionar --</option>'; ['SODIMM','DIMM'].forEach(ff=>{ const o=document.createElement('option'); o.value=ff; o.textContent=ff; factorEl.appendChild(o); }); }
+          if (capEl) { setSafeHTML(capEl, '<option value="">-- Seleccionar --</option>'); [4,8,16,32,64,128,256].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; capEl.appendChild(o); }); }
+          if (factorEl){ setSafeHTML(factorEl, '<option value="">-- Seleccionar --</option>'); ['SODIMM','DIMM'].forEach(ff=>{ const o=document.createElement('option'); o.value=ff; o.textContent=ff; factorEl.appendChild(o); }); }
         } else {
-          if (capEl) capEl.innerHTML = '<option value="">-- Seleccionar --</option>';
-          if (factorEl) factorEl.innerHTML = '<option value="">-- Seleccionar --</option>';
+          if (capEl) setSafeHTML(capEl, '<option value="">-- Seleccionar --</option>');
+          if (factorEl) setSafeHTML(factorEl, '<option value="">-- Seleccionar --</option>');
         }
       } else if (isDisco){
         // For disks, capacity options larger
         const cap = document.getElementById('compCapacidad');
-        if (cap) { cap.innerHTML = '<option value="">-- Seleccionar --</option>'; [32,64,128,256,512,1024,2048].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; cap.appendChild(o); }); }
+        if (cap) { setSafeHTML(cap, '<option value="">-- Seleccionar --</option>'); [32,64,128,256,512,1024,2048].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; cap.appendChild(o); }); }
         // Populate tipo disco for DISCO
         const tipoDiscoEl = document.getElementById('compTipoDisco');
         if (tipoDiscoEl) {
-          tipoDiscoEl.innerHTML = '<option value="">-- Seleccionar --</option>';
+          setSafeHTML(tipoDiscoEl, '<option value="">-- Seleccionar --</option>');
           ['HDD','SSD SATA','SSD NVMe'].forEach(td=>{ const o=document.createElement('option'); o.value=td; o.textContent=td; tipoDiscoEl.appendChild(o); });
         }
         // show serial field for disks
@@ -2874,10 +2903,10 @@ let currentDeviceForComponents = null;
         if (serialElD) serialElD.style.display = '';
       } else {
         // no generic fallback: clear component-specific selects
-        const frec = document.getElementById('compFrecuencia'); if (frec) frec.innerHTML = '<option value="">-- Seleccionar --</option>';
-        const tipoMemEl2 = document.getElementById('compTipoMemoria'); if (tipoMemEl2) tipoMemEl2.innerHTML = '<option value="">-- Seleccionar --</option>';
-        const cap2 = document.getElementById('compCapacidad'); if (cap2) cap2.innerHTML = '<option value="">-- Seleccionar --</option>';
-        const factorEl2 = document.getElementById('compTipoModulo'); if (factorEl2) factorEl2.innerHTML = '<option value="">-- Seleccionar --</option>';
+        const frec = document.getElementById('compFrecuencia'); if (frec) setSafeHTML(frec, '<option value="">-- Seleccionar --</option>');
+        const tipoMemEl2 = document.getElementById('compTipoMemoria'); if (tipoMemEl2) setSafeHTML(tipoMemEl2, '<option value="">-- Seleccionar --</option>');
+        const cap2 = document.getElementById('compCapacidad'); if (cap2) setSafeHTML(cap2, '<option value="">-- Seleccionar --</option>');
+        const factorEl2 = document.getElementById('compTipoModulo'); if (factorEl2) setSafeHTML(factorEl2, '<option value="">-- Seleccionar --</option>');
       }
 
       // CPU specific: show manual frequency input and limit tipo_memoria to Cache
@@ -2889,7 +2918,7 @@ let currentDeviceForComponents = null;
       if (isCpu) {
         if (compFreqSelect) { compFreqSelect.style.display = 'none'; compFreqSelect.name = ''; }
         if (compFreqInput) { compFreqInput.style.display = ''; compFreqInput.name = 'frecuencia'; }
-        if (tipoMemEl) { tipoMemEl.innerHTML = '<option value="">-- Seleccionar --</option>'; const o=document.createElement('option'); o.value='Cache'; o.textContent='Cache'; tipoMemEl.appendChild(o); }
+        if (tipoMemEl) { setSafeHTML(tipoMemEl, '<option value="">-- Seleccionar --</option>'); const o=document.createElement('option'); o.value='Cache'; o.textContent='Cache'; tipoMemEl.appendChild(o); }
         if (labelCompModeloEl) { labelCompModeloEl.style.display = ''; }
         // populate modelos estado=2 for CPU
         if (compModeloEl) populateCompModelos();
@@ -3363,7 +3392,7 @@ let currentDeviceForComponents = null;
         if (isRam) {
           const frecEl = document.getElementById('editCompFrecuencia');
           const currentFrecValue = frecEl.value;
-          frecEl.innerHTML = '<option value="">-- Seleccionar --</option>';
+          setSafeHTML(frecEl, '<option value="">-- Seleccionar --</option>');
           [2400,2666,2933,3000,3200,3600,3733,4000,4266,4800,5200,5600].forEach(f=>{ 
             const o=document.createElement('option'); 
             o.value=f; 
@@ -3375,7 +3404,7 @@ let currentDeviceForComponents = null;
           // Populate tipo de módulo for laptop/desktop RAM
           const ffEl = document.getElementById('editCompTipoModulo');
           const currentFFValue = ffEl.value;
-          ffEl.innerHTML = '<option value="">-- Seleccionar --</option>';
+          setSafeHTML(ffEl, '<option value="">-- Seleccionar --</option>');
           ['DIMM','SODIMM'].forEach(ff=>{ 
             const o=document.createElement('option'); 
             o.value=ff; 
@@ -3400,7 +3429,7 @@ let currentDeviceForComponents = null;
       if (isDisco && !isCelular) {
         const tipoDiscoEl = document.getElementById('editCompTipoDisco');
         const currentTipoDisco = tipoDiscoEl?.value || '';
-        tipoDiscoEl.innerHTML = '<option value="">-- Seleccionar --</option>';
+        setSafeHTML(tipoDiscoEl, '<option value="">-- Seleccionar --</option>');
         ['HDD','SSD SATA','SSD NVMe'].forEach(td=>{ 
           const o=document.createElement('option'); 
           o.value=td; 
@@ -3434,7 +3463,7 @@ let currentDeviceForComponents = null;
       if (isRam) {
         const tipoMemEl = document.getElementById('editCompTipoMemoria');
         const currentTipoMemValue = tipoMemEl.value;
-        tipoMemEl.innerHTML = '<option value="">-- Seleccionar --</option>';
+        setSafeHTML(tipoMemEl, '<option value="">-- Seleccionar --</option>');
         if (isCelular) {
           ['LPDDR3X','LPDDR4','LPDDR4X','LPDDR5','LPDDR5X'].forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; tipoMemEl.appendChild(o); });
         } else if (isLaptopOrDesktop) {
@@ -3450,7 +3479,7 @@ let currentDeviceForComponents = null;
       if (isCpu) {
         if (frecInp) { frecInp.style.display = 'none'; frecInp.name = ''; }
         if (frecText) { frecText.style.display = ''; frecText.name = 'frecuencia'; }
-        if (tipoMemEl2) { tipoMemEl2.innerHTML = '<option value="">-- Seleccionar --</option>'; const o=document.createElement('option'); o.value='Cache'; o.textContent='Cache'; tipoMemEl2.appendChild(o); }
+        if (tipoMemEl2) { setSafeHTML(tipoMemEl2, '<option value="">-- Seleccionar --</option>'); const o=document.createElement('option'); o.value='Cache'; o.textContent='Cache'; tipoMemEl2.appendChild(o); }
         // Ensure the edit modal shows the Frecuencia label too when CPU is selected
         try { if (!isCelular) document.getElementById('labelEditFrecuencia').style.display = ''; } catch(e) {}
         // Clear and disable capacidad in edit modal for CPU
@@ -3470,7 +3499,7 @@ let currentDeviceForComponents = null;
       if (tipo) {
         const capEl = document.getElementById('editCompCapacidad');
         const currentValue = capEl.value;
-        capEl.innerHTML = '<option value="">-- Seleccionar --</option>';
+        setSafeHTML(capEl, '<option value="">-- Seleccionar --</option>');
         
         if (isRam) {
           if (isCelular) {
@@ -3783,14 +3812,27 @@ function cargarMarcas() {
       marcasData = data || [];
       const select = document.getElementById('selectMarcaGestion');
       if (select) {
-        select.innerHTML = '<option value="">-- Selecciona una marca --</option>' +
-          (Array.isArray(data) ? data.map(m => `<option value="${m.id_marca}">${m.nombre_marca}</option>`).join('') : '');
+        select.textContent = '';
+        {
+          const baseOpt = document.createElement('option');
+          baseOpt.value = '';
+          baseOpt.textContent = '-- Selecciona una marca --';
+          select.appendChild(baseOpt);
+          if (Array.isArray(data)) {
+            data.forEach((m) => {
+              const opt = document.createElement('option');
+              opt.value = m.id_marca;
+              opt.textContent = m.nombre_marca;
+              select.appendChild(opt);
+            });
+          }
+        }
       }
       return marcasData;
     })
     .catch(() => {
       const select = document.getElementById('selectMarcaGestion');
-      if (select) select.innerHTML = '<option value="">Error al cargar marcas</option>';
+      if (select) setSafeHTML(select, '<option value="">Error al cargar marcas</option>');
       return [];
     });
 }
@@ -3885,15 +3927,26 @@ function cargarModelos() {
       if (marcasData.length === 0) {
         cargarMarcasParaSelector();
       }
-      select.innerHTML = '<option value="">-- Selecciona un modelo --</option>' +
-        (Array.isArray(data) ? data.map(m => {
-          const marca = marcasData.find(ma => ma.id_marca == m.fk_id_marca);
-          return `<option value="${m.id_modelo}">${m.nombre_modelo} (${marca?.nombre_marca || '-'})</option>`;
-        }).join('') : '');
+      select.textContent = '';
+      {
+        const baseOpt = document.createElement('option');
+        baseOpt.value = '';
+        baseOpt.textContent = '-- Selecciona un modelo --';
+        select.appendChild(baseOpt);
+        if (Array.isArray(data)) {
+          data.forEach((m) => {
+            const marca = marcasData.find(ma => ma.id_marca == m.fk_id_marca);
+            const opt = document.createElement('option');
+            opt.value = m.id_modelo;
+            opt.textContent = `${m.nombre_modelo} (${marca?.nombre_marca || '-'})`;
+            select.appendChild(opt);
+          });
+        }
+      }
     })
     .catch(() => {
       const select = document.getElementById('selectModeloGestion');
-      if (select) select.innerHTML = '<option value="">Error al cargar modelos</option>';
+      if (select) setSafeHTML(select, '<option value="">Error al cargar modelos</option>');
     });
 }
 
@@ -3904,8 +3957,21 @@ function cargarMarcasParaSelector() {
       marcasData = marcas || [];
       const select = document.getElementById('editModeloMarcaInline');
       if (select) {
-        select.innerHTML = '<option value="">-- Selecciona marca --</option>' +
-          (Array.isArray(marcas) ? marcas.map(m => `<option value="${m.id_marca}">${m.nombre_marca}</option>`).join('') : '');
+        select.textContent = '';
+        {
+          const baseOpt = document.createElement('option');
+          baseOpt.value = '';
+          baseOpt.textContent = '-- Selecciona marca --';
+          select.appendChild(baseOpt);
+          if (Array.isArray(marcas)) {
+            marcas.forEach((m) => {
+              const opt = document.createElement('option');
+              opt.value = m.id_marca;
+              opt.textContent = m.nombre_marca;
+              select.appendChild(opt);
+            });
+          }
+        }
       }
     })
     .catch(() => {
@@ -4435,7 +4501,19 @@ async function populateSelectMarcaNew(selectedMarcaId) {
   }
   const sel = document.getElementById('selectMarcaNewModelo');
   if (!sel) return;
-  sel.innerHTML = '<option value="">-- Selecciona marca --</option>' + (marcasData.map(m => `<option value="${m.id_marca}">${m.nombre_marca}</option>`).join(''));
+  sel.textContent = '';
+  {
+    const baseOpt = document.createElement('option');
+    baseOpt.value = '';
+    baseOpt.textContent = '-- Selecciona marca --';
+    sel.appendChild(baseOpt);
+    marcasData.forEach((m) => {
+      const opt = document.createElement('option');
+      opt.value = m.id_marca;
+      opt.textContent = m.nombre_marca;
+      sel.appendChild(opt);
+    });
+  }
   if (selectedMarcaId) {
     sel.value = selectedMarcaId;
   } else {
@@ -4621,12 +4699,12 @@ async function showEmpleadoDetails(empleadoId) {
   // Open modal and show loading state
   openModal('modalEmpleadoDetails', true);
   const contentDiv = document.getElementById('empleadoDetailsContent');
-  contentDiv.innerHTML = `
+  setSafeHTML(contentDiv, `
     <div style="text-align:center; padding:20px;">
       <span class="spinner" style="display:inline-block;width:24px;height:24px;border:3px solid var(--text-gray);border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span>
       <p style="margin-top:12px; color:var(--text-gray);">Cargando datos...</p>
     </div>
-  `;
+  `);
   
   try {
     const resp = await fetch(`/devices/empleado/${empleadoId}`);
@@ -4643,7 +4721,7 @@ async function showEmpleadoDetails(empleadoId) {
     const puesto = empleado.puesto || '-';
     const empresa = empleado.empresa || '-';
     
-    contentDiv.innerHTML = `
+    setSafeHTML(contentDiv, `
       <div style="display:flex; flex-direction:column; gap:16px;">
         <div style="border-left:4px solid #007bff; padding-left:12px;">
           <div style="font-size:0.875rem; color:var(--text-gray); margin-bottom:4px;">Nombre Completo</div>
@@ -4666,15 +4744,15 @@ async function showEmpleadoDetails(empleadoId) {
           <div style="font-size:1rem; font-weight:600; color:var(--text-primary);">${empresa}</div>
         </div>
       </div>
-    `;
+    `);
   } catch (err) {
     console.error('Error cargando datos del empleado:', err);
-    contentDiv.innerHTML = `
+    setSafeHTML(contentDiv, `
       <div style="text-align:center; padding:20px;">
         <p style="color:#dc3545; font-weight:600;">Error al cargar los datos del empleado</p>
         <p style="color:var(--text-gray); font-size:0.875rem; margin-top:8px;">Por favor, intenta nuevamente</p>
       </div>
-    `;
+    `);
   }
 }
 
@@ -4685,12 +4763,12 @@ async function showDeviceDetails(deviceId) {
   // Open modal and show loading state
   openModal('modalDeviceDetails', true);
   const contentDiv = document.getElementById('deviceDetailsContent');
-  contentDiv.innerHTML = `
+  setSafeHTML(contentDiv, `
     <div style="text-align:center; padding:20px;">
       <span class="spinner" style="display:inline-block;width:24px;height:24px;border:3px solid var(--text-gray);border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span>
       <p style="margin-top:12px; color:var(--text-gray);">Cargando datos...</p>
     </div>
-  `;
+  `);
   
   try {
     // Fetch device data
@@ -4797,15 +4875,15 @@ async function showDeviceDetails(deviceId) {
       </div>
     `;
     
-    contentDiv.innerHTML = deviceHTML;
+    setSafeHTML(contentDiv, deviceHTML);
   } catch (err) {
     console.error('Error cargando datos del dispositivo:', err);
-    contentDiv.innerHTML = `
+    setSafeHTML(contentDiv, `
       <div style="text-align:center; padding:20px;">
         <p style="color:#dc3545; font-weight:600;">Error al cargar los datos del dispositivo</p>
         <p style="color:var(--text-gray); font-size:0.875rem; margin-top:8px;">Por favor, intenta nuevamente</p>
       </div>
-    `;
+    `);
   }
 }
 

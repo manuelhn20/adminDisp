@@ -29,6 +29,15 @@
     return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
 
+  function setSafeHTML(el, html) {
+    if (!el) return;
+    if (typeof window.safeSetHTML === 'function') {
+      window.safeSetHTML(el, html);
+      return;
+    }
+    el.textContent = String(html == null ? '' : html);
+  }
+
   // Resalta `term` dentro de `text` con <mark class="hl">
   // Ignora tildes y mayúsculas tanto en el término como en el texto.
   function highlightCell(text, term) {
@@ -273,9 +282,11 @@
         });
         btn.disabled = n === 0 || hayLiquidados;
         const icon = btn.querySelector('.material-symbols-rounded');
-        btn.innerHTML =
+        setSafeHTML(
+          btn,
           `${icon ? icon.outerHTML : '<span class="material-symbols-rounded">payments</span>'} ` +
-          (n > 0 ? `Liquidar seleccionados (${n})` : 'Liquidar seleccionados');
+          (n > 0 ? `Liquidar seleccionados (${n})` : 'Liquidar seleccionados')
+        );
         btn.title = hayLiquidados ? 'No se puede liquidar registros ya liquidados' : '';
       }
     }
@@ -284,9 +295,11 @@
     if (btnPrint) {
       btnPrint.disabled = n === 0;
       const icon = btnPrint.querySelector('.material-symbols-rounded');
-      btnPrint.innerHTML =
+      setSafeHTML(
+        btnPrint,
         `${icon ? icon.outerHTML : '<span class="material-symbols-rounded">print</span>'} ` +
-        (n > 0 ? `Imprimir seleccionados (${n})` : 'Imprimir seleccionados');
+        (n > 0 ? `Imprimir seleccionados (${n})` : 'Imprimir seleccionados')
+      );
     }
   }
 
@@ -395,7 +408,7 @@
 
     // Vaciar el wrapper y colocar nuestro checkbox centrado
     const wrapper = headerCell.querySelector('.ag-header-cell-comp-wrapper') || headerCell;
-    wrapper.innerHTML = '';
+    wrapper.textContent = '';
     wrapper.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%';
     wrapper.appendChild(cb);
 
@@ -671,20 +684,20 @@
       { label: 'Fecha liquidado',      value: data.fechaLiquidado },
     );
 
-    body.innerHTML = fields.map(f => `
+    setSafeHTML(body, fields.map(f => `
       <div class="det-row">
         <span class="det-label">${f.label}</span>
         <span class="det-value">${(f.value != null && f.value !== '') ? f.value : '<em class="det-empty">&mdash;</em>'}</span>
-      </div>`).join('');
+      </div>`).join(''));
 
     // Badge de PDF en el header si el registro está liquidado
     const headerBadge = document.getElementById('detModalBadge');
     if (headerBadge) {
-      headerBadge.innerHTML = '';
+      headerBadge.textContent = '';
 
       if (data.liquidado_bool) {
         // Mostrar badge inmediatamente, sin esperar a la BD
-        headerBadge.innerHTML = `
+        setSafeHTML(headerBadge, `
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="display:inline-flex;align-items:center;gap:5px;
               background:#dcfce7;color:#166534;border:1px solid #86efac;
@@ -692,7 +705,7 @@
               <span class="material-symbols-rounded" style="font-size:15px;">payments</span>
               liquidado: S&iacute;
             </span>
-          </div>`;
+          </div>`);
 
         // Si hay número de recibo, verificar si existe PDF guardado
         if (data.noRecibo) {
@@ -707,14 +720,14 @@
               if (!badgeDiv) return;
               // Actualizar la etiqueta con la fecha del PDF
               const span = badgeDiv.querySelector('span:first-child');
-              if (span) span.innerHTML = `
+              if (span) setSafeHTML(span, `
                 <span class="material-symbols-rounded" style="font-size:15px;">payments</span>
-                liquidado: S&iacute; &mdash; PDF ${info.fecha ? info.fecha.split('T')[0] : ''}`;
+                liquidado: S&iacute; &mdash; PDF ${info.fecha ? info.fecha.split('T')[0] : ''}`);
               // Agregar botón visor si hay fileId
               if (fileId) {
                 const btn = document.createElement('button');
                 btn.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:#eff6ff;color:#1d4ed8;border:1px solid #93c5fd;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;';
-                btn.innerHTML = `<span class="material-symbols-rounded" style="font-size:15px;">picture_as_pdf</span> ${fileName}`;
+                setSafeHTML(btn, `<span class="material-symbols-rounded" style="font-size:15px;">picture_as_pdf</span> ${fileName}`);
                 btn.onclick = () => cxcOpenPDFViewer(encodeURIComponent(fileId), fileName, dlUrl);
                 badgeDiv.querySelector('div').appendChild(btn);
               }
@@ -784,7 +797,7 @@
               const filterEjecutivoEl = document.getElementById('filterEjecutivo');
               if (filterEjecutivoEl) {
                 const currentValue = filterEjecutivoEl.value;
-                filterEjecutivoEl.innerHTML = '<option value="">Todos</option>';
+                setSafeHTML(filterEjecutivoEl, '<option value="">Todos</option>');
                 
                 if (Array.isArray(ejecutivos)) {
                   ejecutivos.forEach(ej => {
@@ -1111,7 +1124,7 @@
             updateSyncBadge(data.last_inserted || 0);
           }
         } else {
-          if (dateEl) dateEl.innerHTML = '&mdash; (sin ejecutar)';
+          if (dateEl) setSafeHTML(dateEl, '&mdash; (sin ejecutar)');
         }
         prevSyncDate = data.lastSync;
       })
@@ -1277,7 +1290,7 @@ async function cxcOpenPDFViewer(fileId, fileName, directDlUrl, blobUrl) {
     if (!modal) return;
 
     showLoading('Cargando PDF, por favor espera...');
-    if (pages) pages.innerHTML = '';
+    if (pages) pages.textContent = '';
     _cxcScale = 1.0;
     _cxcRotation = 0; // Resetear rotación
     cxcUpdateZoomUI(100);
@@ -1364,7 +1377,7 @@ async function cxcRenderAllPages() {
   if (!_cxcPdfDoc) return;
   const container = document.getElementById('cxcPDFPages');
   if (!container) return;
-  container.innerHTML = '';
+  container.textContent = '';
   const numPages = _cxcPdfDoc.numPages;
   for (let i = 1; i <= numPages; i++) {
     const page     = await _cxcPdfDoc.getPage(i);
@@ -1516,7 +1529,7 @@ async function openProcesadosModal() {
   const content = document.getElementById('procesadosModalContent');
   if (!modal) return;
   modal.classList.add('open');
-  content.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);"><span class="material-symbols-rounded" style="font-size:32px;display:block;margin-bottom:8px">hourglass_empty</span>Cargando liquidaciones procesadas...</div>';
+  setSafeHTML(content, '<div style="text-align:center;padding:32px;color:var(--muted);"><span class="material-symbols-rounded" style="font-size:32px;display:block;margin-bottom:8px">hourglass_empty</span>Cargando liquidaciones procesadas...</div>');
 
   document.getElementById('procesadosModalClose')?.addEventListener('click', () => {
     modal.classList.remove('open');
@@ -1534,9 +1547,9 @@ async function openProcesadosModal() {
     const resp = await fetch(`/cxc/lotes?${_procQp}`, { credentials: 'same-origin' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const lotes = await resp.json();
-    content.innerHTML = _renderProcesadosTable(lotes);
+    setSafeHTML(content, _renderProcesadosTable(lotes));
   } catch (err) {
-    content.innerHTML = `<div style="padding:24px;color:#ef4444;">Error al cargar: ${err}</div>`;
+    setSafeHTML(content, `<div style="padding:24px;color:#ef4444;">Error al cargar: ${err}</div>`);
   }
 }
 
@@ -1807,21 +1820,21 @@ function _liqRenderStep1(loteId, numLiq, blobUrl) {
   const safeUrl  = (blobUrl || '').replace(/'/g, "\\'");
   const safeName = (numLiq + '.pdf').replace(/'/g, "\\'");
   if (cardCont) {
-    cardCont.innerHTML = `<div class="pdf-card" onclick="cxcOpenPDFViewer('','${safeName}','${safeUrl}','${safeUrl}')">
+    setSafeHTML(cardCont, `<div class="pdf-card" onclick="cxcOpenPDFViewer('','${safeName}','${safeUrl}','${safeUrl}')">
       <div class="pdf-card-icon">${_PDF_CARD_IMG}</div>
       <div class="pdf-card-title">${numLiq}.pdf</div>
       <div style="text-align:center;margin-top:12px;">
         <span class="pdf-card-badge">Toca aquí para visualizar</span>
       </div>
-    </div>`;
+    </div>`);
   }
   if (actions) {
     const safeNum = numLiq.replace(/'/g, "\\'");
-    actions.innerHTML = `
+    setSafeHTML(actions, `
       <button class="modal-btn modal-btn--ghost" onclick="document.getElementById('liqDocsModal').classList.remove('open')">Cerrar</button>
       <button class="modal-btn modal-btn--primary" onclick="_liqContinuarASubir(${loteId},'${safeNum}')">
         <span class="material-symbols-rounded" style="font-size:14px;vertical-align:-3px">upload_file</span> Subir documento
-      </button>`;
+      </button>`);
   }
 }
 
@@ -1832,19 +1845,19 @@ function _liqRenderStep3(loteId, numLiq, revFileId, revDlUrl) {
   if (title) title.textContent = 'Revisión de documentos — ' + numLiq;
   const proxyUrl = `/cxc/lotes/${loteId}/pdf`;
   if (cardCont) {
-    cardCont.innerHTML = _liqBuildCard(numLiq, numLiq + ' rev.pdf', proxyUrl, revFileId, revDlUrl);
+    setSafeHTML(cardCont, _liqBuildCard(numLiq, numLiq + ' rev.pdf', proxyUrl, revFileId, revDlUrl));
   }
   if (actions) {
     const safeNum = numLiq.replace(/'/g, "\\'");
     const _canConfirm = (window.CXC_FLAGS?.CAN_CONFIRM !== false);
-    actions.innerHTML = `
+    setSafeHTML(actions, `
       <button class="modal-btn modal-btn--ghost" onclick="document.getElementById('liqDocsModal').classList.remove('open')">Cerrar</button>
       <button class="lote-btn lote-btn--fin" onclick="_liqRegenerarDoc(${loteId},'${safeNum}')">
         <span class="material-symbols-rounded" style="font-size:13px">restart_alt</span> Regenerar
       </button>
       ${_canConfirm ? `<button class="lote-btn lote-btn--confirm" onclick="_liqConfirmar(${loteId})">
         <span class="material-symbols-rounded" style="font-size:13px">verified</span> Confirmar
-      </button>` : ''}`;
+      </button>` : ''}`);
   }
 }
 
@@ -1855,11 +1868,11 @@ function _liqRenderStep4(loteId, numLiq) {
   if (title) title.textContent = 'Documento en Onedrive';
   const proxyUrl = `/cxc/lotes/${loteId}/pdf`;
   if (cardCont) {
-    cardCont.innerHTML = _liqBuildCard(numLiq, numLiq + '.pdf', proxyUrl, '', '');
+    setSafeHTML(cardCont, _liqBuildCard(numLiq, numLiq + '.pdf', proxyUrl, '', ''));
   }
   if (actions) {
-    actions.innerHTML = `
-      <button class="modal-btn modal-btn--primary" onclick="document.getElementById('liqDocsModal').classList.remove('open')">Cerrar</button>`;
+    setSafeHTML(actions, `
+      <button class="modal-btn modal-btn--primary" onclick="document.getElementById('liqDocsModal').classList.remove('open')">Cerrar</button>`);
   }
 }
 
@@ -1882,7 +1895,7 @@ function _liqViewDocModal(estadoDoc, loteId, numLiq, fileId, dlUrl, revFileId, r
     if (stepWrapper) stepWrapper.style.display = 'none';
     if (stepLabels)  stepLabels.style.display  = 'none';
     if (cardCont) {
-      cardCont.innerHTML = _liqBuildCard(numLiq, numLiq + '.pdf', proxyUrl, fileId || '', dlUrl || '');
+      setSafeHTML(cardCont, _liqBuildCard(numLiq, numLiq + '.pdf', proxyUrl, fileId || '', dlUrl || ''));
     }
   } else {
     // Estados 11/12/13: mostrar stepper en el paso correspondiente
@@ -1896,18 +1909,18 @@ function _liqViewDocModal(estadoDoc, loteId, numLiq, fileId, dlUrl, revFileId, r
 
     if (estadoDoc === 11) {
       if (cardCont) {
-        cardCont.innerHTML = _liqBuildCard(numLiq, numLiq + '.pdf', proxyUrl, fileId || '', dlUrl || '');
+        setSafeHTML(cardCont, _liqBuildCard(numLiq, numLiq + '.pdf', proxyUrl, fileId || '', dlUrl || ''));
       }
     } else {
       // 12 / 13: mostrar archivo original — el rev se ve desde "Revisar documento"
       if (cardCont) {
-        cardCont.innerHTML = _liqBuildCard(numLiq, numLiq + '.pdf', proxyUrl, fileId || '', dlUrl || '');
+        setSafeHTML(cardCont, _liqBuildCard(numLiq, numLiq + '.pdf', proxyUrl, fileId || '', dlUrl || ''));
       }
     }
   }
 
   if (actions) {
-    actions.innerHTML = `<button class="modal-btn modal-btn--primary" onclick="document.getElementById('liqDocsModal').classList.remove('open')">Cerrar</button>`;
+    setSafeHTML(actions, `<button class="modal-btn modal-btn--primary" onclick="document.getElementById('liqDocsModal').classList.remove('open')">Cerrar</button>`);
   }
 
   modal.classList.add('open');
@@ -1953,8 +1966,8 @@ function _subirDocumentoClick(loteId, numLiq) {
   const preview      = document.getElementById('liqFilePreview');
   const photoPreview = document.getElementById('liqPhotoPreview');
   const confirmBtn   = document.getElementById('liqSubirConfirmBtn');
-  if (preview)      preview.innerHTML = '';
-  if (photoPreview) photoPreview.innerHTML = '';
+  if (preview)      preview.textContent = '';
+  if (photoPreview) photoPreview.textContent = '';
   if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.onclick = null; }
 
   // Botón descargar → proxy del PDF original generado
@@ -2064,7 +2077,7 @@ function _liqRenderFilePreview(loteId, numLiq) {
   if (!preview || !confirmBtn) return;
 
   if (!file) {
-    preview.innerHTML = '';
+    preview.textContent = '';
     confirmBtn.disabled = true;
     confirmBtn.onclick = null;
     return;
@@ -2078,7 +2091,7 @@ function _liqRenderFilePreview(loteId, numLiq) {
   const borderColor = '#10b981';
   const safeFileName = file.name.replace(/"/g, '&quot;');
 
-  preview.innerHTML = `
+  setSafeHTML(preview, `
     <h4 style="margin:0 0 12px;font-size:0.9rem;color:#e5e7eb;font-weight:600;">Archivos seleccionados:</h4>
     <div style="display:flex;align-items:center;gap:10px;padding:12px;background:#1f2937;border:1px solid ${borderColor};border-radius:8px;">
       <svg style="width:20px;height:20px;color:#9ca3af;flex-shrink:0;" fill="currentColor" viewBox="0 0 20 20">
@@ -2098,7 +2111,7 @@ function _liqRenderFilePreview(loteId, numLiq) {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
         </svg>
       </button>
-    </div>`;
+    </div>`);
 
   confirmBtn.disabled = !isValid;
   confirmBtn.onclick  = isValid ? () => _liqSubirArchivo(loteId, numLiq, window._liqPendingFile) : null;
@@ -2114,7 +2127,7 @@ function _liqEliminarArchivo() {
   window._liqPendingFile = null;
   const preview    = document.getElementById('liqFilePreview');
   const confirmBtn = document.getElementById('liqSubirConfirmBtn');
-  if (preview)    preview.innerHTML = '';
+  if (preview)    preview.textContent = '';
   if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.onclick = null; }
   const fi = document.getElementById('liqFileInput');
   if (fi) fi.value = '';
@@ -2185,7 +2198,7 @@ function _liqRenderPhotoPreview(loteId, numLiq) {
   if (!preview || !confirmBtn) return;
 
   if (!photos.length) {
-    preview.innerHTML   = '';
+    preview.textContent   = '';
     confirmBtn.disabled = true;
     confirmBtn.onclick  = null;
     return;
@@ -2209,7 +2222,7 @@ function _liqRenderPhotoPreview(loteId, numLiq) {
     ? `<span style="font-size:0.72rem;background:#ef444422;color:#ef4444;border:1px solid #ef4444;border-radius:4px;padding:1px 6px;margin-left:6px;">máx.</span>`
     : '';
 
-  preview.innerHTML = `
+  setSafeHTML(preview, `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <h4 style="margin:0;font-size:0.88rem;color:${countColor};font-weight:600;display:flex;align-items:center;">
         ${photos.length}/${LIQ_MAX_PHOTOS} fotos${maxBadge}
@@ -2218,7 +2231,7 @@ function _liqRenderPhotoPreview(loteId, numLiq) {
               style="background:#374151;border:none;color:#9ca3af;padding:4px 9px;border-radius:4px;cursor:pointer;font-size:0.75rem;"
               onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#9ca3af'">Quitar todas</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;">${thumbsHtml}</div>`;
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;">${thumbsHtml}</div>`);
 
   confirmBtn.disabled = false;
   confirmBtn.onclick  = () => _liqGenerarYSubirPDFDesdePhotos(loteId, numLiq);
@@ -2347,7 +2360,7 @@ async function _liqSubirArchivo(loteId, numLiq, file) {
       const procContent = document.getElementById('procesadosModalContent');
       if (procContent) {
         fetch('/cxc/lotes?estado=Procesado', { credentials: 'same-origin' })
-          .then(r => r.json()).then(lotes => { procContent.innerHTML = _renderProcesadosTable(lotes); })
+          .then(r => r.json()).then(lotes => { setSafeHTML(procContent, _renderProcesadosTable(lotes)); })
           .catch(() => {});
       }
       _liqOpenDocsModal(3, loteId, numLiq, null, data.rev_file_id || '', data.rev_dl_url || '');
@@ -2588,7 +2601,7 @@ async function openCobrosLoteModal(loteId, numero) {
   const titulo  = document.getElementById('cobrosLoteTitulo');
   if (!modal) return;
   if (titulo) titulo.textContent = 'Cobros — ' + (numero || ('#' + loteId));
-  content.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);">Cargando...</div>';
+  setSafeHTML(content, '<div style="text-align:center;padding:32px;color:var(--muted);">Cargando...</div>');
   modal.classList.add('open');
 
   document.getElementById('cobrosLoteModalClose')?.addEventListener('click', () => {
@@ -2603,7 +2616,7 @@ async function openCobrosLoteModal(loteId, numero) {
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const cobros = await resp.json();
     if (!cobros.length) {
-      content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Sin cobros asociados a este lote.</div>';
+      setSafeHTML(content, '<div style="text-align:center;padding:40px;color:var(--muted);">Sin cobros asociados a este lote.</div>');
       return;
     }
     const fmtMoney = v => v != null ? 'L ' + parseFloat(v).toLocaleString('es-HN',{minimumFractionDigits:2,maximumFractionDigits:2}) : '&mdash;';
@@ -2619,7 +2632,7 @@ async function openCobrosLoteModal(loteId, numero) {
       <td>${c.banco||'&mdash;'}</td>
       <td>${c.ejecutivo||'&mdash;'}</td>
     </tr>`).join('');
-    content.innerHTML = `
+    setSafeHTML(content, `
       <div style="padding:0 0 10px;display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:11px;color:var(--muted);">${cobros.length} registro(s)</span>
         <span style="font-size:13px;font-weight:700;color:var(--brand,#22c55e);">Total: ${fmtMoney(total)}</span>
@@ -2630,8 +2643,8 @@ async function openCobrosLoteModal(loteId, numero) {
           <th>Valor Pagado</th><th>M&eacute;todo Pago</th><th>banco</th><th>ejecutivo</th>
         </tr></thead>
         <tbody>${rows}</tbody>
-      </table>`;
+      </table>`);
   } catch (err) {
-    content.innerHTML = `<div style="padding:24px;color:#ef4444;">Error: ${err}</div>`;
+    setSafeHTML(content, `<div style="padding:24px;color:#ef4444;">Error: ${err}</div>`);
   }
 }
