@@ -14,8 +14,7 @@
 
 ## 2026-03-25
 - Leídas y aplicadas skills: systematic-debugging + test-driven-development para remediación de SQL injection reportada en issues.md.
-- Auditados módulos afectados: cxc/operations.py, devices/service.py, inventario/service.py, kardex/db.py.
-- Remediadas interpolaciones SQL en `execute()` removiendo f-strings y manteniendo parámetros `?`.
-- Convertidos armados dinámicos de `IN (...)`, `WHERE` y `SET` a concatenación segura desde fragmentos controlados (whitelists/listas internas).
-- Validación post-fix: búsqueda de patrones `execute(f`/`sql=f`/`query=f` sin hallazgos en los archivos afectados.
-- Verificación de errores: sin errores de compilación relevantes en cxc/operations.py y kardex/db.py; observaciones restantes de Sourcery no bloqueantes en otros módulos.
+- Auditados módulos afectados: admin_disp/cxc/operations.py, admin_disp/devices/service.py, admin_disp/inventario/service.py, admin_disp/kardex/db.py.
+- Remediadas interpolaciones SQL en execute eliminando f-strings y manteniendo bind de parámetros con placeholders '?'.
+- Endurecidos armados dinámicos de IN, WHERE y SET usando concatenación de fragmentos controlados (whitelists/listas internas), sin cambiar lógica funcional.
+- Validación post-fix: búsqueda regex sin hallazgos de execute(f, query=f o sql=f en los módulos afectados.

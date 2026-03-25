@@ -11,8 +11,8 @@
 
 ## Security Findings 2026-03-25
 
-- El reporte de issues detectó SQL injection potencial por uso de f-strings en `execute()` en módulos con pyodbc.
-- La causa raíz en los casos reportados fue interpolación de SQL (especialmente cláusulas `IN (...)`, `WHERE` y `SET`) antes de ejecutar.
-- Se aplicó mitigación mínima: eliminar SQL f-string en ejecución y conservar parámetros bind (`?`) en valores de entrada.
-- En cláusulas dinámicas inevitables (p. ej. `ORDER BY`), se mantuvo únicamente construcción desde whitelists internas preexistentes.
-- No se introdujeron cambios funcionales de negocio; solo endurecimiento de construcción SQL.
+- El reporte de issues detectó riesgo de SQL injection por SQL formado mediante interpolación en tiempo de ejecución.
+- La causa raíz en las ubicaciones reportadas fue uso de f-strings para insertar fragmentos SQL (IN, WHERE, SET, ORDER BY) antes del execute.
+- Se aplicó mitigación mínima: eliminar f-strings en SQL ejecutado y conservar parámetros bind con placeholders '?'.
+- En cláusulas dinámicas inevitables (por ejemplo ORDER BY), se mantuvo ensamblado solo desde whitelists o fragmentos controlados internamente.
+- No se cambiaron reglas de negocio ni contratos de funciones; solo hardening de construcción SQL.

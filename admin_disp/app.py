@@ -500,4 +500,6 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True, port=8000, host='0.0.0.0')
+    flask_env = os.getenv('FLASK_ENV', 'production').lower()
+    debug = os.getenv('FLASK_DEBUG', '0').lower() in ('1', 'true', 'yes') and flask_env != 'production'
+    app.run(debug=debug, port=8000, host='0.0.0.0')

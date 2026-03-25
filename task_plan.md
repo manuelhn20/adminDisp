@@ -18,4 +18,4 @@ Agregar configuración de despliegue en contenedor con dependencias ODBC de Linu
 ## Security Remediation (2026-03-25)
 - [complete] 5. Auditar ubicaciones reportadas en issues.md
 - [complete] 6. Remediar SQL dinámico con parametrización y armado seguro
-- [complete] 7. Validar que no queden `execute(f"...")` en módulos afectados
+- [complete] 7. Validar que no queden patrones SQL f-string en módulos afectados
