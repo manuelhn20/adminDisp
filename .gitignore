@@ -60,4 +60,6 @@ tools/
 # Archivos temporales
 *.tmp
 .tmp/
-~$*
+findings.md
+progress.md
+task_plan.md

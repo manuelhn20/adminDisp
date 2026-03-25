@@ -171,13 +171,13 @@ def get_marcas(include_inactive: bool = True) -> List[Dict[str, Any]]:
     conn = get_db_kardex()
     cur = conn.cursor()
 
-    where = "" if include_inactive else "WHERE status = 1"
-    cur.execute(f"""
-        SELECT id, name, description, status, syncDate
-        FROM marca
-        {where}
-        ORDER BY name
-    """)
+    where = "" if include_inactive else " WHERE status = 1"
+    query_marcas = (
+        "SELECT id, name, description, status, syncDate "
+        "FROM marca" + where + " "
+        "ORDER BY name"
+    )
+    cur.execute(query_marcas)
 
     return _rows_to_list(cur, cur.fetchall())
 
@@ -254,15 +254,15 @@ def upsert_marcas(marcas: List[Dict[str, Any]]) -> Dict[str, int]:
 def get_productos(solo_disponibles: bool = False) -> List[Dict[str, Any]]:
     conn = get_db_kardex()
     cur = conn.cursor()
-    where = "WHERE p.status = 1" if solo_disponibles else ""
-    cur.execute(f"""
-        SELECT p.id, p.itemName, p.brand, COALESCE(m.name, p.brand) AS brandNombre,
-               p.categoria, p.um, p.status, p.syncDate
-        FROM producto p
-        LEFT JOIN marca m ON p.brand = m.name
-        {where}
-        ORDER BY p.itemName
-    """)
+    where = " WHERE p.status = 1" if solo_disponibles else ""
+    query_productos = (
+        "SELECT p.id, p.itemName, p.brand, COALESCE(m.name, p.brand) AS brandNombre, "
+        "p.categoria, p.um, p.status, p.syncDate "
+        "FROM producto p "
+        "LEFT JOIN marca m ON p.brand = m.name" + where + " "
+        "ORDER BY p.itemName"
+    )
+    cur.execute(query_productos)
     return _rows_to_list(cur, cur.fetchall())
 
 
@@ -312,13 +312,13 @@ def get_almacenes(solo_activos: bool = True) -> List[Dict[str, Any]]:
     """
     conn = get_db_kardex()
     cur = conn.cursor()
-    where = "WHERE status = 1" if solo_activos else ""
-    cur.execute(f"""
-        SELECT id, idName, company, status, description, type, syncDate
-        FROM almacen
-        {where}
-        ORDER BY idName
-    """)
+    where = " WHERE status = 1" if solo_activos else ""
+    query_almacenes = (
+        "SELECT id, idName, company, status, description, type, syncDate "
+        "FROM almacen" + where + " "
+        "ORDER BY idName"
+    )
+    cur.execute(query_almacenes)
     return _rows_to_list(cur, cur.fetchall())
 
 

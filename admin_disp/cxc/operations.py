@@ -171,8 +171,8 @@ def bulk_insert_cobros(rows):
         # ── Contar cuántas filas se insertarán ─────────────────────────────
         sp_item_ids = [r["spItemId"] for r in rows]
         placeholders = ",".join("?" * len(sp_item_ids))
-        c.execute(f"SELECT COUNT(*) FROM cobro WHERE spItemId IN ({placeholders})",
-                  sp_item_ids)
+        query_count = "SELECT COUNT(*) FROM cobro WHERE spItemId IN (" + placeholders + ")"
+        c.execute(query_count, sp_item_ids)
         existing_count = c.fetchone()[0]
         
         # ── Insertar todas las filas (la BD rechazará los duplicados) ──────
@@ -403,11 +403,11 @@ def update_liquidado_sql(item_ids, liquidadoPor, fecha_liquidado_iso):
     try:
         c = conn.cursor()
         placeholders = ",".join("?" for _ in item_ids)
-        c.execute(
-            f"UPDATE cobro SET liquidado='Si', liquidadoPor=?, fechaLiquidado=? "
-            f"WHERE spItemId IN ({placeholders})",
-            [liquidadoPor, fecha_liquidado_iso] + list(item_ids),
+        query_update = (
+            "UPDATE cobro SET liquidado='Si', liquidadoPor=?, fechaLiquidado=? "
+            "WHERE spItemId IN (" + placeholders + ")"
         )
+        c.execute(query_update, [liquidadoPor, fecha_liquidado_iso] + list(item_ids))
         conn.commit()
     finally:
         pass
@@ -482,26 +482,24 @@ def get_cobros_paginated(start, length, filters):
         total = c.fetchone()[0]
 
         # Total con filtros
-        c.execute(f"SELECT COUNT(*) FROM cobro WHERE {wc}", params)
+        c.execute("SELECT COUNT(*) FROM cobro WHERE " + wc, params)
         filtered = c.fetchone()[0]
 
         # Página de datos con sort dinámico
         # estado: 0=Recibido  1=Procesado  2=Finalizado  (columna directa en cobro)
         _ESTADO_MAP = {0: 'Recibido', 1: 'Procesado', 2: 'Finalizado'}
-        c.execute(
-            f"""
-            SELECT spItemId, codigoCliente, nombreCliente, banco, metodoPago,
-                   noFactura, valorPagado, noRecibo, creado, ejecutivo,
-                   sucursal, fechaCheque, comentarioAdicional,
-                   liquidado, liquidadoPor, fechaLiquidado, tieneComprobante,
-                   loteId, estado
-            FROM cobro
-            WHERE {wc}
-            ORDER BY {sort_col} {sort_dir}
-            OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-            """,
-            params + [start, length],
+        page_query = (
+            "SELECT spItemId, codigoCliente, nombreCliente, banco, metodoPago, "
+            "noFactura, valorPagado, noRecibo, creado, ejecutivo, "
+            "sucursal, fechaCheque, comentarioAdicional, "
+            "liquidado, liquidadoPor, fechaLiquidado, tieneComprobante, "
+            "loteId, estado "
+            "FROM cobro "
+            "WHERE " + wc + " "
+            "ORDER BY " + sort_col + " " + sort_dir + " "
+            "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY"
         )
+        c.execute(page_query, params + [start, length])
         cols = [d[0] for d in c.description]
         rows = [dict(zip(cols, row)) for row in c.fetchall()]
         for r in rows:
@@ -522,18 +520,16 @@ def get_cobros_by_ids(item_ids):
     try:
         c = conn.cursor()
         placeholders = ",".join("?" for _ in item_ids)
-        c.execute(
-            f"""
-            SELECT spItemId, codigoCliente, nombreCliente, banco, metodoPago,
-                   noFactura, valorPagado, noRecibo, creado, ejecutivo,
-                   sucursal, fechaCheque, comentarioAdicional,
-                   liquidado, liquidadoPor, fechaLiquidado, tieneComprobante
-            FROM cobro
-            WHERE spItemId IN ({placeholders})
-            ORDER BY creado DESC
-            """,
-            item_ids,
+        query_by_ids = (
+            "SELECT spItemId, codigoCliente, nombreCliente, banco, metodoPago, "
+            "noFactura, valorPagado, noRecibo, creado, ejecutivo, "
+            "sucursal, fechaCheque, comentarioAdicional, "
+            "liquidado, liquidadoPor, fechaLiquidado, tieneComprobante "
+            "FROM cobro "
+            "WHERE spItemId IN (" + placeholders + ") "
+            "ORDER BY creado DESC"
         )
+        c.execute(query_by_ids, item_ids)
         cols = [d[0] for d in c.description]
         return [dict(zip(cols, row)) for row in c.fetchall()]
     finally:
@@ -637,10 +633,8 @@ def registrar_liquidacion_pdf(ejecutivo, generadoPor, rangoFechas, recibos_list,
         rows_updated = 0
         if loteId and _sp_item_ids:
             placeholders = ','.join('?' * len(_sp_item_ids))
-            c.execute(
-                f"UPDATE cobro SET loteId=?, estado=1 WHERE spItemId IN ({placeholders})",
-                [loteId] + list(_sp_item_ids),
-            )
+            query_lote = "UPDATE cobro SET loteId=?, estado=1 WHERE spItemId IN (" + placeholders + ")"
+            c.execute(query_lote, [loteId] + list(_sp_item_ids))
             rows_updated = c.rowcount
 
         conn.commit()
@@ -759,16 +753,16 @@ def get_liquidaciones_recientes(limit: int = 50):
     conn = get_db_cxc()
     try:
         c = conn.cursor()
-        c.execute(
-            f"""
-            SELECT TOP {int(limit)}
-                id, fechaGeneracion, ejecutivo, generadoPor,
-                rangoFechas, spFileName, spFileId, spDownloadUrl,
-                numeroLiquidacion, estado, fechaFin, total
-            FROM lote
-            ORDER BY fechaGeneracion DESC
-            """
+        safe_limit = int(limit)
+        query_recent = (
+            "SELECT TOP " + str(safe_limit) + " "
+            "id, fechaGeneracion, ejecutivo, generadoPor, "
+            "rangoFechas, spFileName, spFileId, spDownloadUrl, "
+            "numeroLiquidacion, estado, fechaFin, total "
+            "FROM lote "
+            "ORDER BY fechaGeneracion DESC"
         )
+        c.execute(query_recent)
         cols = ['id', 'fechaGeneracion', 'ejecutivo', 'generadoPor',
                 'rangoFechas', 'spFileName', 'spFileId', 'spDownloadUrl',
                 'numeroLiquidacion', 'estado', 'fechaFin', 'total']
@@ -814,22 +808,20 @@ def get_lotes(limit: int = 200, estado: str = None, ejecutivo: str = None,
             conditions.append('l.fechaGeneracion < DATEADD(day, 1, CAST(? AS date))')
             params.append(fechaFin)
         where = ('WHERE ' + ' AND '.join(conditions)) if conditions else ''
-        c.execute(
-            f"""
-            SELECT TOP {int(limit)}
-                l.id, l.numeroLiquidacion, l.estado,
-                l.fechaGeneracion, l.fechaFin,
-                l.ejecutivo, l.generadoPor, l.total,
-                l.spFileId, l.spFileName, l.spDownloadUrl,
-                (SELECT COUNT(*) FROM cobro c WHERE c.loteId = l.id) AS num_cobros,
-                l.liquidadoPor,
-                l.spRevFileId, l.spRevDlUrl
-            FROM lote l
-            {where}
-            ORDER BY l.fechaGeneracion DESC
-            """,
-            params
+        safe_limit = int(limit)
+        query_lotes = (
+            "SELECT TOP " + str(safe_limit) + " "
+            "l.id, l.numeroLiquidacion, l.estado, "
+            "l.fechaGeneracion, l.fechaFin, "
+            "l.ejecutivo, l.generadoPor, l.total, "
+            "l.spFileId, l.spFileName, l.spDownloadUrl, "
+            "(SELECT COUNT(*) FROM cobro c WHERE c.loteId = l.id) AS num_cobros, "
+            "l.liquidadoPor, "
+            "l.spRevFileId, l.spRevDlUrl "
+            "FROM lote l " + where + " "
+            "ORDER BY l.fechaGeneracion DESC"
         )
+        c.execute(query_lotes, params)
         cols = ['id', 'numeroLiquidacion', 'estado', 'fechaGeneracion', 'fechaFin',
                 'ejecutivo', 'generadoPor', 'total', 'spFileId', 'spFileName',
                 'spDownloadUrl', 'num_cobros', 'liquidadoPor',

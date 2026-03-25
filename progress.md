@@ -11,3 +11,11 @@
 - Agregados archivos de despliegue: Dockerfile y .dockerignore, instalando unixodbc y msodbcsql18 para entorno Linux.
 - Logs de Railway confirmaron dos causas simultáneas: driver 17 inexistente en contenedor y credenciales faltantes en conexiones no trusted.
 - Ajustados defaults a ODBC Driver 18 en configuración y mejorado mensaje de error de credenciales en core/db.py.
+
+## 2026-03-25
+- Leídas y aplicadas skills: systematic-debugging + test-driven-development para remediación de SQL injection reportada en issues.md.
+- Auditados módulos afectados: cxc/operations.py, devices/service.py, inventario/service.py, kardex/db.py.
+- Remediadas interpolaciones SQL en `execute()` removiendo f-strings y manteniendo parámetros `?`.
+- Convertidos armados dinámicos de `IN (...)`, `WHERE` y `SET` a concatenación segura desde fragmentos controlados (whitelists/listas internas).
+- Validación post-fix: búsqueda de patrones `execute(f`/`sql=f`/`query=f` sin hallazgos en los archivos afectados.
+- Verificación de errores: sin errores de compilación relevantes en cxc/operations.py y kardex/db.py; observaciones restantes de Sourcery no bloqueantes en otros módulos.

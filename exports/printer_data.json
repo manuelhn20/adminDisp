@@ -7,9 +7,9 @@
       "tinta_levels": {
         "Negro": 50
       },
-      "tiempo_segundos": 5.0,
+      "tiempo_segundos": 5.36,
       "intentos": 1,
-      "timestamp": "2026-03-24T08:39:29.148508"
+      "timestamp": "2026-03-25T09:11:17.923067"
     },
     {
       "ip": "192.168.0.187",
@@ -18,9 +18,9 @@
       "tinta_levels": {
         "Negro": 10
       },
-      "tiempo_segundos": 4.84,
+      "tiempo_segundos": 5.3,
       "intentos": 1,
-      "timestamp": "2026-03-24T08:39:29.001164"
+      "timestamp": "2026-03-25T09:11:17.876219"
     },
     {
       "ip": "192.168.0.155",
@@ -29,9 +29,9 @@
       "tinta_levels": {
         "Negro": 70
       },
-      "tiempo_segundos": 4.29,
+      "tiempo_segundos": 5.33,
       "intentos": 1,
-      "timestamp": "2026-03-24T08:39:28.456254"
+      "timestamp": "2026-03-25T09:11:17.907117"
     },
     {
       "ip": "192.168.0.102",
@@ -40,9 +40,9 @@
       "tinta_levels": {
         "Negro": 90
       },
-      "tiempo_segundos": 4.28,
+      "tiempo_segundos": 5.33,
       "intentos": 1,
-      "timestamp": "2026-03-24T08:39:28.451253"
+      "timestamp": "2026-03-25T09:11:17.911102"
     },
     {
       "ip": "192.168.0.29",
@@ -51,9 +51,9 @@
       "tinta_levels": {
         "Negro": 10
       },
-      "tiempo_segundos": 4.26,
+      "tiempo_segundos": 5.28,
       "intentos": 1,
-      "timestamp": "2026-03-24T08:39:28.441253"
+      "timestamp": "2026-03-25T09:11:17.861271"
     },
     {
       "ip": "192.168.0.10",
@@ -61,9 +61,9 @@
       "status": "Fracaso",
       "tinta_levels": {},
       "error": "Timeout al conectar a http://192.168.0.10",
-      "tiempo_segundos": 8.13,
+      "tiempo_segundos": 8.17,
       "intentos": 2,
-      "timestamp": "2026-03-24T08:39:45.788154"
+      "timestamp": "2026-03-25T09:11:35.225111"
     },
     {
       "ip": "192.168.1.114",
@@ -72,9 +72,9 @@
       "tinta_levels": {
         "Negro": 60
       },
-      "tiempo_segundos": 1.95,
+      "tiempo_segundos": 1.89,
       "intentos": 1,
-      "timestamp": "2026-03-24T08:39:30.400125"
+      "timestamp": "2026-03-25T09:11:19.762982"
     },
     {
       "ip": "192.168.2.202",
@@ -82,10 +82,10 @@
       "status": "Fracaso",
       "tinta_levels": {},
       "error": "Timeout al conectar a http://192.168.2.202",
-      "tiempo_segundos": 8.14,
+      "tiempo_segundos": 8.15,
       "intentos": 2,
-      "timestamp": "2026-03-24T08:39:45.804153"
+      "timestamp": "2026-03-25T09:11:35.226113"
     }
   ],
-  "last_updated": "2026-03-24T08:39:45.901155"
+  "last_updated": "2026-03-25T09:11:35.357835"
 }

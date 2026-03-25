@@ -112,17 +112,18 @@ class DeviceService:
             )
 
         cur = self.conn.cursor()
-        cur.execute(f"""
-            SELECT d.id_dispositivo, d.numero_serie, d.identificador, d.imei, d.imei2, d.direccion_mac,
-                   d.ip_asignada, d.tamano, d.color, d.cargador, d.observaciones, ISNULL(d.estado, 0) as estado,
-                   d.fk_id_modelo, m.nombre_modelo, m.categoria, m.fk_id_marca as fk_id_marca, ma.nombre_marca,
-                   d.fk_id_plan
-            FROM dispositivo d
-            LEFT JOIN modelo m ON m.id_modelo = d.fk_id_modelo
-            LEFT JOIN marca ma ON ma.id_marca = m.fk_id_marca
-            WHERE d.estado != 3
-            ORDER BY {order_by}
-        """)
+        list_query = (
+            "SELECT d.id_dispositivo, d.numero_serie, d.identificador, d.imei, d.imei2, d.direccion_mac, "
+            "d.ip_asignada, d.tamano, d.color, d.cargador, d.observaciones, ISNULL(d.estado, 0) as estado, "
+            "d.fk_id_modelo, m.nombre_modelo, m.categoria, m.fk_id_marca as fk_id_marca, ma.nombre_marca, "
+            "d.fk_id_plan "
+            "FROM dispositivo d "
+            "LEFT JOIN modelo m ON m.id_modelo = d.fk_id_modelo "
+            "LEFT JOIN marca ma ON ma.id_marca = m.fk_id_marca "
+            "WHERE d.estado != 3 "
+            "ORDER BY " + order_by
+        )
+        cur.execute(list_query)
         cols = [c[0] for c in cur.description]
         return [dict(zip(cols, r)) for r in cur.fetchall()]
 
@@ -521,7 +522,7 @@ class DeviceService:
                 params.append(ESTADO_SIN_ASIGNAR)
 
             placeholders = ', '.join(['?'] * len(params))
-            sql = f"INSERT INTO componente ({', '.join(columns)}) OUTPUT INSERTED.id_componente VALUES ({placeholders})"
+            sql = "INSERT INTO componente (" + ', '.join(columns) + ") OUTPUT INSERTED.id_componente VALUES (" + placeholders + ")"
             cur.execute(sql, params)
             result = cur.fetchone()
             if result is None:
@@ -772,7 +773,7 @@ class DeviceService:
             if not updates:
                 return True  # Nothing to update
 
-            sql = f"UPDATE componente SET {', '.join(updates)} WHERE id_componente = ?"
+            sql = "UPDATE componente SET " + ', '.join(updates) + " WHERE id_componente = ?"
             params.append(componente_id)
             
             cur.execute(sql, params)
@@ -1034,25 +1035,27 @@ class DeviceService:
         try:
             # Primero obtener el tipo de cada dispositivo que será transferido
             placeholders = ','.join(['?'] * len(device_ids))
-            cur.execute(f"""
-                SELECT d.id_dispositivo, m.categoria
-                FROM dispositivo d
-                LEFT JOIN modelo m ON m.id_modelo = d.fk_id_modelo
-                WHERE d.id_dispositivo IN ({placeholders})
-            """, device_ids)
+            query_tipos = (
+                "SELECT d.id_dispositivo, m.categoria "
+                "FROM dispositivo d "
+                "LEFT JOIN modelo m ON m.id_modelo = d.fk_id_modelo "
+                "WHERE d.id_dispositivo IN (" + placeholders + ")"
+            )
+            cur.execute(query_tipos, device_ids)
             tipo_rows = cur.fetchall()
             tipos_por_device = { r[0]: (r[1] or '') for r in tipo_rows }
 
             # Verificar si alguno de los dispositivos tiene un reclamo activo
             # (consideramos activo si r.fecha_fin_reclamo IS NULL o r.estado_proceso = 0)
             try:
-                cur.execute(f"""
-                    SELECT DISTINCT a.fk_id_dispositivo
-                    FROM asignacion a
-                    JOIN reclamo_seguro r ON r.fk_id_asignacion = a.id_asignacion
-                    WHERE a.fk_id_dispositivo IN ({placeholders})
-                      AND (r.fecha_fin_reclamo IS NULL OR r.estado_proceso = 0)
-                """, device_ids)
+                query_reclamos = (
+                    "SELECT DISTINCT a.fk_id_dispositivo "
+                    "FROM asignacion a "
+                    "JOIN reclamo_seguro r ON r.fk_id_asignacion = a.id_asignacion "
+                    "WHERE a.fk_id_dispositivo IN (" + placeholders + ") "
+                    "AND (r.fecha_fin_reclamo IS NULL OR r.estado_proceso = 0)"
+                )
+                cur.execute(query_reclamos, device_ids)
                 reclamo_rows = cur.fetchall()
                 if reclamo_rows:
                     # Do not expose internal IDs in error messages returned to clients.
@@ -1106,11 +1109,12 @@ class DeviceService:
             self.conn.autocommit = False
 
             # Obtener asignaciones activas para los dispositivos y el empleado origen
-            select_sql = f"""
-                SELECT id_asignacion, fk_id_dispositivo, codigo_plaza
-                FROM asignacion
-                WHERE fk_id_empleado = ? AND fk_id_dispositivo IN ({placeholders}) AND (fecha_fin_asignacion IS NULL OR fecha_fin_asignacion = '')
-            """
+            select_sql = (
+                "SELECT id_asignacion, fk_id_dispositivo, codigo_plaza "
+                "FROM asignacion "
+                "WHERE fk_id_empleado = ? AND fk_id_dispositivo IN (" + placeholders + ") "
+                "AND (fecha_fin_asignacion IS NULL OR fecha_fin_asignacion = '')"
+            )
             params = [fk_from_empleado] + device_ids
             cur.execute(select_sql, params)
             rows = cur.fetchall()
@@ -1118,7 +1122,11 @@ class DeviceService:
             asign_by_device = { r[1]: {'id_asignacion': r[0], 'codigo_plaza': r[2]} for r in rows }
 
             # Cerrar las asignaciones activas (fecha_fin_asignacion = GETDATE())
-            update_sql = f"UPDATE asignacion SET fecha_fin_asignacion = GETDATE() WHERE fk_id_empleado = ? AND fk_id_dispositivo IN ({placeholders}) AND (fecha_fin_asignacion IS NULL OR fecha_fin_asignacion = '')"
+            update_sql = (
+                "UPDATE asignacion SET fecha_fin_asignacion = GETDATE() "
+                "WHERE fk_id_empleado = ? AND fk_id_dispositivo IN (" + placeholders + ") "
+                "AND (fecha_fin_asignacion IS NULL OR fecha_fin_asignacion = '')"
+            )
             cur.execute(update_sql, params)
 
             # Insertar nuevas asignaciones para el empleado receptor (copiar codigo_plaza si existía)
@@ -1220,7 +1228,7 @@ class DeviceService:
             vals.extend([1 if cargador else 0, estado, fk_id_modelo])
 
             placeholders = ','.join(['?'] * len(cols))
-            sql = f"INSERT INTO dispositivo ({', '.join(cols)}) OUTPUT INSERTED.id_dispositivo VALUES ({placeholders})"
+            sql = "INSERT INTO dispositivo (" + ', '.join(cols) + ") OUTPUT INSERTED.id_dispositivo VALUES (" + placeholders + ")"
             cur.execute(sql, tuple(vals))
             result = cur.fetchone()
             if result is None:
@@ -1269,7 +1277,7 @@ class DeviceService:
                 vals.insert(1, None)
 
             placeholders = ','.join(['?'] * len(cols))
-            sql = f"INSERT INTO dispositivo ({', '.join(cols)}) OUTPUT INSERTED.id_dispositivo VALUES ({placeholders})"
+            sql = "INSERT INTO dispositivo (" + ', '.join(cols) + ") OUTPUT INSERTED.id_dispositivo VALUES (" + placeholders + ")"
             cur.execute(sql, tuple(vals))
             result = cur.fetchone()
             if result is None:
@@ -1348,15 +1356,15 @@ class DeviceService:
             base_where += " AND m.categoria = ?"
             params.append(str(categoria).strip())
         
-        sql = f"""
-            SELECT m.id_modelo, m.nombre_modelo, m.categoria, m.fk_id_marca,
-                   ma.nombre_marca, ISNULL(m.estado,1) AS estado,
-                   m.salidas, m.capacidad
-            FROM modelo m
-            LEFT JOIN marca ma ON ma.id_marca = m.fk_id_marca
-            WHERE {base_where}
-            ORDER BY m.nombre_modelo
-        """
+        sql = (
+            "SELECT m.id_modelo, m.nombre_modelo, m.categoria, m.fk_id_marca, "
+            "ma.nombre_marca, ISNULL(m.estado,1) AS estado, "
+            "m.salidas, m.capacidad "
+            "FROM modelo m "
+            "LEFT JOIN marca ma ON ma.id_marca = m.fk_id_marca "
+            "WHERE " + base_where + " "
+            "ORDER BY m.nombre_modelo"
+        )
         cur.execute(sql, params)
         cols = [c[0] for c in cur.description]
         return [dict(zip(cols, r)) for r in cur.fetchall()]
@@ -1471,7 +1479,7 @@ class DeviceService:
                 cur_emp = conn_emp.cursor()
                 # Construir placeholders para pyodbc
                 placeholders = ','.join(['?'] * len(emp_ids))
-                sql = f"SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN ({placeholders})"
+                sql = "SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, tuple(emp_ids))
                 for row in cur_emp.fetchall():
                     try:
@@ -1504,7 +1512,7 @@ class DeviceService:
                 conn_emp = get_db_empleados()
                 cur_emp = conn_emp.cursor()
                 placeholders = ','.join(['?'] * len(missing_ids))
-                sql = f"SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN ({placeholders})"
+                sql = "SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, tuple(missing_ids))
                 emp_map2 = {int(r[0]): str(r[1]) for r in cur_emp.fetchall()}
                 for a in asignaciones:
@@ -1580,7 +1588,7 @@ class DeviceService:
                 conn_emp = get_db_empleados()
                 cur_emp = conn_emp.cursor()
                 placeholders = ','.join(['?'] * len(emp_ids))
-                sql = f"SELECT id_empleado, nombre_completo, empresa FROM empleados WHERE id_empleado IN ({placeholders})"
+                sql = "SELECT id_empleado, nombre_completo, empresa FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, tuple(emp_ids))
                 for row in cur_emp.fetchall():
                     try:
@@ -1822,7 +1830,7 @@ class DeviceService:
                 conn_emp = get_db_empleados()
                 cur_emp = conn_emp.cursor()
                 placeholders = ','.join(['?'] * len(missing_ids))
-                sql = f"SELECT id_empleado, nombre_completo, empresa FROM empleados WHERE id_empleado IN ({placeholders})"
+                sql = "SELECT id_empleado, nombre_completo, empresa FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, tuple(missing_ids))
                 emp_map = {}
                 emp_company = {}
@@ -2122,13 +2130,18 @@ class DeviceService:
         
         # Si se marca como completado y no se provee fecha_fin_reclamo, usar GETDATE().
         if estado_val and (not fecha_fin_reclamo):
-            cur.execute(f"UPDATE reclamo_seguro SET {', '.join(updates)}, fecha_fin_reclamo = GETDATE() WHERE id_reclamo = ?", 
-                       params + [reclamo_id])
+            set_clause = ', '.join(updates)
+            query_reclamo = (
+                "UPDATE reclamo_seguro SET " + set_clause + ", fecha_fin_reclamo = GETDATE() "
+                "WHERE id_reclamo = ?"
+            )
+            cur.execute(query_reclamo, params + [reclamo_id])
         else:
             updates.append("fecha_fin_reclamo = ?")
             params.append(fecha_fin_reclamo)
-            cur.execute(f"UPDATE reclamo_seguro SET {', '.join(updates)} WHERE id_reclamo = ?", 
-                       params + [reclamo_id])
+            set_clause = ', '.join(updates)
+            query_reclamo = "UPDATE reclamo_seguro SET " + set_clause + " WHERE id_reclamo = ?"
+            cur.execute(query_reclamo, params + [reclamo_id])
 
         # Si el reclamo se marca como completado (estado_proceso = 1), volver a poner el dispositivo como 'Asignado' (1)
         # siempre y cuando exista una asignación vinculada y el dispositivo no esté eliminado.
@@ -2201,11 +2214,8 @@ class DeviceService:
             
             values.append(device_id)
             
-            cur.execute(f"""
-                UPDATE dispositivo
-                SET {set_clause}
-                WHERE id_dispositivo = ?
-            """, values)
+            query_update_device = "UPDATE dispositivo SET " + set_clause + " WHERE id_dispositivo = ?"
+            cur.execute(query_update_device, values)
             
             self.conn.commit()
             
@@ -2435,7 +2445,7 @@ class DeviceService:
                 conn_emp = get_db_empleados()
                 cur_emp = conn_emp.cursor()
                 placeholders = ','.join('?' * len(empleado_ids))
-                sql = f"SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN ({placeholders})"
+                sql = "SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, empleado_ids)
                 for row in cur_emp.fetchall():
                     empleados_map[row[0]] = row[1]

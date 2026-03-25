@@ -21,13 +21,13 @@ def get_marcas(include_inactive: bool = False) -> List[Dict[str, Any]]:
     conn = get_db_main()
     cur = conn.cursor()
     
-    where = "" if include_inactive else "WHERE estado = 1"
-    cur.execute(f"""
-        SELECT id, nombre, estado, createdAt, updatedAt
-        FROM marca
-        {where}
-        ORDER BY nombre ASC
-    """)
+    where = "" if include_inactive else " WHERE estado = 1"
+    query = (
+        "SELECT id, nombre, estado, createdAt, updatedAt "
+        "FROM marca" + where + " "
+        "ORDER BY nombre ASC"
+    )
+    cur.execute(query)
     
     rows = cur.fetchall()
     return [dict(zip([col[0] for col in cur.description], row)) for row in rows]
@@ -139,16 +139,16 @@ def get_productos(include_inactive: bool = False) -> List[Dict[str, Any]]:
     conn = get_db_main()
     cur = conn.cursor()
     
-    where = "" if include_inactive else "WHERE p.estado = 1"
-    cur.execute(f"""
-        SELECT p.id, p.nombre, p.descripcion, p.upc1, p.upc2,
-               p.marcaId, m.nombre AS marcaNombre, p.precio, p.estado,
-               p.createdAt, p.updatedAt
-        FROM producto p
-        LEFT JOIN marca m ON p.marcaId = m.id
-        {where}
-        ORDER BY p.nombre ASC
-    """)
+    where = "" if include_inactive else " WHERE p.estado = 1"
+    query = (
+        "SELECT p.id, p.nombre, p.descripcion, p.upc1, p.upc2, "
+        "p.marcaId, m.nombre AS marcaNombre, p.precio, p.estado, "
+        "p.createdAt, p.updatedAt "
+        "FROM producto p "
+        "LEFT JOIN marca m ON p.marcaId = m.id" + where + " "
+        "ORDER BY p.nombre ASC"
+    )
+    cur.execute(query)
     
     rows = cur.fetchall()
     return [dict(zip([col[0] for col in cur.description], row)) for row in rows]
@@ -272,7 +272,7 @@ def update_producto(producto_id: int, nombre: str = None, descripcion: str = Non
         updates.append("updatedAt = GETDATE()")
         params.append(producto_id)
         
-        query = f"UPDATE producto SET {', '.join(updates)} WHERE id = ?"
+        query = "UPDATE producto SET " + ', '.join(updates) + " WHERE id = ?"
         cur.execute(query, params)
         conn.commit()
         logger.info("Producto actualizado id=%s", producto_id)
@@ -326,14 +326,14 @@ def get_movimientos(tipo: str = None, include_inactive: bool = False) -> List[Di
     
     where_clause = " ".join(where_parts) if where_parts[0] != "WHERE 1=1" else where_parts[0]
     
-    cur.execute(f"""
-        SELECT m.id, m.productoId, p.nombre AS producto, m.tipo, m.cantidad,
-               m.referencia, m.observacion, m.estado, m.createdAt, m.updatedAt
-        FROM movimiento m
-        JOIN producto p ON m.productoId = p.id
-        {where_clause}
-        ORDER BY m.createdAt DESC
-    """, params)
+    query = (
+        "SELECT m.id, m.productoId, p.nombre AS producto, m.tipo, m.cantidad, "
+        "m.referencia, m.observacion, m.estado, m.createdAt, m.updatedAt "
+        "FROM movimiento m "
+        "JOIN producto p ON m.productoId = p.id " + where_clause + " "
+        "ORDER BY m.createdAt DESC"
+    )
+    cur.execute(query, params)
     
     rows = cur.fetchall()
     return [dict(zip([col[0] for col in cur.description], row)) for row in rows]
