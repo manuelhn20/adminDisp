@@ -2516,12 +2516,15 @@ class DeviceService:
             SELECT IdAuditoria, TablaPrincipal, TipoOperacion, IdRegistro,
                    UsuarioId, FechaOperacion, Observaciones
             FROM vw_AuditoriaReciente
+            WHERE FechaOperacion >= DATEADD(day, -?, GETDATE())
         """
+        params = [int(dias) if dias is not None else 30]
         if tabla:
-            query += f" WHERE TablaPrincipal = '{tabla}'"
+            query += " AND TablaPrincipal = ?"
+            params.append(tabla)
         query += " ORDER BY FechaOperacion DESC"
-        
-        cur.execute(query)
+
+        cur.execute(query, params)
         cols = [c[0] for c in cur.description]
         return [dict(zip(cols, r)) for r in cur.fetchall()]
 

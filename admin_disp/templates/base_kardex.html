@@ -35,6 +35,8 @@
   <link id="faviconIco" rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2" type="image/x-icon">
   <link id="favicon32" rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}?v=2">
   <link id="favicon16" rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16x16.png') }}?v=2">
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+  <script src="{{ url_for('static', filename='js/security-sanitize.js') }}"></script>
 
   <script>
     // Aplicar dark mode INMEDIATAMENTE para evitar flash de contenido

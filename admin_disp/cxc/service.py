@@ -26,6 +26,9 @@ log = logging.getLogger('admin_disp.cxc.service')
 # Nombre del campo de imagen en la lista de SharePoint
 IMAGE_FIELD = "Comprobante_Imagen"
 
+# Timeouts por defecto para llamadas HTTP externas
+HTTP_TIMEOUT = (5, 30)
+
 
 def ensure_admin_exists():
     try:
@@ -143,6 +146,7 @@ def get_site_and_list_ids(graph_token):
     r = requests.get(
         f"https://graph.microsoft.com/v1.0/sites/{hostname}:{site_path}",
         headers=h,
+        timeout=HTTP_TIMEOUT,
     )
     if r.status_code != 200:
         raise Exception(f"Error sitio SP: {r.status_code} -- {r.text[:200]}")
@@ -151,6 +155,7 @@ def get_site_and_list_ids(graph_token):
     r = requests.get(
         f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists",
         headers=h,
+        timeout=HTTP_TIMEOUT,
     )
     if r.status_code != 200:
         raise Exception(f"Error listas SP: {r.status_code} -- {r.text[:200]}")
@@ -173,7 +178,7 @@ def _fetch_all_items(url, headers):
     """
     items = []
     while url:
-        r = requests.get(url, headers=headers)
+        r = requests.get(url, headers=headers, timeout=HTTP_TIMEOUT)
         if r.status_code != 200:
             raise Exception(f"Error fetch SP: {r.status_code} — {r.text[:200]}")
         data  = r.json()
@@ -646,6 +651,7 @@ def get_image_bytes_for_item(item_id: str):
         f"https://graph.microsoft.com/v1.0/sites/{site_id}"
         f"/lists/{list_id}/items/{item_id}?expand=fields",
         headers={"Authorization": f"Bearer {graph_token}"},
+        timeout=HTTP_TIMEOUT,
     )
     if r.status_code != 200:
         raise Exception(f"Error leyendo item {item_id}: {r.status_code}")
@@ -959,10 +965,15 @@ def _mark_item_liquidado(graph_token, site_id, list_id, item_id, liquidadoPor=No
     if liquidadoPor:
         payload["Liquidadopor"] = liquidadoPor
 
-    r = requests.patch(url, headers=h, json=payload)
+    r = requests.patch(url, headers=h, json=payload, timeout=HTTP_TIMEOUT)
     if r.status_code not in (200, 204):
         # Fallback sin Liquidadopor
-        r2 = requests.patch(url, headers=h, json={"liquidado": "Si", "fechaLiquidado": fecha})
+        r2 = requests.patch(
+            url,
+            headers=h,
+            json={"liquidado": "Si", "fechaLiquidado": fecha},
+            timeout=HTTP_TIMEOUT,
+        )
         if r2.status_code not in (200, 204):
             raise Exception(f"Error PATCH item {item_id}: {r.status_code} — {r.text[:200]}")
     return fecha
@@ -1039,6 +1050,7 @@ def liquidar_por_ids(item_ids, liquidadoPor=None):
             f"https://graph.microsoft.com/v1.0/sites/{site_id}"
             f"/lists/{list_id}/items/{item_id}?expand=fields",
             headers=h,
+            timeout=HTTP_TIMEOUT,
         )
         if r.status_code != 200:
             errores += 1

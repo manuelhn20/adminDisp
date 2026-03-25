@@ -292,13 +292,24 @@ function initTelephoneInput(selectBoxSelector) {
     for (const country of countries) {
         const option = document.createElement('li');
         option.className = 'option';
-        option.innerHTML = `
-            <div>
-                <span class="iconify" data-icon="flag:${country.code.toLowerCase()}-4x3"></span>
-                <span class="country-name">${country.name}</span>
-            </div>
-            <strong>+${country.phone}</strong>
-        `;
+
+        const wrap = document.createElement('div');
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'iconify';
+        iconSpan.setAttribute('data-icon', 'flag:' + String(country.code).toLowerCase() + '-4x3');
+
+        const countryName = document.createElement('span');
+        countryName.className = 'country-name';
+        countryName.textContent = String(country.name || '');
+
+        wrap.appendChild(iconSpan);
+        wrap.appendChild(countryName);
+
+        const phoneCode = document.createElement('strong');
+        phoneCode.textContent = '+' + String(country.phone || '');
+
+        option.appendChild(wrap);
+        option.appendChild(phoneCode);
         updated_ol.appendChild(option);
     }
     

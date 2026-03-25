@@ -360,6 +360,7 @@ def update_blank_fields_with_validation(rows):
         "ejecutivo", "ejecutivoEmail", "sucursal", "fechaCheque",
         "comentarioAdicional", "liquidado", "liquidadoPor", "fechaLiquidado",
     ]
+    blank_field_sql = {field: f"[{field}]" for field in blank_fields}
     
     c = conn.cursor()
     
@@ -381,8 +382,13 @@ def update_blank_fields_with_validation(rows):
             # Solo actualizar si el valor en SP no es None/vacío
             if value is not None and value != "":
                 try:
+                    safe_field = blank_field_sql[field]
+                    update_sql = (
+                        "UPDATE cobro SET " + safe_field + "=? "
+                        "WHERE spItemId=? AND " + safe_field + " IS NULL"
+                    )
                     c.execute(
-                        f"UPDATE cobro SET {field}=? WHERE spItemId=? AND {field} IS NULL",
+                        update_sql,
                         (value, item_id)
                     )
                     if c.rowcount and c.rowcount > 0:
@@ -562,10 +568,17 @@ def get_distinct_values(column):
     conn = get_db_cxc()
     try:
         c = conn.cursor()
-        c.execute(
-            f"SELECT DISTINCT {safe_col} FROM cobro "
-            f"WHERE {safe_col} IS NOT NULL AND {safe_col}<>'' ORDER BY {safe_col}"
-        )
+        if safe_col == "[sucursal]":
+            query = (
+                "SELECT DISTINCT [sucursal] FROM cobro "
+                "WHERE [sucursal] IS NOT NULL AND [sucursal]<>'' ORDER BY [sucursal]"
+            )
+        else:
+            query = (
+                "SELECT DISTINCT [ejecutivo] FROM cobro "
+                "WHERE [ejecutivo] IS NOT NULL AND [ejecutivo]<>'' ORDER BY [ejecutivo]"
+            )
+        c.execute(query)
         return [row[0] for row in c.fetchall()]
     finally:
         pass
