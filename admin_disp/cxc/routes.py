@@ -1008,7 +1008,7 @@ def lote_pdf(loteId):
     try:
         from ..core.db import get_db_cxc
         conn = get_db_cxc()
-        c = conn.cursor()
+        c = conn.get_cursor()
         c.execute(
             "SELECT id, numeroLiquidacion, ejecutivo, rangoFechas, "
             "spFileId, spFileName, spDownloadUrl "

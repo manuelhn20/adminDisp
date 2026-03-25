@@ -1,5 +1,6 @@
 import logging
-from ..core.db import get_db_main, get_db_empleados
+from sqlalchemy import text
+from ..core.db import get_db_main, get_db_empleados, get_sa_engine_main
 from werkzeug.security import generate_password_hash
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ ESTADO_ELIMINADO = 3
 def ensure_admin_exists():
     try:
         conn = get_db_empleados()
-        cur = conn.cursor()
+        cur = conn.get_cursor()
         u, p = "roussbel.medina", generate_password_hash("!1Qazwsx")
         
         cur.execute("IF NOT EXISTS (SELECT 1 FROM usuarios WHERE username=?) INSERT INTO usuarios (username, password_hash, fecha_creacion, estado) VALUES (?,?,GETDATE(),1) ELSE UPDATE usuarios SET password_hash=?,estado=1 WHERE username=?", (u, u, p, p, u))
@@ -35,12 +36,27 @@ def ensure_admin_exists():
 class DeviceService:
     def __init__(self):
         self.conn = get_db_main()
+        self.engine = get_sa_engine_main()
+
+    def _fetch_all(self, query: str, params: dict | None = None):
+        with self.engine.connect() as conn:
+            result = conn.execute(text(query), params or {})
+            return [dict(row) for row in result.mappings().all()]
+
+    def _fetch_one(self, query: str, params: dict | None = None):
+        with self.engine.connect() as conn:
+            row = conn.execute(text(query), params or {}).mappings().first()
+            return dict(row) if row else None
+
+    def _execute(self, query: str, params: dict | None = None):
+        with self.engine.begin() as conn:
+            return conn.execute(text(query), params or {})
         
 
     def has_column(self, table_name: str, column_name: str) -> bool:
         """Return True if the given column exists in the specified table."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? AND COLUMN_NAME = ?", (table_name, column_name))
             return bool(cur.fetchone())
         except Exception:
@@ -49,7 +65,7 @@ class DeviceService:
     def log_auditoria(self, usuario: str, accion: str, tabla_afectada: str, id_registro: int = None, descripcion: str = None):
         """Registra una acción en la tabla de auditoría"""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute("""
                 INSERT INTO auditoria (usuario, accion, tabla_afectada, id_registro, descripcion)
                 VALUES (?, ?, ?, ?, ?)
@@ -64,7 +80,7 @@ class DeviceService:
 
     def list_available_devices(self):
         """Lista dispositivos disponibles para asignar (estado 0 y sin asignación activa)"""
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
                     SELECT d.id_dispositivo, d.numero_serie, d.identificador, d.imei, d.imei2, d.direccion_mac,
                         d.ip_asignada, d.tamano, d.color, d.cargador, d.observaciones, ISNULL(d.estado, 0) as estado,
@@ -111,7 +127,7 @@ class DeviceService:
                 f"TRY_CAST(PARSENAME(d.ip_asignada, 1) AS INT) {dir_s}"
             )
 
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         query = (
             """
             SELECT d.id_dispositivo, d.numero_serie, d.identificador, d.imei, d.imei2, d.direccion_mac,
@@ -135,7 +151,7 @@ class DeviceService:
         Cada elemento incluye: id_dispositivo, categoria, nombre_marca, nombre_modelo,
         numero_serie, fk_id_plan, fecha_fin (ISO), days_until_end (int).
         """
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         # Selecciona dispositivos que tengan fk_id_plan y la fecha_fin del plan dentro de los próximos 2 meses
         cur.execute("""
             SELECT d.id_dispositivo, m.categoria, ma.nombre_marca, m.nombre_modelo,
@@ -202,7 +218,7 @@ class DeviceService:
         return rows
 
     def get_device(self, device_id):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT d.id_dispositivo, d.numero_serie, d.identificador, d.imei, d.imei2, d.direccion_mac,
                    d.ip_asignada, d.tamano, d.color, d.cargador, d.observaciones, ISNULL(d.estado, 0) as estado,
@@ -262,7 +278,7 @@ class DeviceService:
     def get_device_by_identificador(self, identificador: str):
         """Obtiene un dispositivo por su identificador (case-insensitive).
         Retorna el diccionario del dispositivo o None si no existe."""
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT d.*, ISNULL(d.estado, 0) as estado,
                    m.nombre_modelo, m.categoria, m.fk_id_marca as fk_id_marca, ma.nombre_marca
@@ -281,7 +297,7 @@ class DeviceService:
         """Obtiene dispositivos existentes con el mismo modelo para mostrar sugerencias.
         Incluye componentes principales y agrupa por características para evitar duplicados.
         Si hay múltiples dispositivos con la misma config (CPU/RAM/DISCO), retorna UNO de cada grupo."""
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         
         # Obtener TODOS los dispositivos del modelo (sin TOP limit)
         # pero ordenados por fecha descendente
@@ -367,7 +383,7 @@ class DeviceService:
         return result[:10]
 
     def list_components(self, device_id):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT c.*, ma.nombre_marca as nombre_marca, mo.nombre_modelo as nombre_modelo
             FROM componente c
@@ -450,14 +466,6 @@ class DeviceService:
         if tipo_code not in (0, 1, 2):
             raise ValueError("tipo_componente inválido: debe ser 'CPU', 'RAM' o 'DISCO' (o 0/1/2)" )
 
-        # Si es CPU (0) asegurar que no exista ya una CPU asociada al dispositivo
-        if tipo_code == 0:
-            cur = self.conn.cursor()
-            cur.execute("SELECT COUNT(1) FROM componente WHERE fk_id_dispositivo = ? AND tipo_componente = 0", (int(fk_id_dispositivo),))
-            cnt = cur.fetchone()[0]
-            if cnt and cnt > 0:
-                raise ValueError('Ya existe un CPU asignado a este dispositivo (solo uno permitido)')
-
         # Coerce numeric fields
         try:
             frecuencia_val = None
@@ -490,56 +498,81 @@ class DeviceService:
         except Exception:
             fk_marca_val = None
 
-        cur = self.conn.cursor()
+        # Normalize tipo_disco to short stored codes: 'NVMe' or 'SATA' when applicable
+        tipo_disco_val = None
+        if isinstance(tipo_disco, str) and tipo_disco.strip():
+            _td = tipo_disco.strip()
+            _td_l = _td.lower()
+            if 'nvme' in _td_l:
+                tipo_disco_val = 'NVMe'
+            elif 'sata' in _td_l:
+                tipo_disco_val = 'SATA'
+            else:
+                tipo_disco_val = _td
+
+        # Determine whether the componente table has an 'estado' column
+        has_estado = False
         try:
-            # Normalize tipo_disco to short stored codes: 'NVMe' or 'SATA' when applicable
-            tipo_disco_val = None
-            if isinstance(tipo_disco, str) and tipo_disco.strip():
-                _td = tipo_disco.strip()
-                _td_l = _td.lower()
-                if 'nvme' in _td_l:
-                    tipo_disco_val = 'NVMe'
-                elif 'sata' in _td_l:
-                    tipo_disco_val = 'SATA'
-                else:
-                    tipo_disco_val = _td
-
-            # Determine whether the componente table has an 'estado' column
+            has_estado = self.has_column('componente', 'estado')
+        except Exception:
             has_estado = False
-            try:
-                has_estado = self.has_column('componente', 'estado')
-            except Exception:
-                has_estado = False
 
-            try:
-                fk_modelo_val = int(fk_id_modelo) if fk_id_modelo not in (None, '', False) else None
-            except Exception:
-                fk_modelo_val = None
+        try:
+            fk_modelo_val = int(fk_id_modelo) if fk_id_modelo not in (None, '', False) else None
+        except Exception:
+            fk_modelo_val = None
 
-            columns = ['fk_id_dispositivo', 'tipo_componente', 'frecuencia', 'tipo_memoria', 'tipo_modulo', 'capacidad', 'tipo_disco', 'fk_id_marca', 'fk_id_modelo', 'numero_serie']
-            params = [int(fk_id_dispositivo), tipo_code, frecuencia_val, tipo_memoria, tipo_modulo, capacidad_val, tipo_disco_val, fk_marca_val, fk_modelo_val, (numero_serie or None)]
+        columns = [
+            'fk_id_dispositivo',
+            'tipo_componente',
+            'frecuencia',
+            'tipo_memoria',
+            'tipo_modulo',
+            'capacidad',
+            'tipo_disco',
+            'fk_id_marca',
+            'fk_id_modelo',
+            'numero_serie',
+        ]
+        params = {
+            'fk_id_dispositivo': int(fk_id_dispositivo),
+            'tipo_componente': tipo_code,
+            'frecuencia': frecuencia_val,
+            'tipo_memoria': tipo_memoria,
+            'tipo_modulo': tipo_modulo,
+            'capacidad': capacidad_val,
+            'tipo_disco': tipo_disco_val,
+            'fk_id_marca': fk_marca_val,
+            'fk_id_modelo': fk_modelo_val,
+            'numero_serie': (numero_serie or None),
+        }
 
-            if has_estado:
-                columns.append('estado')
-                params.append(ESTADO_SIN_ASIGNAR)
+        if has_estado:
+            columns.append('estado')
+            params['estado'] = ESTADO_SIN_ASIGNAR
 
-            placeholders = ', '.join(['?'] * len(params))
-            columns_sql = ', '.join(columns)
-            sql = "INSERT INTO componente (" + columns_sql + ") OUTPUT INSERTED.id_componente VALUES (" + placeholders + ")"
-            cur.execute(sql, params)
-            result = cur.fetchone()
+        placeholders = ', '.join([f":{c}" for c in columns])
+        columns_sql = ', '.join(columns)
+        sql = f"INSERT INTO componente ({columns_sql}) OUTPUT INSERTED.id_componente VALUES ({placeholders})"
+
+        with self.engine.begin() as conn:
+            # Si es CPU (0) asegurar que no exista ya una CPU asociada al dispositivo
+            if tipo_code == 0:
+                cnt = conn.execute(
+                    text("SELECT COUNT(1) FROM componente WHERE fk_id_dispositivo = :fk_id_dispositivo AND tipo_componente = 0"),
+                    {'fk_id_dispositivo': int(fk_id_dispositivo)},
+                ).scalar() or 0
+                if cnt > 0:
+                    raise ValueError('Ya existe un CPU asignado a este dispositivo (solo uno permitido)')
+
+            result = conn.execute(text(sql), params).first()
             if result is None:
                 raise ValueError("No se pudo crear el componente")
-            new_id = int(result[0])
-            self.conn.commit()
-            return new_id
-        except Exception:
-            self.conn.rollback()
-            raise
+            return int(result[0])
 
     def get_componente(self, componente_id: int):
         """Obtiene un componente por su ID."""
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         try:
             cur.execute("""
                  SELECT id_componente, fk_id_dispositivo, tipo_componente, frecuencia, 
@@ -628,42 +661,50 @@ class DeviceService:
         if not componente_id:
             raise ValueError('componente_id es requerido')
 
-        cur = self.conn.cursor()
-        try:
+        with self.engine.begin() as conn:
             # Si se intenta actualizar el número de serie, validar que no sea duplicado en el mismo dispositivo
             if numero_serie is not None and numero_serie:
                 numero_serie_clean = str(numero_serie).strip()
                 if numero_serie_clean:
-                    # Obtener device_id y tipo del componente actual
-                    cur.execute("SELECT fk_id_dispositivo, tipo_componente FROM componente WHERE id_componente = ?", (componente_id,))
-                    row = cur.fetchone()
+                    row = conn.execute(
+                        text("SELECT fk_id_dispositivo, tipo_componente FROM componente WHERE id_componente = :componente_id"),
+                        {'componente_id': componente_id},
+                    ).first()
                     if row:
                         fk_dev = row[0]
                         tipo_actual = row[1]
-                        # Verificar que no exista otro componente del mismo tipo en el mismo dispositivo con el mismo número de serie
-                        cur.execute("""
-                            SELECT COUNT(1) FROM componente 
-                            WHERE fk_id_dispositivo = ? 
-                              AND tipo_componente = ? 
-                              AND numero_serie = ? 
-                              AND id_componente != ?
-                        """, (fk_dev, tipo_actual, numero_serie_clean, componente_id))
-                        cnt = cur.fetchone()[0]
-                        if cnt and cnt > 0:
-                            raise ValueError(f'Ya existe un componente del mismo tipo con ese número de serie en este dispositivo')
-            
-            # Build dynamic UPDATE statement (keep updates and params in sync)
+                        cnt = conn.execute(
+                            text("""
+                                SELECT COUNT(1) FROM componente
+                                WHERE fk_id_dispositivo = :fk_dev
+                                  AND tipo_componente = :tipo_actual
+                                  AND numero_serie = :numero_serie
+                                  AND id_componente != :componente_id
+                            """),
+                            {
+                                'fk_dev': fk_dev,
+                                'tipo_actual': tipo_actual,
+                                'numero_serie': numero_serie_clean,
+                                'componente_id': componente_id,
+                            },
+                        ).scalar() or 0
+                        if cnt > 0:
+                            raise ValueError('Ya existe un componente del mismo tipo con ese número de serie en este dispositivo')
+
             updates = []
-            params = []
+            params = {'componente_id': componente_id}
 
             if tipo_componente is not None:
-                # Convert text to code if needed
                 if isinstance(tipo_componente, str) and tipo_componente.strip():
                     tc = tipo_componente.strip().upper()
-                    if tc == 'RAM': tipo_code = 1
-                    elif tc == 'DISCO': tipo_code = 2
-                    elif tc == 'CPU': tipo_code = 0
-                    else: tipo_code = None
+                    if tc == 'RAM':
+                        tipo_code = 1
+                    elif tc == 'DISCO':
+                        tipo_code = 2
+                    elif tc == 'CPU':
+                        tipo_code = 0
+                    else:
+                        tipo_code = None
                 else:
                     try:
                         tipo_code = int(tipo_componente) if tipo_componente is not None else None
@@ -672,26 +713,28 @@ class DeviceService:
 
                 if tipo_code not in (0, 1, 2):
                     raise ValueError("tipo_componente inválido: debe ser 'CPU', 'RAM' o 'DISCO'")
-                # If changing to CPU ensure uniqueness for this device
+
                 if tipo_code == 0:
-                    # find device id for this component
-                    cur.execute("SELECT fk_id_dispositivo FROM componente WHERE id_componente = ?", (componente_id,))
-                    row = cur.fetchone()
+                    row = conn.execute(
+                        text("SELECT fk_id_dispositivo FROM componente WHERE id_componente = :componente_id"),
+                        {'componente_id': componente_id},
+                    ).first()
                     fk_dev = row[0] if row else None
                     if fk_dev:
-                        cur.execute("SELECT COUNT(1) FROM componente WHERE fk_id_dispositivo = ? AND tipo_componente = 0 AND id_componente != ?", (fk_dev, componente_id))
-                        cnt = cur.fetchone()[0]
-                        if cnt and cnt > 0:
+                        cnt = conn.execute(
+                            text("SELECT COUNT(1) FROM componente WHERE fk_id_dispositivo = :fk_dev AND tipo_componente = 0 AND id_componente != :componente_id"),
+                            {'fk_dev': fk_dev, 'componente_id': componente_id},
+                        ).scalar() or 0
+                        if cnt > 0:
                             raise ValueError('Ya existe un CPU asignado a este dispositivo (solo uno permitido)')
-                updates.append("tipo_componente = ?")
-                params.append(tipo_code)
+
+                updates.append("tipo_componente = :tipo_componente")
+                params['tipo_componente'] = tipo_code
 
             if frecuencia is not None:
-                # Handle CPU frequency input (e.g. '2.40' or '2,40') -> store as int*100
                 try:
                     freq_val = None
                     if frecuencia not in (None, '', False):
-                        # If string contains comma or dot and looks like GHz, parse
                         s = str(frecuencia).strip()
                         if ',' in s or '.' in s:
                             s2 = s.replace(',', '.')
@@ -704,28 +747,27 @@ class DeviceService:
                                 except Exception:
                                     freq_val = None
                         else:
-                            # assume integer MHz provided
                             freq_val = int(float(s))
-                except:
+                except Exception:
                     freq_val = None
-                updates.append("frecuencia = ?")
-                params.append(freq_val)
+                updates.append("frecuencia = :frecuencia")
+                params['frecuencia'] = freq_val
 
             if tipo_memoria is not None:
-                updates.append("tipo_memoria = ?")
-                params.append(tipo_memoria if tipo_memoria else None)
+                updates.append("tipo_memoria = :tipo_memoria")
+                params['tipo_memoria'] = tipo_memoria if tipo_memoria else None
 
             if tipo_modulo is not None:
-                updates.append("tipo_modulo = ?")
-                params.append(tipo_modulo if tipo_modulo else None)
+                updates.append("tipo_modulo = :tipo_modulo")
+                params['tipo_modulo'] = tipo_modulo if tipo_modulo else None
 
             if capacidad is not None:
                 try:
                     cap_val = int(capacidad) if capacidad else None
-                except:
+                except Exception:
                     cap_val = None
-                updates.append("capacidad = ?")
-                params.append(cap_val)
+                updates.append("capacidad = :capacidad")
+                params['capacidad'] = cap_val
 
             if tipo_disco is not None:
                 tipo_disco_val = None
@@ -738,71 +780,63 @@ class DeviceService:
                         tipo_disco_val = 'SATA'
                     else:
                         tipo_disco_val = _td
-                updates.append("tipo_disco = ?")
-                params.append(tipo_disco_val)
+                updates.append("tipo_disco = :tipo_disco")
+                params['tipo_disco'] = tipo_disco_val
 
             if fk_id_marca is not None:
                 try:
                     marca_val = int(fk_id_marca) if fk_id_marca else None
-                except:
+                except Exception:
                     marca_val = None
-                updates.append("fk_id_marca = ?")
-                params.append(marca_val)
+                updates.append("fk_id_marca = :fk_id_marca")
+                params['fk_id_marca'] = marca_val
 
             if fk_id_modelo is not None:
                 try:
                     modelo_val = int(fk_id_modelo) if fk_id_modelo else None
                 except Exception:
                     modelo_val = None
-                updates.append("fk_id_modelo = ?")
-                params.append(modelo_val)
+                updates.append("fk_id_modelo = :fk_id_modelo")
+                params['fk_id_modelo'] = modelo_val
 
             if estado is not None:
                 try:
                     estado_val = int(estado) if estado is not None and str(estado) != '' else None
                 except Exception:
                     estado_val = None
-                updates.append("estado = ?")
-                params.append(estado_val)
+                updates.append("estado = :estado")
+                params['estado'] = estado_val
 
             if numero_serie is not None:
-                updates.append("numero_serie = ?")
-                params.append(numero_serie if numero_serie else None)
+                updates.append("numero_serie = :numero_serie")
+                params['numero_serie'] = numero_serie if numero_serie else None
 
             if observaciones is not None:
-                updates.append("observaciones = ?")
-                params.append(observaciones if observaciones else None)
+                updates.append("observaciones = :observaciones")
+                params['observaciones'] = observaciones if observaciones else None
 
             if not updates:
-                return True  # Nothing to update
+                return True
 
             set_clause = ', '.join(updates)
-            sql = "UPDATE componente SET " + set_clause + " WHERE id_componente = ?"
-            params.append(componente_id)
-            
-            cur.execute(sql, params)
-            self.conn.commit()
+            sql = f"UPDATE componente SET {set_clause} WHERE id_componente = :componente_id"
+            conn.execute(text(sql), params)
             return True
-        except Exception:
-            self.conn.rollback()
-            raise
 
     def delete_componente(self, componente_id: int):
         """Elimina un componente por su ID."""
         if not componente_id:
             raise ValueError('componente_id es requerido')
         
-        cur = self.conn.cursor()
-        try:
-            cur.execute("DELETE FROM componente WHERE id_componente = ?", (componente_id,))
-            self.conn.commit()
+        with self.engine.begin() as conn:
+            conn.execute(
+                text("DELETE FROM componente WHERE id_componente = :componente_id"),
+                {'componente_id': componente_id},
+            )
             return True
-        except Exception:
-            self.conn.rollback()
-            raise
 
     def list_peripherals(self, device_id):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT * FROM periferico WHERE fk_id_dispositivo = ? ORDER BY id_periferico
         """, (device_id,))
@@ -813,7 +847,7 @@ class DeviceService:
         """Lista dispositivos tipo 'Celular' que no tienen un plan vinculado en la asignación activa,
         o que no tienen asignación activa.
         """
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
              SELECT d.id_dispositivo, d.numero_serie, d.identificador, d.imei, d.imei2, d.direccion_mac,
                  d.ip_asignada, d.tamano, d.color, d.cargador, d.observaciones, ISNULL(d.estado,0) as estado,
@@ -837,7 +871,7 @@ class DeviceService:
         Mueve la asociación del plan al nivel de `dispositivo.fk_id_plan`. 
         Devuelve el `id_dispositivo` actualizado.
         """
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         try:
             # If the caller provided a plan object (with temporary fields), create using those values.
             from collections.abc import Mapping
@@ -976,7 +1010,7 @@ class DeviceService:
             raise
 
     def _get_or_create_marca(self, nombre_marca: str):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("SELECT id_marca FROM marca WHERE nombre_marca = ?", (nombre_marca,))
         row = cur.fetchone()
         if row:
@@ -989,7 +1023,7 @@ class DeviceService:
         return int(result[0])
 
     def _get_or_create_modelo(self, nombre_modelo: str, categoria: str, fk_id_marca: int):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT id_modelo FROM modelo
             WHERE nombre_modelo = ? AND fk_id_marca = ?
@@ -1035,7 +1069,7 @@ class DeviceService:
         except Exception:
             raise ValueError('device_ids inválidos')
 
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         try:
             # Primero obtener el tipo de cada dispositivo que será transferido
             placeholders = ','.join(['?'] * len(device_ids))
@@ -1217,7 +1251,7 @@ class DeviceService:
         if not fk_id_modelo:
             raise ValueError("fk_id_modelo es obligatorio")
         
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         try:
             # Determine which fecha column exists in the DB (prefer 'fecha_obt' then 'fecha_obtencion')
             fecha_col = None
@@ -1274,7 +1308,7 @@ class DeviceService:
         if not marca_nombre or not modelo_nombre or not categoria:
             raise ValueError("marca_nombre, modelo_nombre y categoria son obligatorios")
 
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         try:
             # Transacción manual
             self.conn.autocommit = False
@@ -1308,7 +1342,7 @@ class DeviceService:
 
     # CRUD para Marcas
     def list_marcas(self):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         # Sólo marcas activas (estado = 1). Por compatibilidad, tratar NULL como activo.
         cur.execute("SELECT id_marca, nombre_marca FROM marca WHERE ISNULL(estado, 1) = 1 ORDER BY nombre_marca")
         cols = [c[0] for c in cur.description]
@@ -1316,7 +1350,7 @@ class DeviceService:
 
     def list_marcas_all(self):
         """Devuelve todas las marcas, incluyendo inactivas, con su estado."""
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("SELECT id_marca, nombre_marca, ISNULL(estado,1) AS estado FROM marca ORDER BY nombre_marca")
         cols = [c[0] for c in cur.description]
         return [dict(zip(cols, r)) for r in cur.fetchall()]
@@ -1326,43 +1360,48 @@ class DeviceService:
             raise ValueError("nombre_marca es obligatorio")
         
         nombre_marca = nombre_marca.strip()
-        
-        # Validar que no exista con el mismo nombre (case-insensitive)
-        cur = self.conn.cursor()
-        cur.execute("""
-            SELECT id_marca FROM marca 
-            WHERE LOWER(nombre_marca) = LOWER(?)
-        """, (nombre_marca,))
-        
-        if cur.fetchone():
-            raise ValueError(f"Ya existe una marca con el nombre '{nombre_marca}'")
-        
-        # Crear la marca
-        cur.execute("INSERT INTO marca (nombre_marca, estado) OUTPUT INSERTED.id_marca VALUES (?, ?)", (nombre_marca, 1))
-        result = cur.fetchone()
-        if result is None:
-            raise ValueError("No se pudo crear la marca")
-        marca_id = int(result[0])
-        self.conn.commit()
-        
-        return marca_id, nombre_marca
+
+        with self.engine.begin() as conn:
+            duplicate = conn.execute(
+                text("""
+                    SELECT id_marca FROM marca
+                    WHERE LOWER(nombre_marca) = LOWER(:nombre_marca)
+                """),
+                {'nombre_marca': nombre_marca},
+            ).first()
+            if duplicate:
+                raise ValueError(f"Ya existe una marca con el nombre '{nombre_marca}'")
+
+            result = conn.execute(
+                text("INSERT INTO marca (nombre_marca, estado) OUTPUT INSERTED.id_marca VALUES (:nombre_marca, :estado)"),
+                {'nombre_marca': nombre_marca, 'estado': 1},
+            ).first()
+            if result is None:
+                raise ValueError("No se pudo crear la marca")
+
+            marca_id = int(result[0])
+            return marca_id, nombre_marca
 
     def update_marca(self, marca_id: int, nombre_marca: str):
         if not nombre_marca:
             raise ValueError("nombre_marca es obligatorio")
-        cur = self.conn.cursor()
-        cur.execute("UPDATE marca SET nombre_marca = ? WHERE id_marca = ?", (nombre_marca, marca_id))
-        self.conn.commit()
+        with self.engine.begin() as conn:
+            conn.execute(
+                text("UPDATE marca SET nombre_marca = :nombre_marca WHERE id_marca = :marca_id"),
+                {'nombre_marca': nombre_marca, 'marca_id': marca_id},
+            )
 
     def delete_marca(self, marca_id: int):
-        cur = self.conn.cursor()
-        # Soft-delete: marcar estado = 0 en lugar de borrar la fila
-        cur.execute("UPDATE marca SET estado = 0 WHERE id_marca = ?", (marca_id,))
-        self.conn.commit()
+        with self.engine.begin() as conn:
+            # Soft-delete: marcar estado = 0 en lugar de borrar la fila
+            conn.execute(
+                text("UPDATE marca SET estado = 0 WHERE id_marca = :marca_id"),
+                {'marca_id': marca_id},
+            )
 
     # CRUD para Modelos
     def list_modelos(self, estado: int | None = None, categoria: str | None = None):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         # Permitir filtrar por estado y/o categoría si se provee; por defecto devolver solo activos (estado=1)
         base_where = "ISNULL(m.estado, 1) = ? AND ISNULL(ma.estado, 1) = 1"
         params = [estado if estado is not None else 1]
@@ -1386,7 +1425,7 @@ class DeviceService:
 
     def list_modelos_all(self):
         """Devuelve todos los modelos incluyendo inactivos (para gestión)."""
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT m.id_modelo, m.nombre_modelo, m.categoria, m.fk_id_marca,
                    ma.nombre_marca, ISNULL(m.estado,1) AS estado,
@@ -1401,54 +1440,70 @@ class DeviceService:
     def create_modelo(self, nombre_modelo: str, categoria: str, fk_id_marca, estado: int = 1, salidas: int = None, capacidad: str = None):
         if not nombre_modelo or not categoria or not fk_id_marca:
             raise ValueError("nombre_modelo, categoria y fk_id_marca son obligatorios")
-        cur = self.conn.cursor()
-        # Check duplicate model (same name under same brand) - case insensitive
-        cur.execute(
-            "SELECT id_modelo FROM modelo WHERE LOWER(nombre_modelo) = LOWER(?) AND fk_id_marca = ?",
-            (nombre_modelo.strip(), fk_id_marca)
-        )
-        if cur.fetchone():
-            raise ValueError("Ya existe un modelo con ese nombre para la marca seleccionada")
+        with self.engine.begin() as conn:
+            duplicate = conn.execute(
+                text("SELECT id_modelo FROM modelo WHERE LOWER(nombre_modelo) = LOWER(:nombre_modelo) AND fk_id_marca = :fk_id_marca"),
+                {'nombre_modelo': nombre_modelo.strip(), 'fk_id_marca': fk_id_marca},
+            ).first()
+            if duplicate:
+                raise ValueError("Ya existe un modelo con ese nombre para la marca seleccionada")
 
-        cur.execute(
-            "INSERT INTO modelo (nombre_modelo, categoria, fk_id_marca, estado, salidas, capacidad) OUTPUT INSERTED.id_modelo VALUES (?, ?, ?, ?, ?, ?)",
-            (nombre_modelo.strip(), categoria, fk_id_marca, int(estado), salidas, capacidad)
-        )
-        result = cur.fetchone()
-        if result is None:
-            raise ValueError("No se pudo crear el modelo")
-        self.conn.commit()
-        # Get the ID of the newly created modelo
-        return result[0]
+            result = conn.execute(
+                text("INSERT INTO modelo (nombre_modelo, categoria, fk_id_marca, estado, salidas, capacidad) OUTPUT INSERTED.id_modelo VALUES (:nombre_modelo, :categoria, :fk_id_marca, :estado, :salidas, :capacidad)"),
+                {
+                    'nombre_modelo': nombre_modelo.strip(),
+                    'categoria': categoria,
+                    'fk_id_marca': fk_id_marca,
+                    'estado': int(estado),
+                    'salidas': salidas,
+                    'capacidad': capacidad,
+                },
+            ).first()
+            if result is None:
+                raise ValueError("No se pudo crear el modelo")
+
+            return result[0]
 
     def update_modelo(self, modelo_id: int, nombre_modelo: str, categoria: str, fk_id_marca: int, salidas: int = None, capacidad: str = None):
         if not nombre_modelo or not categoria or not fk_id_marca:
             raise ValueError("nombre_modelo, categoria y fk_id_marca son obligatorios")
-        cur = self.conn.cursor()
-        cur.execute(
-            "UPDATE modelo SET nombre_modelo = ?, categoria = ?, fk_id_marca = ?, salidas = ?, capacidad = ? WHERE id_modelo = ?",
-            (nombre_modelo, categoria, fk_id_marca, salidas, capacidad, modelo_id)
-        )
-        self.conn.commit()
+        with self.engine.begin() as conn:
+            conn.execute(
+                text("UPDATE modelo SET nombre_modelo = :nombre_modelo, categoria = :categoria, fk_id_marca = :fk_id_marca, salidas = :salidas, capacidad = :capacidad WHERE id_modelo = :modelo_id"),
+                {
+                    'nombre_modelo': nombre_modelo,
+                    'categoria': categoria,
+                    'fk_id_marca': fk_id_marca,
+                    'salidas': salidas,
+                    'capacidad': capacidad,
+                    'modelo_id': modelo_id,
+                },
+            )
 
     def delete_modelo(self, modelo_id: int):
-        cur = self.conn.cursor()
-        # Soft-delete: marcar estado = 0 en lugar de borrar la fila
-        cur.execute("UPDATE modelo SET estado = 0 WHERE id_modelo = ?", (modelo_id,))
-        self.conn.commit()
+        with self.engine.begin() as conn:
+            # Soft-delete: marcar estado = 0 en lugar de borrar la fila
+            conn.execute(
+                text("UPDATE modelo SET estado = 0 WHERE id_modelo = :modelo_id"),
+                {'modelo_id': modelo_id},
+            )
 
     def set_marca_estado(self, marca_id: int, estado: int):
-        cur = self.conn.cursor()
-        cur.execute("UPDATE marca SET estado = ? WHERE id_marca = ?", (1 if int(estado) else 0, marca_id))
-        self.conn.commit()
+        with self.engine.begin() as conn:
+            conn.execute(
+                text("UPDATE marca SET estado = :estado WHERE id_marca = :marca_id"),
+                {'estado': 1 if int(estado) else 0, 'marca_id': marca_id},
+            )
 
     def set_modelo_estado(self, modelo_id: int, estado: int):
-        cur = self.conn.cursor()
-        cur.execute("UPDATE modelo SET estado = ? WHERE id_modelo = ?", (1 if int(estado) else 0, modelo_id))
-        self.conn.commit()
+        with self.engine.begin() as conn:
+            conn.execute(
+                text("UPDATE modelo SET estado = :estado WHERE id_modelo = :modelo_id"),
+                {'estado': 1 if int(estado) else 0, 'modelo_id': modelo_id},
+            )
 
     def get_modelo(self, modelo_id: int):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT m.id_modelo, m.nombre_modelo, m.categoria, m.fk_id_marca,
                    ma.nombre_marca, m.salidas, m.capacidad
@@ -1464,7 +1519,7 @@ class DeviceService:
 
     # CRUD para Asignaciones
     def list_asignaciones(self):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
                  SELECT a.id_asignacion, a.fk_id_dispositivo, a.fk_id_empleado, 
                      a.codigo_plaza, a.fecha_inicio_asignacion, a.fecha_fin_asignacion,
@@ -1491,7 +1546,7 @@ class DeviceService:
         if emp_ids:
             try:
                 conn_emp = get_db_empleados()
-                cur_emp = conn_emp.cursor()
+                cur_emp = conn_emp.get_cursor()
                 # Construir placeholders para pyodbc
                 placeholders = ','.join(['?'] * len(emp_ids))
                 sql = "SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN (" + placeholders + ")"
@@ -1525,7 +1580,7 @@ class DeviceService:
         if missing_ids:
             try:
                 conn_emp = get_db_empleados()
-                cur_emp = conn_emp.cursor()
+                cur_emp = conn_emp.get_cursor()
                 placeholders = ','.join(['?'] * len(missing_ids))
                 sql = "SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, tuple(missing_ids))
@@ -1570,7 +1625,7 @@ class DeviceService:
         """Lista solo las asignaciones activas (sin fecha_fin) y cuyo dispositivo no esté eliminado.
         Usada para seleccionar asignaciones válidas al crear un reclamo.
         """
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         # Exclude assignments whose device has an active (in-process) reclamo_seguro.
         # We consider a reclamo active if it has no fecha_fin_reclamo or estado_proceso = 0 (En proceso).
         cur.execute("""
@@ -1601,7 +1656,7 @@ class DeviceService:
         if emp_ids:
             try:
                 conn_emp = get_db_empleados()
-                cur_emp = conn_emp.cursor()
+                cur_emp = conn_emp.get_cursor()
                 placeholders = ','.join(['?'] * len(emp_ids))
                 sql = "SELECT id_empleado, nombre_completo, empresa FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, tuple(emp_ids))
@@ -1634,7 +1689,7 @@ class DeviceService:
 
     def list_deleted_asignaciones(self):
         """Lista asignaciones cuyo dispositivo fue eliminado (auditoría para admins)"""
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT a.id_asignacion, a.fk_id_dispositivo, a.fk_id_empleado, 
                    a.codigo_plaza, a.fecha_inicio_asignacion, a.fecha_fin_asignacion,
@@ -1659,7 +1714,7 @@ class DeviceService:
         if not fk_id_dispositivo or not fk_id_empleado:
             raise ValueError("fk_id_dispositivo y fk_id_empleado son obligatorios")
 
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         try:
             # Normalizar IDs a enteros
             fk_id_dispositivo = int(fk_id_dispositivo)
@@ -1764,7 +1819,7 @@ class DeviceService:
             self.conn.autocommit = True
 
     def update_asignacion_end_date(self, asignacion_id: int, fecha_fin_asignacion):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         # If setting a fecha_fin, update the device estado to 0 (Sin asignar)
         if fecha_fin_asignacion:
             # Get the device id from the assignment
@@ -1783,7 +1838,7 @@ class DeviceService:
         self.conn.commit()
 
     def delete_asignacion(self, asignacion_id: int):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         # Comprobar si existen reclamos asociados a la asignación
         cur.execute("SELECT COUNT(1) FROM reclamo_seguro WHERE fk_id_asignacion = ?", (asignacion_id,))
         row = cur.fetchone()
@@ -1805,7 +1860,7 @@ class DeviceService:
 
     # CRUD para Reclamos
     def list_reclamos(self):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT r.id_reclamo, r.fk_id_asignacion, r.fecha_incidencia, r.lugar_incidencia,
                    r.fecha_inicio_reclamo, r.lugar_reclamo, r.estado_proceso, r.fecha_fin_reclamo,
@@ -1843,7 +1898,7 @@ class DeviceService:
         if missing_ids:
             try:
                 conn_emp = get_db_empleados()
-                cur_emp = conn_emp.cursor()
+                cur_emp = conn_emp.get_cursor()
                 placeholders = ','.join(['?'] * len(missing_ids))
                 sql = "SELECT id_empleado, nombre_completo, empresa FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, tuple(missing_ids))
@@ -1882,7 +1937,7 @@ class DeviceService:
         return reclamos
 
     def get_reclamo(self, reclamo_id: int):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT r.id_reclamo, r.fk_id_asignacion, r.fecha_incidencia, r.lugar_incidencia,
                    r.fecha_inicio_reclamo, r.lugar_reclamo, r.estado_proceso, r.fecha_fin_reclamo,
@@ -1913,7 +1968,7 @@ class DeviceService:
                 fk = recl.get('fk_id_empleado')
                 if fk:
                     conn_emp = get_db_empleados()
-                    cur_emp = conn_emp.cursor()
+                    cur_emp = conn_emp.get_cursor()
                     cur_emp.execute("SELECT nombre_completo, empresa FROM empleados WHERE id_empleado = ?", (int(fk),))
                     rrow = cur_emp.fetchone()
                     if rrow:
@@ -1953,7 +2008,7 @@ class DeviceService:
         except:
             estado_val = 0
 
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         # Si el reclamo ya viene marcado como completado y no se pasó fecha_fin,
         # insertar usando la fecha/hora actual del servidor (GETDATE()).
         # Insertar los nuevos campos `fecha_incidencia` y `lugar_incidencia`.
@@ -1992,7 +2047,7 @@ class DeviceService:
         self.conn.commit()
 
     def get_asignacion(self, asignacion_id: int):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT a.id_asignacion, a.fk_id_dispositivo, a.fk_id_empleado,
                    a.codigo_plaza, a.fecha_inicio_asignacion, a.fecha_fin_asignacion, a.observaciones,
@@ -2025,7 +2080,7 @@ class DeviceService:
                 fk = asign.get('fk_id_empleado')
                 if fk:
                     conn_emp = get_db_empleados()
-                    cur_emp = conn_emp.cursor()
+                    cur_emp = conn_emp.get_cursor()
                     cur_emp.execute("SELECT nombre_completo FROM empleados WHERE id_empleado = ?", (int(fk),))
                     rrow = cur_emp.fetchone()
                     if rrow and rrow[0]:
@@ -2044,7 +2099,7 @@ class DeviceService:
         Si las columnas no existen, intenta crearlas (para entornos sin migración aplicada).
         Retorna True si la operación fue exitosa, False en caso de error.
         """
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         try:
             # Asegurar columnas (crearlas si no existen)
             if not self.has_column('asignacion', 'descargas'):
@@ -2073,7 +2128,7 @@ class DeviceService:
     def update_reclamo(self, reclamo_id: int, estado_proceso=None, fecha_fin_reclamo=None, lugar_reclamo=None,
                       img_evidencia=None, img_form=None, remove_img_evidencia=False, remove_img_form=False,
                       fecha_robo=None, fecha_inicio_reclamo=None):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         # Normalizar estado a entero 0/1
         try:
             estado_val = 1 if str(estado_proceso) in ('1', 'true', 'True') or estado_proceso is True else 0
@@ -2181,7 +2236,7 @@ class DeviceService:
         self.conn.commit()
 
     def delete_reclamo(self, reclamo_id: int):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("DELETE FROM reclamo_seguro WHERE id_reclamo = ?", (reclamo_id,))
         self.conn.commit()
 
@@ -2192,7 +2247,7 @@ class DeviceService:
     def update_device(self, device_id: int, **kwargs):
         """Actualiza un dispositivo y registra en auditoría"""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             
             # Obtener datos anteriores
             device_anterior = self.get_device(device_id)
@@ -2239,7 +2294,7 @@ class DeviceService:
             raise Exception(f"Error actualizando dispositivo: {str(e)}")
 
     def get_active_asignacion_by_device(self, device_id: int):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT id_asignacion, fk_id_dispositivo, fk_id_empleado, codigo_plaza,
                    fecha_inicio_asignacion, fecha_fin_asignacion, observaciones
@@ -2260,7 +2315,7 @@ class DeviceService:
         Si `commit` es False, no hace commit (útil para llamar desde flujos transaccionales).
         Devuelve la `fecha_fin` (datetime) si se realizó, o `None` si no existía asignación activa."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             # Buscar asignación activa (solo en dispositivos no eliminados)
             cur.execute("""
                 SELECT id_asignacion FROM asignacion 
@@ -2295,7 +2350,7 @@ class DeviceService:
         """Realiza soft delete de un dispositivo (marca estado como 3 - Eliminado sin borrar de la tabla)
         También registra en auditoría las asignaciones asociadas"""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             self.conn.autocommit = False
             
             # Obtener datos del dispositivo
@@ -2312,7 +2367,7 @@ class DeviceService:
             if motivo_baja:
                 # Evitar duplicar el mismo motivo si ya fue agregado previamente.
                 try:
-                    cur2 = self.conn.cursor()
+                    cur2 = self.conn.get_cursor()
                     cur2.execute("SELECT observaciones FROM dispositivo WHERE id_dispositivo = ?", (device_id,))
                     row_obs = cur2.fetchone()
                     existing_obs = row_obs[0] if row_obs and row_obs[0] is not None else ''
@@ -2324,7 +2379,7 @@ class DeviceService:
                 if motivo_norm and motivo_norm.lower() not in (existing_obs or '').lower():
                     # Evitar truncamiento: consultar longitud máxima de la columna
                     try:
-                        cur3 = self.conn.cursor()
+                        cur3 = self.conn.get_cursor()
                         cur3.execute("""
                             SELECT CHARACTER_MAXIMUM_LENGTH
                             FROM INFORMATION_SCHEMA.COLUMNS
@@ -2376,7 +2431,7 @@ class DeviceService:
 
     def list_deleted_devices(self):
         """Lista dispositivos eliminados (ordenados por los más recientes primero)"""
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         # Note: include marca name to display in UI
         # Ordena por id_dispositivo DESC para mostrar los más recientes primero
         cur.execute("""
@@ -2396,7 +2451,7 @@ class DeviceService:
     def restore_deleted_device(self, device_id: int):
         """Restaura un dispositivo eliminado (soft delete)"""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             self.conn.autocommit = False
 
             # Verificar que el dispositivo exista y esté eliminado
@@ -2428,7 +2483,7 @@ class DeviceService:
 
     def list_celulares(self):
         """Lista todos los celulares activos (no eliminados) con información de empleado asignado"""
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT d.id_dispositivo, d.identificador, d.imei, d.numero_serie, d.observaciones, 
                    ISNULL(d.estado, 0) as estado,
@@ -2455,7 +2510,7 @@ class DeviceService:
         if empleado_ids:
             try:
                 conn_emp = get_db_empleados()
-                cur_emp = conn_emp.cursor()
+                cur_emp = conn_emp.get_cursor()
                 placeholders = ','.join('?' * len(empleado_ids))
                 sql = "SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, empleado_ids)
@@ -2473,7 +2528,7 @@ class DeviceService:
 
     def list_backups(self, recuperables_only: bool = True):
         """Lista dispositivos en respaldo disponibles para recuperación"""
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         query = """
             SELECT IdRespaldo, IdDispositivo, NumeroSerie, Imei, Estado, 
                    FechaEliminacion, MotivoBaja, Recuperable
@@ -2490,7 +2545,7 @@ class DeviceService:
     def restore_device(self, backup_id: int, usuario_id: int = None):
         """Restaura un dispositivo desde respaldo"""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             self.conn.autocommit = False
             
             # Ejecutar stored procedure de restauración
@@ -2511,7 +2566,7 @@ class DeviceService:
 
     def get_auditoria_reciente(self, tabla: str = None, dias: int = 30):
         """Obtiene registro de auditoría reciente"""
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         query = """
             SELECT IdAuditoria, TablaPrincipal, TipoOperacion, IdRegistro,
                    UsuarioId, FechaOperacion, Observaciones
@@ -2530,7 +2585,7 @@ class DeviceService:
 
     def get_dispositivos_empleado(self, fk_id_empleado):
         """Obtiene todos los dispositivos asignados activos de un empleado"""
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
                         SELECT DISTINCT d.id_dispositivo, d.numero_serie, d.identificador, d.imei, ISNULL(d.estado,0) as estado,
                                      m.categoria, m.nombre_modelo, ma.nombre_marca, a.fecha_inicio_asignacion
@@ -2563,7 +2618,7 @@ class DeviceService:
 
         try:
             conn_emp = get_db_empleados()
-            cur = conn_emp.cursor()
+            cur = conn_emp.get_cursor()
             # Seleccionar columnas que existen en el esquema de `empleados`
             cur.execute("""
                 SELECT id_empleado, codigo_empleado, nombre_completo, empresa, puesto, pasaporte,
@@ -2597,7 +2652,7 @@ class DeviceService:
             return None
         try:
             conn_emp = get_db_empleados()
-            cur = conn_emp.cursor()
+            cur = conn_emp.get_cursor()
             # Verificar si la columna `numero_identidad` existe en la tabla empleados
             try:
                 cur.execute("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'empleados' AND COLUMN_NAME = 'numero_identidad'")
@@ -2634,7 +2689,7 @@ class DeviceService:
             return None
         try:
             conn_emp = get_db_empleados()
-            cur = conn_emp.cursor()
+            cur = conn_emp.get_cursor()
             cur.execute("SELECT id_empleado, codigo_empleado, nombre_completo, numero_identidad, empresa, puesto FROM empleados WHERE codigo_empleado = ?", (codigo,))
             row = cur.fetchone()
             if row:
@@ -2659,7 +2714,7 @@ class DeviceService:
             return None
         try:
             conn_emp = get_db_empleados()
-            cur = conn_emp.cursor()
+            cur = conn_emp.get_cursor()
             cur.execute("SELECT nombre_completo FROM empleados WHERE id_empleado = ?", (int(empleado_id),))
             row = cur.fetchone()
             if row and row[0]:
@@ -2674,7 +2729,7 @@ class DeviceService:
 
     # CRUD para Planes
     def list_planes(self):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
                  SELECT p.id_plan, p.numero_linea, p.fecha_inicio, p.fecha_fin, p.costo_plan, p.moneda_plan,
                      COUNT(d.id_dispositivo) AS linked_count,
@@ -2701,7 +2756,7 @@ class DeviceService:
 
     def list_historico_planes(self):
         """Lista los registros de `historico_planes` para la vista histórica."""
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT id_historico, id_plan, numero_linea, fecha_operacion, fecha_inicio, fecha_fin, costo_plan, moneda_plan
             FROM historico_planes
@@ -2733,7 +2788,7 @@ class DeviceService:
 
         Retorna lista de dicts con campos principales para mostrar en modal.
         """
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT d.id_dispositivo, d.numero_serie, d.identificador, d.imei, d.imei2, d.direccion_mac,
                    m.nombre_modelo, ma.nombre_marca, m.categoria as categoria, d.tamano, d.color, d.observaciones
@@ -2747,7 +2802,7 @@ class DeviceService:
         return rows
 
     def get_plane(self, plan_id: int):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("""
             SELECT id_plan, numero_linea, fecha_inicio, fecha_fin, costo_plan, moneda_plan
             FROM planes
@@ -2762,7 +2817,7 @@ class DeviceService:
     def create_plane(self, numero_linea: str, fecha_inicio: str, fecha_fin: str | None, costo_plan, moneda_plan: str = 'USD'):
         if not numero_linea or not fecha_inicio or costo_plan is None:
             raise ValueError('numero_linea, fecha_inicio y costo_plan son obligatorios')
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute(
             """INSERT INTO planes (numero_linea, fecha_inicio, fecha_fin, costo_plan, moneda_plan) 
             OUTPUT INSERTED.id_plan
@@ -2781,7 +2836,7 @@ class DeviceService:
         Retorna el ID del plan creado. El commit debe hacerse manualmente con confirm_plan_pending()."""
         if not numero_linea or not fecha_inicio or costo_plan is None:
             raise ValueError('numero_linea, fecha_inicio y costo_plan son obligatorios')
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute(
             """INSERT INTO planes (numero_linea, fecha_inicio, fecha_fin, costo_plan, moneda_plan) 
             OUTPUT INSERTED.id_plan
@@ -2807,7 +2862,7 @@ class DeviceService:
         """Busca un plan por número de línea (case-insensitive)"""
         if not numero_linea:
             return None
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute(
             "SELECT id_plan, numero_linea, fecha_inicio, fecha_fin, costo_plan, moneda_plan FROM planes WHERE LOWER(numero_linea) = LOWER(?)",
             (numero_linea,)
@@ -2827,7 +2882,7 @@ class DeviceService:
     def update_plane(self, plan_id: int, numero_linea: str, fecha_inicio: str, fecha_fin: str | None, costo_plan, moneda_plan: str = 'USD'):
         if not numero_linea or not fecha_inicio or costo_plan is None:
             raise ValueError('numero_linea, fecha_inicio y costo_plan son obligatorios')
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute(
             "UPDATE planes SET numero_linea = ?, fecha_inicio = ?, fecha_fin = ?, costo_plan = ?, moneda_plan = ? WHERE id_plan = ?",
             (numero_linea, fecha_inicio, fecha_fin, costo_plan, moneda_plan, plan_id)
@@ -2835,7 +2890,7 @@ class DeviceService:
         self.conn.commit()
 
     def delete_plane(self, plan_id: int):
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         cur.execute("DELETE FROM planes WHERE id_plan = ?", (plan_id,))
         self.conn.commit()
 
@@ -2847,7 +2902,7 @@ class DeviceService:
         4) If device_id provided, link it to the new plan
         Returns dict with ids created/updated.
         """
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         try:
             # Start transaction
             self.conn.autocommit = False
@@ -3000,7 +3055,7 @@ class DeviceService:
         Si la última es 192.168.0.255, devuelve 192.168.1.0.
         Si no hay ninguna, devuelve 192.168.0.1.
         """
-        cur = self.conn.cursor()
+        cur = self.conn.get_cursor()
         try:
             # Obtener todas las IPs asignadas (excluyendo NULLs y vacíos)
             cur.execute(
@@ -3055,7 +3110,7 @@ class DeviceService:
         try:
             if not ip_address:
                 return None
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 """
                 SELECT d.id_dispositivo, m.categoria, ma.nombre_marca, m.nombre_modelo
@@ -3082,7 +3137,7 @@ class DeviceService:
         Devuelve True si se actualizó al menos una fila.
         """
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute("UPDATE dispositivo SET ip_asignada = NULL WHERE id_dispositivo = ?", (int(device_id),))
             self.conn.commit()
             return (cur.rowcount > 0)
@@ -3097,7 +3152,7 @@ class DeviceService:
     def list_auditoria_logs(self, limit: int = 500):
         """Lista los registros de auditoría (últimas acciones registradas)"""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute("""
                 SELECT id_auditoria, usuario, accion, tabla_afectada, id_registro, descripcion, fecha_accion
                 FROM auditoria
@@ -3134,7 +3189,7 @@ class DeviceService:
             bool: True si se actualizó correctamente
         """
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             
             # Actualizar estado
             cur.execute("""
@@ -3159,7 +3214,7 @@ class DeviceService:
             list: Lista de asignaciones con estado != 'completada'
         """
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute("""
                 SELECT 
                     a.id_asignacion,

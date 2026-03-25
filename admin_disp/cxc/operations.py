@@ -1,501 +1,466 @@
-# admin_disp/cxc/operations.py
 """
 Operaciones SQL para Cuentas por Cobrar (CxC).
-Usa get_db_cxc() desde admin_disp.core.db para conexiones persistentes.
+Implementacion incremental sobre SQLAlchemy Core.
 """
-import logging
-from admin_disp.core.db import get_db_cxc
 
-log = logging.getLogger('admin_disp.cxc.operations')
+from __future__ import annotations
+
+import datetime
+import logging
+from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+from sqlalchemy import text
+
+from admin_disp.core.db import get_sa_engine_cxc
+
+log = logging.getLogger("admin_disp.cxc.operations")
+
+
+def _engine():
+    return get_sa_engine_cxc()
+
+
+def _in_params(values: Iterable[Any], prefix: str) -> Tuple[str, Dict[str, Any]]:
+    vals = list(values)
+    binds: Dict[str, Any] = {}
+    placeholders: List[str] = []
+    for idx, value in enumerate(vals):
+        key = f"{prefix}{idx}"
+        binds[key] = value
+        placeholders.append(f":{key}")
+    return ",".join(placeholders), binds
 
 
 def ensure_lote_schema():
     """
-    Garantiza que la tabla `lote` y las columnas `cobro.loteId` / `cobro.estado` existan.
-    Se ejecuta una sola vez al arrancar la app. Es idempotente.
-    Usa conexion directa (no g) para funcionar fuera de contexto de request.
+    Garantiza que la tabla lote y columnas necesarias existan.
+    Se ejecuta al arrancar la app y debe ser idempotente.
     """
-    import pyodbc as _pyodbc
-    from flask import current_app as _app
-    cfg = _app.config
-    trusted = cfg.get('DB_TRUSTED', False)
-    if trusted:
-        _cs = (f"DRIVER={{{cfg['DB_DRIVER']}}};SERVER={cfg['DB_SERVER']};"
-               f"DATABASE=cxc;Trusted_Connection=yes;")
-    else:
-        _cs = (f"DRIVER={{{cfg['DB_DRIVER']}}};SERVER={cfg['DB_SERVER']};"
-               f"DATABASE=cxc;UID={cfg.get('DB_USER','')};PWD={cfg.get('DB_PASSWORD','')};")
-    conn = _pyodbc.connect(_cs)
+    engine = _engine()
     try:
-        c = conn.cursor()
-        # 1. Tabla lote
-        c.execute("""
-            IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name='lote')
-            CREATE TABLE [dbo].[lote] (
-                [id]                 INT            IDENTITY(1,1) NOT NULL,
-                [numeroLiquidacion] NVARCHAR(20)   NULL,
-                [fechaGeneracion]   DATETIME2(0)   NOT NULL DEFAULT GETDATE(),
-                [fechaFin]          DATETIME2(0)   NULL,
-                [ejecutivo]          NVARCHAR(255)  NULL,
-                [generadoPor]       NVARCHAR(255)  NULL,
-                [rangoFechas]       NVARCHAR(100)  NULL,
-                [estado]             NVARCHAR(20)   NOT NULL DEFAULT 'Procesado',
-                [total]              DECIMAL(18,2)  NULL,
-                [recibos]            NVARCHAR(MAX)  NULL,
-                [spFolderPath]     NVARCHAR(500)  NULL,
-                [spFileName]       NVARCHAR(255)  NULL,
-                [spFileId]         NVARCHAR(255)  NULL,
-                [spDownloadUrl]    NVARCHAR(2000) NULL,
-                CONSTRAINT [PK_lote] PRIMARY KEY CLUSTERED ([id] ASC)
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name='lote')
+                    CREATE TABLE [dbo].[lote] (
+                        [id]                 INT            IDENTITY(1,1) NOT NULL,
+                        [numeroLiquidacion] NVARCHAR(20)   NULL,
+                        [fechaGeneracion]   DATETIME2(0)   NOT NULL DEFAULT GETDATE(),
+                        [fechaFin]          DATETIME2(0)   NULL,
+                        [ejecutivo]         NVARCHAR(255)  NULL,
+                        [generadoPor]       NVARCHAR(255)  NULL,
+                        [rangoFechas]       NVARCHAR(100)  NULL,
+                        [estado]            NVARCHAR(20)   NOT NULL DEFAULT 'Procesado',
+                        [total]             DECIMAL(18,2)  NULL,
+                        [recibos]           NVARCHAR(MAX)  NULL,
+                        [spFolderPath]      NVARCHAR(500)  NULL,
+                        [spFileName]        NVARCHAR(255)  NULL,
+                        [spFileId]          NVARCHAR(255)  NULL,
+                        [spDownloadUrl]     NVARCHAR(2000) NULL,
+                        CONSTRAINT [PK_lote] PRIMARY KEY CLUSTERED ([id] ASC)
+                    )
+                    """
+                )
             )
-        """)
-        # 2. Columna cobro.loteId
-        c.execute("""
-            IF NOT EXISTS (
-                SELECT 1 FROM sys.columns
-                WHERE object_id = OBJECT_ID('[dbo].[cobro]') AND name = 'loteId'
+            conn.execute(
+                text(
+                    """
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns
+                        WHERE object_id = OBJECT_ID('[dbo].[cobro]') AND name = 'loteId'
+                    )
+                    ALTER TABLE [dbo].[cobro] ADD [loteId] INT NULL
+                    """
+                )
             )
-            ALTER TABLE [dbo].[cobro] ADD [loteId] INT NULL
-        """)
-        # 3. Columna cobro.estado  (0=Recibido  1=Procesado  2=Finalizado)
-        c.execute("""
-            IF NOT EXISTS (
-                SELECT 1 FROM sys.columns
-                WHERE object_id = OBJECT_ID('[dbo].[cobro]') AND name = 'estado'
+            conn.execute(
+                text(
+                    """
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns
+                        WHERE object_id = OBJECT_ID('[dbo].[cobro]') AND name = 'estado'
+                    )
+                    ALTER TABLE [dbo].[cobro] ADD [estado] TINYINT NOT NULL DEFAULT 0
+                    """
+                )
             )
-            ALTER TABLE [dbo].[cobro] ADD [estado] TINYINT NOT NULL DEFAULT 0
-        """)
-        # 4. Columnas lote para el archivo firmado temporal (rev)
-        c.execute("""
-            IF NOT EXISTS (
-                SELECT 1 FROM sys.columns
-                WHERE object_id = OBJECT_ID('[dbo].[lote]') AND name = 'spRevFileId'
+            conn.execute(
+                text(
+                    """
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns
+                        WHERE object_id = OBJECT_ID('[dbo].[lote]') AND name = 'spRevFileId'
+                    )
+                    ALTER TABLE [dbo].[lote] ADD [spRevFileId] NVARCHAR(255) NULL
+                    """
+                )
             )
-            ALTER TABLE [dbo].[lote] ADD [spRevFileId] NVARCHAR(255) NULL
-        """)
-        c.execute("""
-            IF NOT EXISTS (
-                SELECT 1 FROM sys.columns
-                WHERE object_id = OBJECT_ID('[dbo].[lote]') AND name = 'spRevDlUrl'
+            conn.execute(
+                text(
+                    """
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns
+                        WHERE object_id = OBJECT_ID('[dbo].[lote]') AND name = 'spRevDlUrl'
+                    )
+                    ALTER TABLE [dbo].[lote] ADD [spRevDlUrl] NVARCHAR(2000) NULL
+                    """
+                )
             )
-            ALTER TABLE [dbo].[lote] ADD [spRevDlUrl] NVARCHAR(2000) NULL
-        """)
-        conn.commit()
-        log.info('ensure_lote_schema: schema verificado/creado correctamente.')
-    except Exception as e:
-        log.error('ensure_lote_schema ERROR: %s', e, exc_info=True)
-        try:
-            conn.rollback()
-        except Exception:
-            pass
+        log.info("ensure_lote_schema: schema verificado/creado correctamente.")
+    except Exception as exc:
+        log.error("ensure_lote_schema ERROR: %s", exc, exc_info=True)
         raise
-    finally:
-        try:
-            conn.close()
-        except Exception:
-            pass
 
 
 def ensure_sync_config():
     """Crea la tabla sync_config si no existe y asegura el registro id=1."""
-    conn = get_db_cxc()
+    engine = _engine()
     try:
-        c = conn.cursor()
-        c.execute("""
-            IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name='sync_config')
-            CREATE TABLE sync_config (
-                id        INT PRIMARY KEY DEFAULT 1,
-                lastSync DATETIME2 NULL
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name='sync_config')
+                    CREATE TABLE sync_config (
+                        id INT PRIMARY KEY DEFAULT 1,
+                        lastSync DATETIME2 NULL
+                    )
+                    """
+                )
             )
-        """)
-        c.execute("""
-            IF NOT EXISTS (SELECT 1 FROM sync_config WHERE id=1)
-            INSERT INTO sync_config (id, lastSync) VALUES (1, NULL)
-        """)
-        conn.commit()
+            conn.execute(
+                text(
+                    """
+                    IF NOT EXISTS (SELECT 1 FROM sync_config WHERE id=1)
+                    INSERT INTO sync_config (id, lastSync) VALUES (1, NULL)
+                    """
+                )
+            )
         log.debug("sync_config verificada/creada.")
-    except Exception as e:
-        log.error("Error en ensure_sync_config: %s", e)
+    except Exception as exc:
+        log.error("Error en ensure_sync_config: %s", exc)
         raise
 
 
 def get_last_sync_dt():
-    """Obtiene el timestamp del última sincronización."""
-    conn = get_db_cxc()
-    try:
-        c = conn.cursor()
-        c.execute("SELECT lastSync FROM sync_config WHERE id=1")
-        row = c.fetchone()
-        return row[0] if row and row[0] else None
-    finally:
-        pass
+    """Obtiene el timestamp de la ultima sincronizacion."""
+    engine = _engine()
+    with engine.connect() as conn:
+        return conn.execute(text("SELECT lastSync FROM sync_config WHERE id=1")).scalar()
 
 
 def update_last_sync_dt(dt):
-    """Actualiza el timestamp de la última sincronización."""
-    conn = get_db_cxc()
-    try:
-        c = conn.cursor()
-        c.execute("UPDATE sync_config SET lastSync=? WHERE id=1", (dt,))
-        conn.commit()
-    finally:
-        pass
+    """Actualiza el timestamp de la ultima sincronizacion."""
+    engine = _engine()
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE sync_config SET lastSync=:dt WHERE id=1"), {"dt": dt})
 
 
-# ─── cobro ────────────────────────────────────────────────────────────────────
+# cobro ------------------------------------------------------------------------
 
 def get_existing_sp_ids():
     """Retorna el set de spItemId ya existentes en la tabla cobro."""
-    conn = get_db_cxc()
-    try:
-        c = conn.cursor()
-        c.execute("SELECT spItemId FROM cobro")
-        return {row[0] for row in c.fetchall()}
-    finally:
-        pass
+    engine = _engine()
+    with engine.connect() as conn:
+        rows = conn.execute(text("SELECT spItemId FROM cobro")).all()
+    return {row[0] for row in rows}
 
 
 def bulk_insert_cobros(rows):
     """
     Inserta filas nuevas en cobro.
-    Protege contra duplicados contando antes/después.
     Retorna cantidad de filas insertadas.
     """
     if not rows:
         return 0
 
-    conn = get_db_cxc()
-    try:
-        c = conn.cursor()
-        
-        # ── Contar cuántas filas se insertarán ─────────────────────────────
-        sp_item_ids = [r["spItemId"] for r in rows]
-        placeholders = ",".join("?" for _ in sp_item_ids)
-        query = "SELECT COUNT(*) FROM cobro WHERE spItemId IN (" + placeholders + ")"
-        c.execute(query, sp_item_ids)
-        existing_count = c.fetchone()[0]
-        
-        # ── Insertar todas las filas (la BD rechazará los duplicados) ──────
-        sql = """
-            INSERT INTO cobro (
-                spItemId, codigoCliente, nombreCliente, banco, metodoPago,
-                noFactura, valorPagado, noRecibo, creado, ejecutivo,
-                ejecutivoEmail, sucursal, fechaCheque, comentarioAdicional,
-                liquidado, liquidadoPor, fechaLiquidado, tieneComprobante
-            )
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    insert_sql = text(
         """
-        params = [
-            (
-                r["spItemId"], r["codigoCliente"], r["nombreCliente"],
-                r["banco"], r["metodoPago"], r["noFactura"], r["valorPagado"],
-                r["noRecibo"], r["creado"], r["ejecutivo"], r["ejecutivoEmail"],
-                r["sucursal"], r["fechaCheque"], r["comentarioAdicional"],
-                r["liquidado"], r["liquidadoPor"], r["fechaLiquidado"],
-                r["tieneComprobante"],
-            )
-            for r in rows
-        ]
-        
-        inserted_count = 0
-        for param_set in params:
-            try:
-                c.execute(sql, param_set)
-                inserted_count += 1
-            except Exception:
-                # Ignorar duplicados (spItemId existe)
-                pass
-        
-        conn.commit()
-        return inserted_count
-    finally:
-        pass
-
-
-def bulk_upsert_cobros(rows):
-    """
-    Inserta O actualiza filas en cobro según spItemId:
-    - Si el spItemId no existe → INSERT.
-    - Si ya existe → UPDATE de todos los campos incluyendo liquidado/liquidadoPor/fechaLiquidado.
-    Retorna (inserted, updated).
-    """
-    if not rows:
-        return 0, 0
-
-    conn = get_db_cxc()
-    c = conn.cursor()
-    inserted = 0
-    updated  = 0
-
-    sql_upd = """
-        UPDATE cobro SET
-            codigoCliente=?, nombreCliente=?, banco=?, metodoPago=?,
-            noFactura=?, valorPagado=?, noRecibo=?, creado=?,
-            ejecutivo=?, ejecutivoEmail=?, sucursal=?, fechaCheque=?,
-            comentarioAdicional=?, tieneComprobante=?,
-            liquidado=?, liquidadoPor=?, fechaLiquidado=?
-        WHERE spItemId=?
-    """
-    sql_ins = """
         INSERT INTO cobro (
             spItemId, codigoCliente, nombreCliente, banco, metodoPago,
             noFactura, valorPagado, noRecibo, creado, ejecutivo,
             ejecutivoEmail, sucursal, fechaCheque, comentarioAdicional,
             liquidado, liquidadoPor, fechaLiquidado, tieneComprobante
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    """
-
-    for r in rows:
-        upd_params = (
-            r["codigoCliente"], r["nombreCliente"], r["banco"], r["metodoPago"],
-            r["noFactura"], r["valorPagado"], r["noRecibo"], r["creado"],
-            r["ejecutivo"], r["ejecutivoEmail"], r["sucursal"], r["fechaCheque"],
-            r["comentarioAdicional"], r["tieneComprobante"],
-            r["liquidado"], r["liquidadoPor"], r["fechaLiquidado"],
-            r["spItemId"],
         )
-        try:
-            c.execute(sql_upd, upd_params)
-            if c.rowcount and c.rowcount > 0:
-                updated += 1
-            else:
-                # Not found: INSERT
-                ins_params = (
-                    r["spItemId"], r["codigoCliente"], r["nombreCliente"],
-                    r["banco"], r["metodoPago"], r["noFactura"], r["valorPagado"],
-                    r["noRecibo"], r["creado"], r["ejecutivo"], r["ejecutivoEmail"],
-                    r["sucursal"], r["fechaCheque"], r["comentarioAdicional"],
-                    r["liquidado"], r["liquidadoPor"], r["fechaLiquidado"],
-                    r["tieneComprobante"],
-                )
-                c.execute(sql_ins, ins_params)
-                inserted += 1
-        except Exception as exc:
-            log.warning("bulk_upsert_cobros: error en %s — %s", r.get("spItemId"), exc)
+        VALUES (
+            :spItemId, :codigoCliente, :nombreCliente, :banco, :metodoPago,
+            :noFactura, :valorPagado, :noRecibo, :creado, :ejecutivo,
+            :ejecutivoEmail, :sucursal, :fechaCheque, :comentarioAdicional,
+            :liquidado, :liquidadoPor, :fechaLiquidado, :tieneComprobante
+        )
+        """
+    )
 
-    conn.commit()
+    inserted_count = 0
+    engine = _engine()
+    with engine.begin() as conn:
+        for row in rows:
+            try:
+                conn.execute(insert_sql, row)
+                inserted_count += 1
+            except Exception:
+                # Ignorar duplicados por spItemId.
+                pass
+    return inserted_count
+
+
+def bulk_upsert_cobros(rows):
+    """
+    Inserta o actualiza filas en cobro segun spItemId.
+    Retorna (inserted, updated).
+    """
+    if not rows:
+        return 0, 0
+
+    sql_upd = text(
+        """
+        UPDATE cobro SET
+            codigoCliente=:codigoCliente,
+            nombreCliente=:nombreCliente,
+            banco=:banco,
+            metodoPago=:metodoPago,
+            noFactura=:noFactura,
+            valorPagado=:valorPagado,
+            noRecibo=:noRecibo,
+            creado=:creado,
+            ejecutivo=:ejecutivo,
+            ejecutivoEmail=:ejecutivoEmail,
+            sucursal=:sucursal,
+            fechaCheque=:fechaCheque,
+            comentarioAdicional=:comentarioAdicional,
+            tieneComprobante=:tieneComprobante,
+            liquidado=:liquidado,
+            liquidadoPor=:liquidadoPor,
+            fechaLiquidado=:fechaLiquidado
+        WHERE spItemId=:spItemId
+        """
+    )
+    sql_ins = text(
+        """
+        INSERT INTO cobro (
+            spItemId, codigoCliente, nombreCliente, banco, metodoPago,
+            noFactura, valorPagado, noRecibo, creado, ejecutivo,
+            ejecutivoEmail, sucursal, fechaCheque, comentarioAdicional,
+            liquidado, liquidadoPor, fechaLiquidado, tieneComprobante
+        )
+        VALUES (
+            :spItemId, :codigoCliente, :nombreCliente, :banco, :metodoPago,
+            :noFactura, :valorPagado, :noRecibo, :creado, :ejecutivo,
+            :ejecutivoEmail, :sucursal, :fechaCheque, :comentarioAdicional,
+            :liquidado, :liquidadoPor, :fechaLiquidado, :tieneComprobante
+        )
+        """
+    )
+
+    inserted = 0
+    updated = 0
+    engine = _engine()
+    with engine.begin() as conn:
+        for row in rows:
+            try:
+                result = conn.execute(sql_upd, row)
+                if result.rowcount and result.rowcount > 0:
+                    updated += 1
+                else:
+                    conn.execute(sql_ins, row)
+                    inserted += 1
+            except Exception as exc:
+                log.warning("bulk_upsert_cobros: error en %s - %s", row.get("spItemId"), exc)
+
     return inserted, updated
 
 
-def _is_registro_actualizable(item_id: str, conn):
+def _is_registro_actualizable(item_id: str, conn) -> Tuple[bool, str]:
     """
-    Valida si un registro es actualizable según las reglas de negocio.
-    
-    NO actualizar si:
-    - liquidado != NULL (está liquidado) Y estado = 2 (Finalizado)
-    - liquidado != NULL Y loteId IS NOT NULL (pertenece a un lote)
-    
-    SÍ actualizar si:
-    - liquidado IS NULL (no liquidado)
-    - liquidado != NULL Y estado = 0 (Recibido)
-    
-    Retorna: (es_actualizable: bool, razon_si_no: str)
+    Valida si un registro es actualizable segun reglas de negocio.
     """
-    c = conn.cursor()
     try:
-        c.execute(
-            "SELECT [liquidado], [estado], [loteId] FROM [cobro] WHERE [spItemId] = ?",
-            (item_id,)
-        )
-        row = c.fetchone()
+        row = conn.execute(
+            text(
+                "SELECT [liquidado], [estado], [loteId] FROM [cobro] WHERE [spItemId] = :item_id"
+            ),
+            {"item_id": item_id},
+        ).first()
         if not row:
-            # Registro no existe, no se puede actualizar
             return False, "Registro no existe en BD"
-        
-        liquidado, estado, loteId = row
-        
-        # Si liquidado es NULL → no está liquidado → permitir actualización
+
+        liquidado, estado, lote_id = row
+
         if liquidado is None:
             return True, "OK"
-        
-        # Si liquidado tiene valor (está liquidado), aplicar restricciones
-        # Normalizar: cualquier valor que no sea explícitamente "No", "0", "false" es truthy
-        is_liquidado = liquidado and str(liquidado).lower() not in ('no', '0', 'false', '')
-        
+
+        is_liquidado = bool(liquidado) and str(liquidado).lower() not in ("no", "0", "false", "")
         if not is_liquidado:
-            # Valor falsy → permitir actualización
             return True, "OK"
-        
-        # Está liquidado, verificar estado y loteId
-        if estado == 2:  # Finalizado
+
+        if estado == 2:
             return False, "Estado Finalizado: registro cerrado"
-        
-        if loteId is not None:
+        if lote_id is not None:
             return False, "Pertenece a un lote: registro procesado"
-        
-        # Está liquidado pero en estado Recibido y sin lote → permitir
+
         return True, "OK"
-        
     except Exception as exc:
-        log.warning(f"_is_registro_actualizable: error para {item_id} — {exc}")
-        return False, f"Error validación: {exc}"
+        log.warning("_is_registro_actualizable: error para %s - %s", item_id, exc)
+        return False, f"Error validacion: {exc}"
 
 
 def update_blank_fields_with_validation(rows):
     """
-    Actualiza SOLO los campos en blanco/NULL de registros existentes en cobro.
-    
-    Incluye validación previa según reglas de negocio: solo actualiza si el registro cumple:
-    - NO si está liquidado (liquidado != NULL) y estado = Finalizado o tiene loteId
-    - SÍ si no está liquidado (liquidado IS NULL)
-    - SÍ si está liquidado pero estado = Recibido y sin lote
-    
-    Para cada fila: si spItemId existe en cobro, actualiza solo los campos
-    donde la BD tiene NULL y el item de SP tiene valor.
-    Mantiene intactos los campos que ya tienen datos.
-    
-    Retorna: count de registros actualizados.
+    Actualiza solo campos en blanco/NULL en cobro cuando el registro es actualizable.
+    Retorna cantidad de campos actualizados.
     """
     if not rows:
         return 0
-    
-    conn = get_db_cxc()
-    updated_count = 0
-    skipped_count = 0
-    
-    # Campos que pueden estar en blanco y que queremos llenar
+
     blank_fields = [
-        "codigoCliente", "nombreCliente", "banco", "metodoPago",
-        "noFactura", "valorPagado", "noRecibo", "creado",
-        "ejecutivo", "ejecutivoEmail", "sucursal", "fechaCheque",
-        "comentarioAdicional", "liquidado", "liquidadoPor", "fechaLiquidado",
+        "codigoCliente",
+        "nombreCliente",
+        "banco",
+        "metodoPago",
+        "noFactura",
+        "valorPagado",
+        "noRecibo",
+        "creado",
+        "ejecutivo",
+        "ejecutivoEmail",
+        "sucursal",
+        "fechaCheque",
+        "comentarioAdicional",
+        "liquidado",
+        "liquidadoPor",
+        "fechaLiquidado",
     ]
     blank_field_sql = {field: f"[{field}]" for field in blank_fields}
-    
-    c = conn.cursor()
-    
-    for r in rows:
-        item_id = r.get("spItemId")
-        if not item_id:
-            continue
-        
-        # Validar si este registro puede ser actualizado
-        es_actualizable, razon = _is_registro_actualizable(item_id, conn)
-        if not es_actualizable:
-            log.debug(f"update_blank_fields: saltando {item_id} — {razon}")
-            skipped_count += 1
-            continue
-        
-        # Para cada campo, actualizar si BD tiene NULL y SP tiene valor
-        for field in blank_fields:
-            value = r.get(field)
-            # Solo actualizar si el valor en SP no es None/vacío
-            if value is not None and value != "":
+
+    updated_count = 0
+    skipped_count = 0
+
+    engine = _engine()
+    with engine.begin() as conn:
+        for item in rows:
+            item_id = item.get("spItemId")
+            if not item_id:
+                continue
+
+            es_actualizable, razon = _is_registro_actualizable(item_id, conn)
+            if not es_actualizable:
+                log.debug("update_blank_fields: saltando %s - %s", item_id, razon)
+                skipped_count += 1
+                continue
+
+            for field in blank_fields:
+                value = item.get(field)
+                if value is None or value == "":
+                    continue
+
                 try:
                     safe_field = blank_field_sql[field]
-                    update_sql = (
-                        "UPDATE cobro SET " + safe_field + "=? "
-                        "WHERE spItemId=? AND " + safe_field + " IS NULL"
+                    update_sql = text(
+                        f"UPDATE cobro SET {safe_field}=:value "
+                        f"WHERE spItemId=:item_id AND {safe_field} IS NULL"
                     )
-                    c.execute(
-                        update_sql,
-                        (value, item_id)
-                    )
-                    if c.rowcount and c.rowcount > 0:
-                        updated_count += c.rowcount
+                    result = conn.execute(update_sql, {"value": value, "item_id": item_id})
+                    if result.rowcount and result.rowcount > 0:
+                        updated_count += result.rowcount
                 except Exception as exc:
-                    log.warning(f"update_blank_fields: error en {field} para {item_id} — {exc}")
-    
-    conn.commit()
-    log.info(f"update_blank_fields: {updated_count} campos actualizados, {skipped_count} registros saltados")
+                    log.warning("update_blank_fields: error en %s para %s - %s", field, item_id, exc)
+
+    log.info(
+        "update_blank_fields: %d campos actualizados, %d registros saltados",
+        updated_count,
+        skipped_count,
+    )
     return updated_count
 
 
 def update_liquidado_sql(item_ids, liquidadoPor, fecha_liquidado_iso):
-    """Refleja la liquidación en SQL después de actualizarlo en SharePoint."""
+    """Refleja la liquidacion en SQL despues de actualizarlo en SharePoint."""
     if not item_ids:
         return
-    conn = get_db_cxc()
-    try:
-        c = conn.cursor()
-        placeholders = ",".join("?" for _ in item_ids)
-        query = (
-            "UPDATE cobro SET liquidado='Si', liquidadoPor=?, fechaLiquidado=? "
-            "WHERE spItemId IN (" + placeholders + ")"
-        )
-        c.execute(query, [liquidadoPor, fecha_liquidado_iso] + list(item_ids))
-        conn.commit()
-    finally:
-        pass
+
+    in_clause, in_params = _in_params(item_ids, "item")
+    params = {
+        "liquidado_por": liquidadoPor,
+        "fecha_liquidado": fecha_liquidado_iso,
+        **in_params,
+    }
+    query = text(
+        "UPDATE cobro SET liquidado='Si', liquidadoPor=:liquidado_por, fechaLiquidado=:fecha_liquidado "
+        f"WHERE spItemId IN ({in_clause})"
+    )
+
+    engine = _engine()
+    with engine.begin() as conn:
+        conn.execute(query, params)
 
 
 def get_cobros_paginated(start, length, filters):
     """
-    Paginación server-side con soporte de sort dinámico.
+    Paginacion server-side con soporte de sort dinamico.
     Retorna (rows, total_sin_filtros, total_con_filtros).
     """
-    # Columnas permitidas para ORDER BY (whitelist de seguridad)
-    # Mapeadas a identificadores SQL con bracket-quoting para evitar inyección
-    SORTABLE = {
+    sortable = {
         "codigoCliente": "[codigoCliente]",
         "nombreCliente": "[nombreCliente]",
-        "banco":          "[banco]",
-        "metodoPago":    "[metodoPago]",
-        "noFactura":     "[noFactura]",
-        "valorPagado":   "[valorPagado]",
-        "noRecibo":      "[noRecibo]",
-        "creado":         "[creado]",
-        "ejecutivo":      "[ejecutivo]",
-        "sucursal":       "[sucursal]",
-        "liquidado":      "[liquidado]",
+        "banco": "[banco]",
+        "metodoPago": "[metodoPago]",
+        "noFactura": "[noFactura]",
+        "valorPagado": "[valorPagado]",
+        "noRecibo": "[noRecibo]",
+        "creado": "[creado]",
+        "ejecutivo": "[ejecutivo]",
+        "sucursal": "[sucursal]",
+        "liquidado": "[liquidado]",
         "fechaLiquidado": "[fechaLiquidado]",
     }
-    raw_col  = (filters.get("sort_col") or "creado").strip()
-    sort_col = SORTABLE.get(raw_col, "[creado]")
+
+    raw_col = (filters.get("sort_col") or "creado").strip()
+    sort_col = sortable.get(raw_col, "[creado]")
     sort_dir = "DESC" if (filters.get("sort_dir") or "DESC").upper() == "DESC" else "ASC"
 
-    conn = get_db_cxc()
-    try:
-        c = conn.cursor()
+    where = ["1=1"]
+    params: Dict[str, Any] = {}
 
-        where  = ["1=1"]
-        params = []
+    if filters.get("sucursal"):
+        where.append("sucursal=:sucursal")
+        params["sucursal"] = filters["sucursal"]
 
-        if filters.get("sucursal"):
-            where.append("sucursal=?")
-            params.append(filters["sucursal"])
+    if filters.get("ejecutivo"):
+        where.append("ejecutivo LIKE :ejecutivo")
+        params["ejecutivo"] = f"%{filters['ejecutivo']}%"
 
-        if filters.get("ejecutivo"):
-            where.append("ejecutivo LIKE ?")
-            params.append(f"%{filters['ejecutivo']}%")
+    if filters.get("cliente"):
+        where.append("(codigoCliente LIKE :cliente OR nombreCliente LIKE :cliente)")
+        params["cliente"] = f"%{filters['cliente']}%"
 
-        if filters.get("cliente"):
-            where.append("(codigoCliente LIKE ? OR nombreCliente LIKE ?)")
-            v = f"%{filters['cliente']}%"
-            params += [v, v]
+    if filters.get("recibo"):
+        where.append("noRecibo LIKE :recibo")
+        params["recibo"] = f"%{filters['recibo']}%"
 
-        if filters.get("recibo"):
-            where.append("noRecibo LIKE ?")
-            params.append(f"%{filters['recibo']}%")
+    if filters.get("liquidado") == "1":
+        where.append("(liquidado IS NOT NULL AND liquidado != '' AND LOWER(liquidado) NOT IN ('no', '0', 'false'))")
+    elif filters.get("liquidado") == "0":
+        where.append("(liquidado IS NULL OR liquidado = '' OR LOWER(liquidado) IN ('no', '0', 'false'))")
 
-        if filters.get("liquidado") == "1":
-            where.append("(liquidado IS NOT NULL AND liquidado != '' AND LOWER(liquidado) NOT IN ('no', '0', 'false'))")
-        elif filters.get("liquidado") == "0":
-            where.append("(liquidado IS NULL OR liquidado = '' OR LOWER(liquidado) IN ('no', '0', 'false'))")
+    if filters.get("fecha_ini"):
+        where.append("LEFT(creado,10) >= :fecha_ini")
+        params["fecha_ini"] = filters["fecha_ini"]
 
-        if filters.get("fecha_ini"):
-            where.append("LEFT(creado,10) >= ?")
-            params.append(filters["fecha_ini"])
+    if filters.get("fechaFin"):
+        where.append("LEFT(creado,10) <= :fecha_fin")
+        params["fecha_fin"] = filters["fechaFin"]
 
-        if filters.get("fechaFin"):
-            where.append("LEFT(creado,10) <= ?")
-            params.append(filters["fechaFin"])
+    wc = " AND ".join(where)
 
-        wc = " AND ".join(where)
+    estado_map = {0: "Recibido", 1: "Procesado", 2: "Finalizado"}
 
-        # Total sin filtros
-        c.execute("SELECT COUNT(*) FROM cobro")
-        total = c.fetchone()[0]
+    engine = _engine()
+    with engine.connect() as conn:
+        total = conn.execute(text("SELECT COUNT(*) FROM cobro")).scalar_one()
+        filtered = conn.execute(text(f"SELECT COUNT(*) FROM cobro WHERE {wc}"), params).scalar_one()
 
-        # Total con filtros
-        count_query = "SELECT COUNT(*) FROM cobro WHERE " + wc
-        c.execute(count_query, params)
-        filtered = c.fetchone()[0]
-
-        # Página de datos con sort dinámico
-        # estado: 0=Recibido  1=Procesado  2=Finalizado  (columna directa en cobro)
-        _ESTADO_MAP = {0: 'Recibido', 1: 'Procesado', 2: 'Finalizado'}
-        page_query = (
+        page_sql = text(
             """
             SELECT spItemId, codigoCliente, nombreCliente, banco, metodoPago,
                    noFactura, valorPagado, noRecibo, creado, ejecutivo,
@@ -511,513 +476,521 @@ def get_cobros_paginated(start, length, filters):
             + " "
             + sort_dir
             + """
-            OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+            OFFSET :start ROWS FETCH NEXT :length ROWS ONLY
             """
         )
-        c.execute(page_query, params + [start, length])
-        cols = [d[0] for d in c.description]
-        rows = [dict(zip(cols, row)) for row in c.fetchall()]
-        for r in rows:
-            r['estado_cobro'] = _ESTADO_MAP.get(r.get('estado') or 0, 'Recibido')
-        return rows, total, filtered
-    finally:
-        pass
+        page_params = {**params, "start": int(start), "length": int(length)}
+        rows = [dict(row) for row in conn.execute(page_sql, page_params).mappings().all()]
+
+    for row in rows:
+        row["estado_cobro"] = estado_map.get(row.get("estado") or 0, "Recibido")
+
+    return rows, total, filtered
 
 
 def get_cobros_by_ids(item_ids):
     """
-    Retorna las filas completas de cobro para una lista de spItemId.
-    Usado por el endpoint de impresión de reporte.
+    Retorna filas completas de cobro para una lista de spItemId.
     """
     if not item_ids:
         return []
-    conn = get_db_cxc()
-    try:
-        c = conn.cursor()
-        placeholders = ",".join("?" for _ in item_ids)
-        query = (
-            """
-            SELECT spItemId, codigoCliente, nombreCliente, banco, metodoPago,
-                   noFactura, valorPagado, noRecibo, creado, ejecutivo,
-                   sucursal, fechaCheque, comentarioAdicional,
-                   liquidado, liquidadoPor, fechaLiquidado, tieneComprobante
-            FROM cobro
-            WHERE spItemId IN ("""
-            + placeholders
-            + """)
-            ORDER BY creado DESC
-            """
+
+    in_clause, in_params = _in_params(item_ids, "item")
+    query = text(
+        """
+        SELECT spItemId, codigoCliente, nombreCliente, banco, metodoPago,
+               noFactura, valorPagado, noRecibo, creado, ejecutivo,
+               sucursal, fechaCheque, comentarioAdicional,
+               liquidado, liquidadoPor, fechaLiquidado, tieneComprobante
+        FROM cobro
+        WHERE spItemId IN ("""
+        + in_clause
+        + """
         )
-        c.execute(query, item_ids)
-        cols = [d[0] for d in c.description]
-        return [dict(zip(cols, row)) for row in c.fetchall()]
-    finally:
-        pass
+        ORDER BY creado DESC
+        """
+    )
+
+    engine = _engine()
+    with engine.connect() as conn:
+        return [dict(row) for row in conn.execute(query, in_params).mappings().all()]
 
 
 def get_distinct_values(column):
-    """Retorna valores distintos de sucursal o ejecutivo para los filtros."""
-    # Mapping explícito: sólo identificadores SQL pre-definidos entran en la query
-    COLUMN_SQL = {
-        "sucursal":  "[sucursal]",
+    """Retorna valores distintos de sucursal o ejecutivo para filtros."""
+    column_sql = {
+        "sucursal": "[sucursal]",
         "ejecutivo": "[ejecutivo]",
     }
-    safe_col = COLUMN_SQL.get(column)
+    safe_col = column_sql.get(column)
     if not safe_col:
         return []
-    conn = get_db_cxc()
-    try:
-        c = conn.cursor()
-        if safe_col == "[sucursal]":
-            query = (
-                "SELECT DISTINCT [sucursal] FROM cobro "
-                "WHERE [sucursal] IS NOT NULL AND [sucursal]<>'' ORDER BY [sucursal]"
-            )
-        else:
-            query = (
-                "SELECT DISTINCT [ejecutivo] FROM cobro "
-                "WHERE [ejecutivo] IS NOT NULL AND [ejecutivo]<>'' ORDER BY [ejecutivo]"
-            )
-        c.execute(query)
-        return [row[0] for row in c.fetchall()]
-    finally:
-        pass
+
+    if safe_col == "[sucursal]":
+        query = text(
+            "SELECT DISTINCT [sucursal] FROM cobro "
+            "WHERE [sucursal] IS NOT NULL AND [sucursal]<>'' ORDER BY [sucursal]"
+        )
+    else:
+        query = text(
+            "SELECT DISTINCT [ejecutivo] FROM cobro "
+            "WHERE [ejecutivo] IS NOT NULL AND [ejecutivo]<>'' ORDER BY [ejecutivo]"
+        )
+
+    engine = _engine()
+    with engine.connect() as conn:
+        return [row[0] for row in conn.execute(query).all()]
 
 
 def get_ejecutivos_by_sucursal(sucursal):
-    """Retorna los ejecutivos de una sucursal específica."""
+    """Retorna los ejecutivos de una sucursal especifica."""
     if not sucursal:
         return []
-    conn = get_db_cxc()
+
+    engine = _engine()
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT DISTINCT [ejecutivo] FROM cobro "
+                "WHERE [sucursal] = :sucursal AND [ejecutivo] IS NOT NULL AND [ejecutivo]<>'' "
+                "ORDER BY [ejecutivo]"
+            ),
+            {"sucursal": sucursal},
+        ).all()
+    return [row[0] for row in rows]
+
+
+# liquidaciones pdf ------------------------------------------------------------
+
+def registrar_liquidacion_pdf(
+    ejecutivo,
+    generadoPor,
+    rangoFechas,
+    recibos_list,
+    spFolderPath,
+    spFileName,
+    spFileId,
+    spDownloadUrl,
+    **kwargs,
+):
+    """Inserta un registro en lote cuando se genera y sube un PDF."""
+    engine = _engine()
     try:
-        c = conn.cursor()
-        c.execute(
-            "SELECT DISTINCT [ejecutivo] FROM cobro "
-            "WHERE [sucursal] = ? AND [ejecutivo] IS NOT NULL AND [ejecutivo]<>'' "
-            "ORDER BY [ejecutivo]",
-            (sucursal,)
-        )
-        return [row[0] for row in c.fetchall()]
-    finally:
-        pass
+        recibos_json = " ".join(str(r) for r in recibos_list)
+        total = kwargs.get("total")
+        sp_item_ids = kwargs.get("sp_item_ids", [])
+        numero_liquidacion = kwargs.get("numeroLiquidacion")
 
+        with engine.begin() as conn:
+            if not numero_liquidacion:
+                cnt = (conn.execute(text("SELECT COUNT(*) FROM lote")).scalar() or 0) + 1
+                numero_liquidacion = f"LIQ-{cnt:05d}"
 
-# ── Liquidaciones PDF ──────────────────────────────────────────────────────────
+            lote_id = conn.execute(
+                text(
+                    """
+                    INSERT INTO lote (
+                        ejecutivo, generadoPor, rangoFechas, recibos,
+                        spFolderPath, spFileName, spFileId, spDownloadUrl,
+                        numeroLiquidacion, estado, total
+                    )
+                    OUTPUT INSERTED.id
+                    VALUES (
+                        :ejecutivo, :generado_por, :rango_fechas, :recibos,
+                        :sp_folder_path, :sp_file_name, :sp_file_id, :sp_download_url,
+                        :numero_liquidacion, '11', :total
+                    )
+                    """
+                ),
+                {
+                    "ejecutivo": ejecutivo,
+                    "generado_por": generadoPor,
+                    "rango_fechas": rangoFechas,
+                    "recibos": recibos_json,
+                    "sp_folder_path": spFolderPath,
+                    "sp_file_name": spFileName,
+                    "sp_file_id": spFileId,
+                    "sp_download_url": spDownloadUrl,
+                    "numero_liquidacion": numero_liquidacion,
+                    "total": total,
+                },
+            ).scalar()
 
-def registrar_liquidacion_pdf(ejecutivo, generadoPor, rangoFechas, recibos_list,
-                               spFolderPath, spFileName, spFileId, spDownloadUrl,
-                               **kwargs):
-    """
-    Inserta un registro en la tabla lote cuando se genera y sube un PDF.
+            rows_updated = 0
+            if lote_id and sp_item_ids:
+                in_clause, in_params = _in_params(sp_item_ids, "item")
+                update_query = text(
+                    "UPDATE cobro SET loteId=:lote_id, estado=1 "
+                    f"WHERE spItemId IN ({in_clause})"
+                )
+                res = conn.execute(update_query, {"lote_id": lote_id, **in_params})
+                rows_updated = res.rowcount or 0
 
-    Args:
-        ejecutivo      : Nombre del ejecutivo del reporte
-        generadoPor   : Usuario que generó el PDF (sesión)
-        rangoFechas   : String de rango, ej: '01/03/2026 al 03/03/2026'
-        recibos_list   : Lista de noRecibo incluidos en el PDF
-        spFolderPath : Ruta de carpeta en SharePoint, ej: 'IT/CxC/2026'
-        spFileName   : Nombre del archivo, ej: 'liq_2026-03-03_143022.pdf'
-        spFileId     : ID del item en Graph API
-        spDownloadUrl: URL de descarga directa
-
-    Returns:
-        int: ID del registro insertado, o None en caso de error
-    """
-    conn = get_db_cxc()
-    try:
-        c = conn.cursor()
-        recibos_json = ' '.join(str(r) for r in recibos_list)
-
-        # Calcular total si no se proporcionó
-        _total             = kwargs.get('total')
-        _sp_item_ids       = kwargs.get('sp_item_ids', [])
-        numeroLiquidacion = kwargs.get('numeroLiquidacion')
-
-        # Si no se proporcionó un número pre-generado, generarlo aquí
-        if not numeroLiquidacion:
-            c.execute("SELECT COUNT(*) FROM lote")
-            cnt = (c.fetchone()[0] or 0) + 1
-            numeroLiquidacion = f"LIQ-{cnt:05d}"
-
-        c.execute(
-            """
-            INSERT INTO lote
-                (ejecutivo, generadoPor, rangoFechas, recibos,
-                 spFolderPath, spFileName, spFileId, spDownloadUrl,
-                 numeroLiquidacion, estado, total)
-            OUTPUT INSERTED.id
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '11', ?)
-            """,
-            ejecutivo, generadoPor, rangoFechas, recibos_json,
-            spFolderPath, spFileName, spFileId, spDownloadUrl,
-            numeroLiquidacion, _total,
-        )
-        row = c.fetchone()
-        loteId = row[0] if row else None
-
-        # Vincular cobros al lote y marcarlos como Procesado (estado=1)
-        rows_updated = 0
-        if loteId and _sp_item_ids:
-            placeholders = ','.join('?' for _ in _sp_item_ids)
-            query = "UPDATE cobro SET loteId=?, estado=1 WHERE spItemId IN (" + placeholders + ")"
-            c.execute(query, [loteId] + list(_sp_item_ids))
-            rows_updated = c.rowcount
-
-        conn.commit()
         log.info(
-            'registrar_liquidacion_pdf: loteId=%s numero=%s cobros_vinculados=%d/%d',
-            loteId, numeroLiquidacion, rows_updated, len(_sp_item_ids),
+            "registrar_liquidacion_pdf: loteId=%s numero=%s cobros_vinculados=%d/%d",
+            lote_id,
+            numero_liquidacion,
+            rows_updated,
+            len(sp_item_ids),
         )
-        if rows_updated == 0 and _sp_item_ids:
+        if rows_updated == 0 and sp_item_ids:
             log.warning(
-                'registrar_liquidacion_pdf: 0 cobros vinculados para lote %s '
-                '(sp_item_ids=%s). Verificar columnas cobro.loteId/estado y los IDs.',
-                numeroLiquidacion, _sp_item_ids[:5],
+                "registrar_liquidacion_pdf: 0 cobros vinculados para lote %s (sp_item_ids=%s).",
+                numero_liquidacion,
+                sp_item_ids[:5],
             )
-        return loteId
+        return lote_id
     except Exception:
-        log.exception('Error registrando liquidacion PDF')
+        log.exception("Error registrando liquidacion PDF")
         return None
 
 
 def update_lote_sp_info(loteId: int, spFileId: str, spDownloadUrl: str):
-    """Actualiza los campos de SharePoint en un lote ya registrado."""
+    """Actualiza campos SharePoint en un lote existente."""
     if not loteId:
         return
-    conn = get_db_cxc()
+    engine = _engine()
     try:
-        c = conn.cursor()
-        c.execute(
-            "UPDATE lote SET spFileId=?, spDownloadUrl=? WHERE id=?",
-            spFileId, spDownloadUrl, loteId,
-        )
-        conn.commit()
+        with engine.begin() as conn:
+            conn.execute(
+                text("UPDATE lote SET spFileId=:sp_file_id, spDownloadUrl=:sp_download_url WHERE id=:id"),
+                {"sp_file_id": spFileId, "sp_download_url": spDownloadUrl, "id": loteId},
+            )
     except Exception:
-        log.exception('update_lote_sp_info: error actualizando lote %s', loteId)
+        log.exception("update_lote_sp_info: error actualizando lote %s", loteId)
 
 
 def update_lote_rev_sp_info(loteId: int, rev_file_id: str, rev_dl_url: str):
-    """Guarda el ID y URL del archivo firmado (_rev) en SP para un lote."""
+    """Guarda ID y URL del archivo firmado (_rev) en un lote."""
     if not loteId:
         return
-    conn = get_db_cxc()
+    engine = _engine()
     try:
-        c = conn.cursor()
-        c.execute(
-            "UPDATE lote SET spRevFileId=?, spRevDlUrl=? WHERE id=?",
-            rev_file_id, rev_dl_url, loteId,
-        )
-        conn.commit()
+        with engine.begin() as conn:
+            conn.execute(
+                text("UPDATE lote SET spRevFileId=:rev_id, spRevDlUrl=:rev_url WHERE id=:id"),
+                {"rev_id": rev_file_id, "rev_url": rev_dl_url, "id": loteId},
+            )
     except Exception:
-        log.exception('update_lote_rev_sp_info: error actualizando lote %s', loteId)
+        log.exception("update_lote_rev_sp_info: error actualizando lote %s", loteId)
 
 
 def clear_lote_rev_sp_info(loteId: int):
-    """Limpia los campos del archivo rev (tras confirmar/renombrar)."""
+    """Limpia campos del archivo rev en un lote."""
     if not loteId:
         return
-    conn = get_db_cxc()
+    engine = _engine()
     try:
-        c = conn.cursor()
-        c.execute(
-            "UPDATE lote SET spRevFileId=NULL, spRevDlUrl=NULL WHERE id=?",
-            loteId,
-        )
-        conn.commit()
+        with engine.begin() as conn:
+            conn.execute(
+                text("UPDATE lote SET spRevFileId=NULL, spRevDlUrl=NULL WHERE id=:id"),
+                {"id": loteId},
+            )
     except Exception:
-        log.exception('clear_lote_rev_sp_info: error actualizando lote %s', loteId)
+        log.exception("clear_lote_rev_sp_info: error actualizando lote %s", loteId)
 
 
 def get_liquidacion_por_recibo(no_recibo: str):
     """
-    Busca el último PDF de liquidación que contiene el recibo indicado.
-
-    Returns:
-        dict con {id, fechaGeneracion, ejecutivo, spFolderPath,
-                  spFileName, spFileId, spDownloadUrl}
-        o None si no hay registro.
+    Busca el ultimo PDF de liquidacion que contiene el recibo indicado.
     """
-    conn = get_db_cxc()
+    engine = _engine()
     try:
-        c = conn.cursor()
-        # Busca el registro más reciente que contenga el recibo (JSON array o substring)
-        c.execute(
-            """
-            SELECT TOP 1
-                id, fechaGeneracion, ejecutivo, generadoPor,
-                spFolderPath, spFileName, spFileId, spDownloadUrl,
-                numeroLiquidacion, estado
-            FROM lote
-            WHERE recibos LIKE ?
-            ORDER BY fechaGeneracion DESC
-            """,
-            f'%"{no_recibo}"%',
-        )
-        row = c.fetchone()
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(
+                    """
+                    SELECT TOP 1
+                        id, fechaGeneracion, ejecutivo, generadoPor,
+                        spFolderPath, spFileName, spFileId, spDownloadUrl,
+                        numeroLiquidacion, estado
+                    FROM lote
+                    WHERE recibos LIKE :recibo
+                    ORDER BY fechaGeneracion DESC
+                    """
+                ),
+                {"recibo": f'%"{no_recibo}"%'},
+            ).mappings().first()
+
         if not row:
             return None
+
         return {
-            'id':                row[0],
-            'fecha':             str(row[1]),
-            'ejecutivo':         row[2] or '',
-            'generadoPor':      row[3] or '',
-            'spFolderPath':    row[4] or '',
-            'spFileName':      row[5] or '',
-            'spFileId':        row[6] or '',
-            'spDownloadUrl':   row[7] or '',
-            'numeroLiquidacion': row[8] or '',
-            'estado':            row[9] or 'Procesado',
+            "id": row.get("id"),
+            "fecha": str(row.get("fechaGeneracion")),
+            "ejecutivo": row.get("ejecutivo") or "",
+            "generadoPor": row.get("generadoPor") or "",
+            "spFolderPath": row.get("spFolderPath") or "",
+            "spFileName": row.get("spFileName") or "",
+            "spFileId": row.get("spFileId") or "",
+            "spDownloadUrl": row.get("spDownloadUrl") or "",
+            "numeroLiquidacion": row.get("numeroLiquidacion") or "",
+            "estado": row.get("estado") or "Procesado",
         }
     except Exception:
-        import logging
-        logging.getLogger('admin_disp.cxc.operations').exception('Error buscando liquidacion por recibo')
+        log.exception("Error buscando liquidacion por recibo")
         return None
 
 
 def get_liquidaciones_recientes(limit: int = 50):
-    """Retorna los últimos N lotes."""
-    conn = get_db_cxc()
+    """Retorna los ultimos N lotes."""
+    engine = _engine()
     try:
-        c = conn.cursor()
         limit_value = int(limit)
-        c.execute(
-            """
-            SELECT id, fechaGeneracion, ejecutivo, generadoPor,
-                   rangoFechas, spFileName, spFileId, spDownloadUrl,
-                   numeroLiquidacion, estado, fechaFin, total
-            FROM lote
-            ORDER BY fechaGeneracion DESC
-            OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY
-            """,
-            (limit_value,),
-        )
-        cols = ['id', 'fechaGeneracion', 'ejecutivo', 'generadoPor',
-                'rangoFechas', 'spFileName', 'spFileId', 'spDownloadUrl',
-                'numeroLiquidacion', 'estado', 'fechaFin', 'total']
-        return [dict(zip(cols, row)) for row in c.fetchall()]
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    """
+                    SELECT id, fechaGeneracion, ejecutivo, generadoPor,
+                           rangoFechas, spFileName, spFileId, spDownloadUrl,
+                           numeroLiquidacion, estado, fechaFin, total
+                    FROM lote
+                    ORDER BY fechaGeneracion DESC
+                    OFFSET 0 ROWS FETCH NEXT :limit_value ROWS ONLY
+                    """
+                ),
+                {"limit_value": limit_value},
+            ).mappings().all()
+        return [dict(row) for row in rows]
     except Exception:
-        import logging
-        logging.getLogger('admin_disp.cxc.operations').exception('Error listando liquidaciones')
+        log.exception("Error listando liquidaciones")
         return []
 
 
-def get_lotes(limit: int = 200, estado: str = None, ejecutivo: str = None,
-              recibo: str = None, fecha_inicio: str = None, fechaFin: str = None,
-              sucursal: str = None, cliente: str = None):
+def get_lotes(
+    limit: int = 200,
+    estado: str = None,
+    ejecutivo: str = None,
+    recibo: str = None,
+    fecha_inicio: str = None,
+    fechaFin: str = None,
+    sucursal: str = None,
+    cliente: str = None,
+):
     """Retorna lotes con conteo de cobros asociados, con filtros opcionales."""
-    conn = get_db_cxc()
-    try:
-        c = conn.cursor()
-        conditions = []
-        params = []
-        if estado == 'Procesado':
-            # Incluye el valor legacy 'Procesado' y los sub-estados numéricos 11-14
-            conditions.append("(l.estado IN ('Procesado', '11', '12', '13', '14'))")
-        elif estado in ('Finalizado', 'Recibido'):
-            conditions.append('l.estado = ?')
-            params.append(estado)
-        if ejecutivo:
-            conditions.append('l.ejecutivo LIKE ?')
-            params.append(f'%{ejecutivo}%')
-        if recibo:
-            conditions.append('EXISTS (SELECT 1 FROM cobro c2 WHERE c2.loteId = l.id AND c2.noRecibo LIKE ?)')
-            params.append(f'%{recibo}%')
-        if sucursal:
-            conditions.append('EXISTS (SELECT 1 FROM cobro c2 WHERE c2.loteId = l.id AND c2.sucursal = ?)')
-            params.append(sucursal)
-        if cliente:
-            conditions.append('EXISTS (SELECT 1 FROM cobro c2 WHERE c2.loteId = l.id AND (c2.nombreCliente LIKE ? OR c2.codigoCliente LIKE ?))')
-            params.append(f'%{cliente}%')
-            params.append(f'%{cliente}%')
-        if fecha_inicio:
-            conditions.append('l.fechaGeneracion >= ?')
-            params.append(fecha_inicio)
-        if fechaFin:
-            conditions.append('l.fechaGeneracion < DATEADD(day, 1, CAST(? AS date))')
-            params.append(fechaFin)
-        where = ('WHERE ' + ' AND '.join(conditions)) if conditions else ''
-        limit_value = int(limit)
-        query = (
-            """
-            SELECT l.id, l.numeroLiquidacion, l.estado,
-                   l.fechaGeneracion, l.fechaFin,
-                   l.ejecutivo, l.generadoPor, l.total,
-                   l.spFileId, l.spFileName, l.spDownloadUrl,
-                   (SELECT COUNT(*) FROM cobro c WHERE c.loteId = l.id) AS num_cobros,
-                   l.liquidadoPor,
-                   l.spRevFileId, l.spRevDlUrl
-            FROM lote l
-            """
-            + where
-            + """
-            ORDER BY l.fechaGeneracion DESC
-            OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY
-            """
+    conditions: List[str] = []
+    params: Dict[str, Any] = {}
+
+    if estado == "Procesado":
+        conditions.append("(l.estado IN ('Procesado', '11', '12', '13', '14'))")
+    elif estado in ("Finalizado", "Recibido"):
+        conditions.append("l.estado = :estado")
+        params["estado"] = estado
+
+    if ejecutivo:
+        conditions.append("l.ejecutivo LIKE :ejecutivo")
+        params["ejecutivo"] = f"%{ejecutivo}%"
+
+    if recibo:
+        conditions.append(
+            "EXISTS (SELECT 1 FROM cobro c2 WHERE c2.loteId = l.id AND c2.noRecibo LIKE :recibo)"
         )
-        c.execute(query, params + [limit_value])
-        cols = ['id', 'numeroLiquidacion', 'estado', 'fechaGeneracion', 'fechaFin',
-                'ejecutivo', 'generadoPor', 'total', 'spFileId', 'spFileName',
-                'spDownloadUrl', 'num_cobros', 'liquidadoPor',
-                'spRevFileId', 'spRevDlUrl']
-        rows = []
-        for row in c.fetchall():
-            d = dict(zip(cols, row))
-            # Serializar fechas
-            for k in ('fechaGeneracion', 'fechaFin'):
-                if d[k] is not None:
-                    d[k] = str(d[k])
-            rows.append(d)
+        params["recibo"] = f"%{recibo}%"
+
+    if sucursal:
+        conditions.append(
+            "EXISTS (SELECT 1 FROM cobro c2 WHERE c2.loteId = l.id AND c2.sucursal = :sucursal)"
+        )
+        params["sucursal"] = sucursal
+
+    if cliente:
+        conditions.append(
+            "EXISTS (SELECT 1 FROM cobro c2 WHERE c2.loteId = l.id "
+            "AND (c2.nombreCliente LIKE :cliente_nombre OR c2.codigoCliente LIKE :cliente_codigo))"
+        )
+        params["cliente_nombre"] = f"%{cliente}%"
+        params["cliente_codigo"] = f"%{cliente}%"
+
+    if fecha_inicio:
+        conditions.append("l.fechaGeneracion >= :fecha_inicio")
+        params["fecha_inicio"] = fecha_inicio
+
+    if fechaFin:
+        conditions.append("l.fechaGeneracion < DATEADD(day, 1, CAST(:fecha_fin AS date))")
+        params["fecha_fin"] = fechaFin
+
+    where_sql = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    limit_value = int(limit)
+
+    query = text(
+        """
+        SELECT l.id, l.numeroLiquidacion, l.estado,
+               l.fechaGeneracion, l.fechaFin,
+               l.ejecutivo, l.generadoPor, l.total,
+               l.spFileId, l.spFileName, l.spDownloadUrl,
+               (SELECT COUNT(*) FROM cobro c WHERE c.loteId = l.id) AS num_cobros,
+               l.liquidadoPor,
+               l.spRevFileId, l.spRevDlUrl
+        FROM lote l
+        """
+        + where_sql
+        + """
+        ORDER BY l.fechaGeneracion DESC
+        OFFSET 0 ROWS FETCH NEXT :limit_value ROWS ONLY
+        """
+    )
+
+    engine = _engine()
+    try:
+        with engine.connect() as conn:
+            rows = [
+                dict(row)
+                for row in conn.execute(query, {**params, "limit_value": limit_value}).mappings().all()
+            ]
+
+        for row in rows:
+            for key in ("fechaGeneracion", "fechaFin"):
+                if row.get(key) is not None:
+                    row[key] = str(row[key])
         return rows
     except Exception:
-        log.exception('Error en get_lotes')
+        log.exception("Error en get_lotes")
         return []
 
 
 def get_next_numero_liquidacion() -> str:
-    """Reserva y retorna el próximo número de liquidación (LIQ-00001 format)."""
-    conn = get_db_cxc()
+    """Reserva y retorna el proximo numero de liquidacion."""
+    engine = _engine()
     try:
-        c = conn.cursor()
-        c.execute("SELECT COUNT(*) FROM lote")
-        cnt = (c.fetchone()[0] or 0) + 1
+        with engine.connect() as conn:
+            cnt = (conn.execute(text("SELECT COUNT(*) FROM lote")).scalar() or 0) + 1
         return f"LIQ-{cnt:05d}"
     except Exception:
         import time
+
         return f"LIQ-{int(time.time())}"
 
 
 def finalizar_lote(loteId: int, finalizado_por: str = None):
     """
-    Cambia el estado a 'Finalizado', registra fechaFin y marca
-    los cobros del lote como liquidado='Si' en la tabla cobro.
+    Cambia estado a Finalizado, registra fechaFin y actualiza cobros del lote.
     """
-    import datetime as _dt
-    conn = get_db_cxc()
+    now = datetime.datetime.now()
+    liquidado_por = finalizado_por or "Sistema"
+    fecha_iso = now.strftime("%Y-%m-%dT%H:%M:%S")
+
+    engine = _engine()
     try:
-        c = conn.cursor()
-        now = _dt.datetime.now()
-        c.execute(
-            """
-            UPDATE lote
-               SET estado = 'Finalizado', fechaFin = ?,
-                   liquidadoPor = ?
-             WHERE id = ? AND estado != 'Finalizado'
-            """,
-            now, finalizado_por or 'Sistema', loteId,
-        )
-        affected = c.rowcount
-        if affected > 0:
-            fecha_iso = now.strftime('%Y-%m-%dT%H:%M:%S')
-            liquidadoPor = finalizado_por or 'Sistema'
-            c.execute(
-                """
-                UPDATE cobro
-                   SET estado = 2,
-                       liquidado = 'Si',
-                       liquidadoPor = ?,
-                       fechaLiquidado = ?
-                 WHERE loteId = ?
-                   AND (liquidado IS NULL OR liquidado NOT IN ('Si', 'si', 'SI', '1', 'true'))
-                """,
-                liquidadoPor, fecha_iso, loteId,
+        with engine.begin() as conn:
+            result = conn.execute(
+                text(
+                    """
+                    UPDATE lote
+                    SET estado = 'Finalizado', fechaFin = :now, liquidadoPor = :liquidado_por
+                    WHERE id = :lote_id AND estado != 'Finalizado'
+                    """
+                ),
+                {"now": now, "liquidado_por": liquidado_por, "lote_id": loteId},
             )
-        conn.commit()
+            affected = result.rowcount or 0
+
+            if affected > 0:
+                conn.execute(
+                    text(
+                        """
+                        UPDATE cobro
+                        SET estado = 2,
+                            liquidado = 'Si',
+                            liquidadoPor = :liquidado_por,
+                            fechaLiquidado = :fecha_iso
+                        WHERE loteId = :lote_id
+                          AND (liquidado IS NULL OR liquidado NOT IN ('Si', 'si', 'SI', '1', 'true'))
+                        """
+                    ),
+                    {
+                        "liquidado_por": liquidado_por,
+                        "fecha_iso": fecha_iso,
+                        "lote_id": loteId,
+                    },
+                )
+
         return affected > 0
     except Exception:
-        log.exception('Error en finalizar_lote id=%s', loteId)
+        log.exception("Error en finalizar_lote id=%s", loteId)
         return False
 
 
 def get_lote_by_id(loteId: int):
-    """Retorna metadata de un lote por su ID, o None si no existe."""
-    conn = get_db_cxc()
+    """Retorna metadata de un lote por ID, o None si no existe."""
+    engine = _engine()
     try:
-        c = conn.cursor()
-        c.execute(
-            """
-            SELECT id, numeroLiquidacion, ejecutivo, spFolderPath,
-                   spFileId, spFileName, spDownloadUrl, estado,
-                   spRevFileId, spRevDlUrl
-            FROM lote WHERE id = ?
-            """,
-            loteId,
-        )
-        row = c.fetchone()
-        if not row:
-            return None
-        cols = ['id', 'numeroLiquidacion', 'ejecutivo', 'spFolderPath',
-                'spFileId', 'spFileName', 'spDownloadUrl', 'estado',
-                'spRevFileId', 'spRevDlUrl']
-        return dict(zip(cols, row))
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(
+                    """
+                    SELECT id, numeroLiquidacion, ejecutivo, spFolderPath,
+                           spFileId, spFileName, spDownloadUrl, estado,
+                           spRevFileId, spRevDlUrl
+                    FROM lote WHERE id = :lote_id
+                    """
+                ),
+                {"lote_id": loteId},
+            ).mappings().first()
+        return dict(row) if row else None
     except Exception:
-        log.exception('get_lote_by_id error id=%s', loteId)
+        log.exception("get_lote_by_id error id=%s", loteId)
         return None
 
 
 def update_lote_estado(loteId: int, nuevo_estado: str) -> bool:
-    """
-    Actualiza el campo estado de un lote.
-    Valores de documento: '11'=generado, '12'=firmado, '13'=en_revision, '14'=confirmado.
-    El valor 'Finalizado' lo gestiona finalizar_lote().
-    """
-    conn = get_db_cxc()
+    """Actualiza el campo estado de un lote."""
+    engine = _engine()
     try:
-        c = conn.cursor()
-        c.execute("UPDATE lote SET estado = ? WHERE id = ?", str(nuevo_estado), loteId)
-        conn.commit()
-        return (c.rowcount or 0) > 0
+        with engine.begin() as conn:
+            result = conn.execute(
+                text("UPDATE lote SET estado = :estado WHERE id = :lote_id"),
+                {"estado": str(nuevo_estado), "lote_id": loteId},
+            )
+        return (result.rowcount or 0) > 0
     except Exception:
-        log.exception('update_lote_estado error id=%s nuevo_estado=%s', loteId, nuevo_estado)
+        log.exception("update_lote_estado error id=%s nuevo_estado=%s", loteId, nuevo_estado)
         return False
 
 
 def get_cobros_by_lote(loteId: int):
     """Retorna todos los cobros vinculados a un lote."""
-    conn = get_db_cxc()
+    engine = _engine()
     try:
-        c = conn.cursor()
-        c.execute(
-            """
-            SELECT spItemId, codigoCliente, nombreCliente, banco, metodoPago,
-                   noFactura, valorPagado, noRecibo, creado, ejecutivo,
-                   sucursal, liquidado, liquidadoPor, fechaLiquidado
-            FROM cobro
-            WHERE loteId = ?
-            ORDER BY creado DESC
-            """,
-            loteId,
-        )
-        cols = [d[0] for d in c.description]
-        return [dict(zip(cols, row)) for row in c.fetchall()]
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    """
+                    SELECT spItemId, codigoCliente, nombreCliente, banco, metodoPago,
+                           noFactura, valorPagado, noRecibo, creado, ejecutivo,
+                           sucursal, liquidado, liquidadoPor, fechaLiquidado
+                    FROM cobro
+                    WHERE loteId = :lote_id
+                    ORDER BY creado DESC
+                    """
+                ),
+                {"lote_id": loteId},
+            ).mappings().all()
+        return [dict(row) for row in rows]
     except Exception:
-        log.exception('Error en get_cobros_by_lote id=%s', loteId)
+        log.exception("Error en get_cobros_by_lote id=%s", loteId)
         return []
 
 
-# ── Empleados helpers ─────────────────────────────────────────────────────────
+# empleados helpers ------------------------------------------------------------
 
 def get_codigo_empleado_by_nombre(nombre: str):
     """
-    Busca el código de empleado en la BD de empleados por nombre completo.
-
-    Args:
-        nombre: Nombre completo del ejecutivo a buscar (case-insensitive)
-
-    Returns:
-        str: codigo_empleado (ej: 'TGU001') o None si no se encuentra
+    Busca el codigo de empleado en la BD de empleados por nombre completo.
     """
     from admin_disp.core.db import get_db_empleados
+
     if not nombre or not nombre.strip():
         return None
+
     conn = get_db_empleados()
     try:
-        c = conn.cursor()
-        c.execute(
+        cur = conn.get_cursor()
+        cur.execute(
             "SELECT TOP 1 codigo_empleado FROM empleados "
             "WHERE LOWER(nombre_completo) = LOWER(?)",
             nombre.strip(),
         )
-        row = c.fetchone()
+        row = cur.fetchone()
         return row[0].strip() if row and row[0] else None
     except Exception:
         log.exception("Error buscando codigo_empleado para '%s'", nombre)
@@ -1026,18 +999,13 @@ def get_codigo_empleado_by_nombre(nombre: str):
 
 def fill_sucursal_from_empleados():
     """
-    Actualiza la columna sucursal en cobro para filas donde está vacía,
-    haciendo match por ejecutivoEmail = empleados.usuario (email completo).
-
-    Returns:
-        int: Cantidad de filas actualizadas
+    Actualiza sucursal en cobro cuando esta vacia, usando ejecutivoEmail -> empleados.usuario.
     """
     from admin_disp.core.db import get_db_empleados
-    cxc_conn = get_db_cxc()
+
     emp_conn = get_db_empleados()
     try:
-        c_emp = emp_conn.cursor()
-        # Obtener mapeo email completo → sucursal desde la BD de empleados
+        c_emp = emp_conn.get_cursor()
         c_emp.execute(
             "SELECT usuario, sucursal FROM empleados "
             "WHERE usuario IS NOT NULL AND usuario <> '' "
@@ -1049,33 +1017,35 @@ def fill_sucursal_from_empleados():
             if row[0]
         }
         if not mapping:
-            log.warning("fill_sucursal_from_empleados: no se encontró mapeo en empleados")
+            log.warning("fill_sucursal_from_empleados: no se encontro mapeo en empleados")
             return 0
 
-        # Obtener cobros con sucursal vacía o nula
-        c_cxc = cxc_conn.cursor()
-        c_cxc.execute(
-            "SELECT spItemId, ejecutivoEmail FROM cobro "
-            "WHERE (sucursal IS NULL OR sucursal = '') AND ejecutivoEmail IS NOT NULL"
-        )
-        cobros = c_cxc.fetchall()
-
         updated = 0
-        for spItemId, ejecutivo_email in cobros:
-            if not ejecutivo_email:
-                continue
-            email_key = ejecutivo_email.strip().lower()
-            sucursal = mapping.get(email_key)
-            if sucursal:
-                c_cxc.execute(
-                    "UPDATE cobro SET sucursal = ? WHERE spItemId = ?",
-                    (sucursal, spItemId),
+        engine = _engine()
+        with engine.begin() as conn:
+            cobros = conn.execute(
+                text(
+                    "SELECT spItemId, ejecutivoEmail FROM cobro "
+                    "WHERE (sucursal IS NULL OR sucursal = '') AND ejecutivoEmail IS NOT NULL"
                 )
-                updated += 1
+            ).all()
 
-        cxc_conn.commit()
+            for sp_item_id, ejecutivo_email in cobros:
+                if not ejecutivo_email:
+                    continue
+                sucursal = mapping.get(str(ejecutivo_email).strip().lower())
+                if not sucursal:
+                    continue
+
+                result = conn.execute(
+                    text("UPDATE cobro SET sucursal = :sucursal WHERE spItemId = :sp_item_id"),
+                    {"sucursal": sucursal, "sp_item_id": sp_item_id},
+                )
+                updated += result.rowcount or 0
+
         log.info("fill_sucursal_from_empleados: %d registros actualizados", updated)
         return updated
     except Exception:
         log.exception("Error en fill_sucursal_from_empleados")
         return 0
+

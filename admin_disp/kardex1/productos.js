@@ -21,7 +21,7 @@ async function cargarMarcasSelect() {
     if (!json.success) return;
 
     const select = document.getElementById('productoMarcaId');
-    select.innerHTML = safeHtml('<option value="">— Sin marca —</option>');
+    safeSetHTML(select, '<option value="">— Sin marca —</option>');
     json.data.forEach(m => {
       const opt = document.createElement('option');
       opt.value       = m.id;
@@ -40,7 +40,7 @@ async function cargarProductos() {
     productos = json.data;
     renderizarTabla();
   } catch {
-    document.getElementById('tablaProductos').innerHTML = safeHtml(`
+    safeSetHTML(document.getElementById('tablaProductos'), `
       <tr><td colspan="8" class="text-center py-8 text-red-400">
         <i class="fa fa-triangle-exclamation mr-2"></i>Error al cargar productos
       </td></tr>`);
@@ -51,14 +51,14 @@ async function cargarProductos() {
 function renderizarTabla() {
   const tbody = document.getElementById('tablaProductos');
   if (productos.length === 0) {
-    tbody.innerHTML = safeHtml(`
+    safeSetHTML(tbody, `
       <tr><td colspan="8" class="text-center py-8 text-gray-400">
         No hay productos registrados
       </td></tr>`);
     return;
   }
 
-  tbody.innerHTML = safeHtml(productos.map(p => `
+  safeSetHTML(tbody, productos.map(p => `
     <tr class="hover:bg-gray-50 transition ${p.estado === 0 ? 'opacity-60' : ''}">
       <td class="px-4 py-3 text-gray-500">${p.id}</td>
       <td class="px-4 py-3 font-medium">${escHtml(p.nombre)}</td>
@@ -220,7 +220,7 @@ function abrirModalConfirmar(id, estadoActual) {
   const nombre     = p ? p.nombre : '';
   const esDesact   = estadoActual === 1;
 
-  document.getElementById('confirmarIcono').innerHTML = safeHtml(esDesact
+  safeSetHTML(document.getElementById('confirmarIcono'), esDesact
     ? `<span class="text-orange-500"><i class="fa fa-toggle-off text-5xl"></i></span>`
     : `<span class="text-green-500"><i class="fa fa-toggle-on text-5xl"></i></span>`);
 

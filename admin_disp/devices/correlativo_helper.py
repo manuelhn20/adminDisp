@@ -87,7 +87,7 @@ def generar_correlativo(db_connection, formato: str) -> Optional[str]:
         None si hay error
     """
     try:
-        cursor = db_connection.cursor()
+        cursor = db_connection.get_cursor()
         
         # Llamar al SP con auditoría usando snake_case
         cursor.execute("""
@@ -254,7 +254,7 @@ def obtener_o_generar_correlativo(db_connection, asignacion_id: int, categoria: 
             correlativo_numero = int(correlativo_completo.split('-')[-1])
             
             # Guardar en la base de datos como INT
-            cursor = db_connection.cursor()
+            cursor = db_connection.get_cursor()
             cursor.execute(
                 "UPDATE asignacion SET correlativo = ? WHERE id_asignacion = ? AND correlativo IS NULL",
                 (correlativo_numero, asignacion_id)

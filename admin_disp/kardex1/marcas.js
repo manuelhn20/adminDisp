@@ -24,7 +24,7 @@ async function cargarMarcas() {
     marcas = json.data;
     renderizarTabla();
   } catch (err) {
-    document.getElementById('tablaMarcas').innerHTML = safeHtml(`
+    safeSetHTML(document.getElementById('tablaMarcas'), `
       <tr><td colspan="5" class="text-center py-8 text-red-400">
         <i class="fa fa-triangle-exclamation mr-2"></i>Error al cargar marcas
       </td></tr>`);
@@ -34,14 +34,14 @@ async function cargarMarcas() {
 function renderizarTabla() {
   const tbody = document.getElementById('tablaMarcas');
   if (marcas.length === 0) {
-    tbody.innerHTML = safeHtml(`
+    safeSetHTML(tbody, `
       <tr><td colspan="5" class="text-center py-8 text-gray-400">
         No hay marcas registradas
       </td></tr>`);
     return;
   }
 
-  tbody.innerHTML = safeHtml(marcas.map(m => `
+  safeSetHTML(tbody, marcas.map(m => `
     <tr class="hover:bg-gray-50 transition ${m.estado === 0 ? 'opacity-60' : ''}">
       <td class="px-4 py-3 text-gray-500">${m.id}</td>
       <td class="px-4 py-3 font-medium">${escHtml(m.nombre)}</td>
@@ -153,7 +153,7 @@ function abrirModalConfirmar(id, estadoActual) {
 
   const esDesactivar = estadoActual === 1;
 
-  document.getElementById('confirmarIcono').innerHTML = safeHtml(esDesactivar
+  safeSetHTML(document.getElementById('confirmarIcono'), esDesactivar
     ? `<span class="text-orange-500"><i class="fa fa-toggle-off"></i></span>`
     : `<span class="text-green-500"><i class="fa fa-toggle-on"></i></span>`);
 

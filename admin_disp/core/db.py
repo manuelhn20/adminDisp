@@ -1,5 +1,7 @@
-import pyodbc
 from flask import current_app, g
+from sqlalchemy import create_engine
+from urllib.parse import quote_plus
+from .sa_compat import SACompatConnection
 
 
 def build_conn_str(driver, server, database, user=None, password=None, trusted=False):
@@ -36,48 +38,88 @@ def get_db_connection(database_type='main'):
 def get_db_main():
     """Conexión a base de datos principal (admin_disp)."""
     if 'db_main' not in g:
-        cfg = current_app.config
+        g.db_main = SACompatConnection(get_sa_engine_main())
+    return g.db_main
+
+
+def get_sa_engine_main():
+    """Engine SQLAlchemy Core para BD principal (reutilizable a nivel app)."""
+    app = current_app
+    engines = app.extensions.setdefault('sa_engines', {})
+    if 'main' not in engines:
+        cfg = app.config
         conn_str = build_conn_str(
             cfg['DB_DRIVER'], cfg['DB_SERVER'], cfg['DB_DATABASE'],
             cfg.get('DB_USER'), cfg.get('DB_PASSWORD'), cfg.get('DB_TRUSTED')
         )
-        g.db_main = pyodbc.connect(conn_str)
-    return g.db_main
+        connect_url = "mssql+pyodbc:///?odbc_connect=" + quote_plus(conn_str)
+        engines['main'] = create_engine(connect_url, future=True, pool_pre_ping=True)
+    return engines['main']
+
+
+def get_sa_engine_kardex():
+    """Engine SQLAlchemy Core para BD Kardex (reutilizable a nivel app)."""
+    app = current_app
+    engines = app.extensions.setdefault('sa_engines', {})
+    if 'kardex' not in engines:
+        cfg = app.config
+        conn_str = build_conn_str(
+            cfg['DB_DRIVER'], cfg['DB_SERVER'], 'kardex',
+            cfg.get('DB_USER'), cfg.get('DB_PASSWORD'), cfg.get('DB_TRUSTED')
+        )
+        connect_url = "mssql+pyodbc:///?odbc_connect=" + quote_plus(conn_str)
+        engines['kardex'] = create_engine(connect_url, future=True, pool_pre_ping=True)
+    return engines['kardex']
+
+
+def get_sa_engine_cxc():
+    """Engine SQLAlchemy Core para BD CxC (reutilizable a nivel app)."""
+    app = current_app
+    engines = app.extensions.setdefault('sa_engines', {})
+    if 'cxc' not in engines:
+        cfg = app.config
+        conn_str = build_conn_str(
+            cfg['DB_DRIVER'], cfg['DB_SERVER'], 'cxc',
+            cfg.get('DB_USER'), cfg.get('DB_PASSWORD'), cfg.get('DB_TRUSTED')
+        )
+        connect_url = "mssql+pyodbc:///?odbc_connect=" + quote_plus(conn_str)
+        engines['cxc'] = create_engine(connect_url, future=True, pool_pre_ping=True)
+    return engines['cxc']
+
+
+def get_sa_engine_empleados():
+    """Engine SQLAlchemy Core para BD de empleados (reutilizable a nivel app)."""
+    app = current_app
+    engines = app.extensions.setdefault('sa_engines', {})
+    if 'empleados' not in engines:
+        cfg = app.config
+        conn_str = build_conn_str(
+            cfg['EMP_DRIVER'], cfg['EMP_SERVER'], cfg['EMP_DATABASE'],
+            cfg.get('EMP_USER'), cfg.get('EMP_PASSWORD'), cfg.get('EMP_TRUSTED')
+        )
+        connect_url = "mssql+pyodbc:///?odbc_connect=" + quote_plus(conn_str)
+        engines['empleados'] = create_engine(connect_url, future=True, pool_pre_ping=True)
+    return engines['empleados']
 
 
 def get_db_empleados():
     """Conexión a base de datos de empleados."""
     if 'db_empleados' not in g:
-        cfg = current_app.config
-        conn_str = build_conn_str(
-            cfg['EMP_DRIVER'], cfg['EMP_SERVER'], cfg['EMP_DATABASE'],
-            cfg.get('EMP_USER'), cfg.get('EMP_PASSWORD'), cfg.get('EMP_TRUSTED')
-        )
-        g.db_empleados = pyodbc.connect(conn_str)
+        g.db_empleados = SACompatConnection(get_sa_engine_empleados())
     return g.db_empleados
 
 
 def get_db_cxc():
     """Conexión a base de datos de CxC (Cuentas por Cobrar)."""
     if 'db_cxc' not in g:
-        cfg = current_app.config
-        conn_str = build_conn_str(
-            cfg['DB_DRIVER'], cfg['DB_SERVER'], 'cxc',
-            cfg.get('DB_USER'), cfg.get('DB_PASSWORD'), cfg.get('DB_TRUSTED')
-        )
-        g.db_cxc = pyodbc.connect(conn_str)
+        g.db_cxc = SACompatConnection(get_sa_engine_cxc())
     return g.db_cxc
 
 
 def get_db_kardex():
     """Conexión a base de datos de Kardex (control de inventario)."""
     if 'db_kardex' not in g:
-        cfg = current_app.config
-        conn_str = build_conn_str(
-            cfg['DB_DRIVER'], cfg['DB_SERVER'], 'kardex',
-            cfg.get('DB_USER'), cfg.get('DB_PASSWORD'), cfg.get('DB_TRUSTED')
-        )
-        g.db_kardex = pyodbc.connect(conn_str)
+        g.db_kardex = SACompatConnection(get_sa_engine_kardex())
     return g.db_kardex
 
 

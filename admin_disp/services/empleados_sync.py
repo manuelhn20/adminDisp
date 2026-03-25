@@ -346,7 +346,7 @@ def sincronizar_empleados(cfg: Optional[SharePointConfig] = None, only: Optional
             logger.info("Total archivos - principal=%s, alterno_filtrados=%s, total_combined=%s", primary_len, alt_filtered_len, len(empleados))
 
         conn = get_db_empleados()
-        cur = conn.cursor()
+        cur = conn.get_cursor()
 
         sql_insert = (
             "INSERT INTO empleados "

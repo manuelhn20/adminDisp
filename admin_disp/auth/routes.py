@@ -128,7 +128,7 @@ def validar_usuario():
             return jsonify({'error': 'Usuario requerido'}), 400
 
         svc = AuthService()
-        cur = svc.conn.cursor()
+        cur = svc.conn.get_cursor()
         cur.execute(
             "SELECT id_usuario, fecha_ultimo_acceso, codigo, fecha_codigo FROM usuarios WHERE username = ?",
             (username,)

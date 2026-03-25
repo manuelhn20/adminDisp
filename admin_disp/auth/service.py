@@ -41,7 +41,7 @@ class AuthService:
         try:
             logger.info("=== INICIO LOGIN: username='%s' ===", username)
 
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT id_usuario, password_hash, fk_id_empleado, fecha_ultimo_acceso, estado "
                 "FROM usuarios WHERE username = ?",
@@ -104,7 +104,7 @@ class AuthService:
     def get_user_roles(self, user_id):
         """Obtiene roles de usuario (tabla legacy)."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT r.nombre_rol FROM usuarios_x_roles uxr "
                 "JOIN roles r ON r.id_rol = uxr.fk_id_rol "
@@ -119,7 +119,7 @@ class AuthService:
     def get_empleado_name(self, user_id):
         """Obtiene nombre del empleado asociado al usuario."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT e.nombre_completo FROM usuarios u "
                 "LEFT JOIN empleados e ON e.id_empleado = u.fk_id_empleado "
@@ -135,7 +135,7 @@ class AuthService:
     def get_empleado_sucursal(self, user_id):
         """Obtiene la sucursal del empleado asociado al usuario (para operadores)."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT e.sucursal FROM usuarios u "
                 "LEFT JOIN empleados e ON e.id_empleado = u.fk_id_empleado "
@@ -151,7 +151,7 @@ class AuthService:
     def get_all_employees(self):
         """Obtiene todos los empleados."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT id_empleado, nombre_completo, empresa, puesto, departamento "
                 "FROM empleados ORDER BY nombre_completo"
@@ -167,7 +167,7 @@ class AuthService:
     def get_employees_without_user(self):
         """Obtiene empleados que no tienen usuario asignado."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT e.id_empleado, e.nombre_completo, e.empresa, e.puesto, e.departamento "
                 "FROM empleados e "
@@ -190,7 +190,7 @@ class AuthService:
     def is_first_user_exists(self):
         """Verifica si existe algún usuario en el sistema."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute("SELECT COUNT(*) FROM usuarios")
             return cur.fetchone()[0] > 0
         except Exception:
@@ -202,7 +202,7 @@ class AuthService:
         if self.is_first_user_exists():
             return False, "Ya existe un administrador en el sistema."
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             self.conn.autocommit = False
             pwd_hash = generate_password_hash(password)
             cur.execute(
@@ -238,7 +238,7 @@ class AuthService:
             return False, "Debe especificar un rol"
 
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             self.conn.autocommit = False
 
             cur.execute("SELECT COUNT(*) FROM usuarios WHERE username = ?", (username,))
@@ -290,7 +290,7 @@ class AuthService:
     def list_all_users(self):
         """Lista todos los usuarios con sus roles."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT u.id_usuario, u.username, u.fk_id_empleado, "
                 "STRING_AGG(r.nombre_rol, ', ') as roles "
@@ -319,7 +319,7 @@ class AuthService:
     def get_user_by_id(self, user_id):
         """Obtiene detalles de un usuario por ID."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT u.id_usuario, u.username, u.fk_id_empleado, "
                 "(SELECT TOP 1 id_rol FROM usuarios_x_roles WHERE fk_id_usuario = u.id_usuario) "
@@ -342,7 +342,7 @@ class AuthService:
     def update_user(self, user_id, role_id, password=None):
         """Actualiza rol y/o contraseña de un usuario."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             self.conn.autocommit = False
             cur.execute("DELETE FROM usuarios_x_roles WHERE fk_id_usuario = ?", (user_id,))
             cur.execute(
@@ -366,7 +366,7 @@ class AuthService:
     def deactivate_user(self, user_id):
         """Desactiva un usuario removiendo sus roles."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute("DELETE FROM usuarios_x_roles WHERE fk_id_usuario = ?", (user_id,))
             self.conn.commit()
             return True, None
@@ -378,7 +378,7 @@ class AuthService:
     def list_deactivated_users(self):
         """Lista usuarios sin roles (desactivados)."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT u.id_usuario, u.username, u.fk_id_empleado FROM usuarios u "
                 "WHERE u.id_usuario NOT IN (SELECT fk_id_usuario FROM usuarios_x_roles) "
@@ -399,7 +399,7 @@ class AuthService:
     def get_roles(self):
         """Obtiene lista de roles disponibles."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute("SELECT id_rol, nombre_rol FROM roles ORDER BY nombre_rol")
             return [{'id_rol': r[0], 'nombre_rol': r[1]} for r in cur.fetchall()]
         except Exception:
@@ -409,7 +409,7 @@ class AuthService:
     def restore_user(self, user_id):
         """Reactiva un usuario asignándole el rol 'operador' por defecto."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             self.conn.autocommit = False
             cur.execute("SELECT TOP 1 id_rol FROM roles WHERE nombre_rol = 'operador'")
             default_role = cur.fetchone()
@@ -437,7 +437,7 @@ class AuthService:
         """Establece el estado del usuario y gestiona roles según corresponda."""
         cur = None
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             self.conn.autocommit = False
             messages = []
             affected = 0
@@ -507,7 +507,7 @@ class AuthService:
         """Sincroniza usuarios.estado según empleados.estado."""
         updated = 0
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT id_usuario, fk_id_empleado FROM empleados.dbo.usuarios "
                 "WHERE fk_id_empleado IS NOT NULL"
@@ -570,7 +570,7 @@ class AuthServiceExtended(AuthService):
         Retorna (None, None, None) si no se puede obtener.
         """
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT u.username, e.nombre_completo, e.usuario "
                 "FROM empleados.dbo.usuarios u "
@@ -593,7 +593,7 @@ class AuthServiceExtended(AuthService):
     def get_user_systems_roles(self, user_id):
         """Obtiene los roles del usuario organizados por sistema."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT s.nombre_sistema, r.nombre_rol "
                 "FROM empleados.dbo.usuarios_x_roles_x_sistemas uxrxs "
@@ -628,7 +628,7 @@ class AuthServiceExtended(AuthService):
     def get_active_employees_with_email(self):
         """Obtiene empleados activos con email válido."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT id_empleado, nombre_completo, usuario, estado "
                 "FROM empleados.dbo.empleados "
@@ -645,7 +645,7 @@ class AuthServiceExtended(AuthService):
     def get_all_active_employees(self):
         """Obtiene todos los empleados activos (con o sin usuario)."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT id_empleado, nombre_completo, usuario, estado, "
                 "CASE WHEN usuario IS NOT NULL AND usuario != '' AND usuario LIKE '%@%' THEN 1 ELSE 0 END AS tiene_usuario "
@@ -667,7 +667,7 @@ class AuthServiceExtended(AuthService):
     def get_sistemas(self):
         """Obtiene la lista de sistemas disponibles."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT id_sistema, nombre_sistema, descripcion, activo "
                 "FROM empleados.dbo.sistemas WHERE activo=1 ORDER BY id_sistema"
@@ -691,7 +691,7 @@ class AuthServiceExtended(AuthService):
     def get_roles_genericos(self):
         """Obtiene roles genéricos (admin, operador, auditor; excluye superAdmin)."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT id_rol, nombre_rol, descripcion "
                 "FROM empleados.dbo.roles WHERE id_rol IN (1,2,3) ORDER BY id_rol"
@@ -706,7 +706,7 @@ class AuthServiceExtended(AuthService):
     def get_all_users(self):
         """Obtiene todos los usuarios del sistema."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT u.id_usuario, u.username, e.nombre_completo, u.fecha_creacion "
                 "FROM empleados.dbo.usuarios u "
@@ -731,7 +731,7 @@ class AuthServiceExtended(AuthService):
     def get_usuario_by_id(self, user_id):
         """Obtiene detalles completos de un usuario."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT u.id_usuario, u.username, u.password_hash, u.fecha_ultimo_acceso, "
                 "u.fecha_creacion, u.codigo, u.fecha_codigo, u.codigo_intentos_fallidos, "
@@ -768,7 +768,7 @@ class AuthServiceExtended(AuthService):
         if not employee_id:
             return False, "Debe seleccionar un empleado"
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             self.conn.autocommit = False
 
             cur.execute(
@@ -817,7 +817,7 @@ class AuthServiceExtended(AuthService):
             db_main: Parámetro ignorado (mantenido por compatibilidad), usa self.conn para auditoría
         """
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             self.conn.autocommit = False
 
             # Obtener datos actuales del usuario
@@ -964,7 +964,7 @@ class AuthServiceExtended(AuthService):
     def _log_auditoria_cambio_roles(self, usuario_realiza, usuario_afectado, id_usuario_afectado, rol_anterior, rol_nuevo):
         """Registra cambio de roles en tabla auditoria de BD empleados (misma conexión)."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "INSERT INTO empleados.dbo.auditoria "
                 "(usuario_que_realiza, usuario_afectado, id_usuario_afectado, rolAnterior, rolNuevo) "
@@ -979,7 +979,7 @@ class AuthServiceExtended(AuthService):
     def get_codigo_temporal(self, user_id):
         """Obtiene el código temporal de un usuario y verifica su vigencia."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             cur.execute(
                 "SELECT codigo, fecha_codigo, codigo_regenerado "
                 "FROM empleados.dbo.usuarios WHERE id_usuario = ?",
@@ -1007,7 +1007,7 @@ class AuthServiceExtended(AuthService):
     def regenerar_codigo_temporal(self, user_id):
         """Regenera el código temporal de un usuario."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             self.conn.autocommit = False
             cur.execute(
                 "SELECT codigo_regenerado FROM empleados.dbo.usuarios WHERE id_usuario = ?",
@@ -1042,7 +1042,7 @@ class AuthServiceExtended(AuthService):
     def validar_codigo_temporal(self, username, codigo):
         """Valida el código temporal de un usuario (máx. 3 intentos, expira en 1 hora)."""
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             self.conn.autocommit = False
             cur.execute(
                 "SELECT id_usuario, codigo, fecha_codigo, codigo_intentos_fallidos "
@@ -1118,7 +1118,7 @@ class AuthServiceExtended(AuthService):
             return False, "La contraseña debe contener al menos un símbolo especial"
 
         try:
-            cur = self.conn.cursor()
+            cur = self.conn.get_cursor()
             self.conn.autocommit = False
             cur.execute(
                 "SELECT password_hash FROM empleados.dbo.usuarios WHERE id_usuario = ?",

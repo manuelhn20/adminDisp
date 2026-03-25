@@ -2090,7 +2090,11 @@ async function reloadDevicesTable() {
     const html = await response.text();
     const tbody = document.querySelector('#devicesTable tbody');
     if (tbody) {
-      tbody.innerHTML = html;
+      if (typeof window.safeSetHTML === 'function') {
+        window.safeSetHTML(tbody, html);
+      } else {
+        tbody.innerHTML = html;
+      }
     }
     
     if (table) hideTableLoader(table.parentElement || table);

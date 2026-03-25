@@ -1,7 +1,8 @@
 import os
 import glob
 import logging
-import pyodbc
+from urllib.parse import quote_plus
+from sqlalchemy import create_engine
 
 logger = logging.getLogger('admin_disp.services.backup')
 
@@ -94,25 +95,21 @@ def run_backups(app):
             conn_str = _build_conn_str(app.config, use_emp=use_emp)
             logger.info('[Backup] Respaldando [%s] → %s', db_name, backup_file)
 
-            conn = pyodbc.connect(conn_str, autocommit=True, timeout=300)
+            connect_url = "mssql+pyodbc:///?odbc_connect=" + quote_plus(conn_str)
+            engine = create_engine(connect_url, future=True, pool_pre_ping=True)
             try:
-                cursor = conn.cursor()
                 sql = (
                     f"BACKUP DATABASE [{db_name}] "
                     f"TO DISK = N'{backup_file}' "
                     f"WITH COMPRESSION, FORMAT, INIT, "
                     f"NAME = N'{db_name} backup {timestamp}'"
                 )
-                cursor.execute(sql)
-                # Consumir los result sets informativos que genera BACKUP DATABASE
-                try:
-                    while cursor.nextset():
-                        pass
-                except Exception:
-                    pass
+                with engine.connect() as conn:
+                    conn = conn.execution_options(isolation_level='AUTOCOMMIT')
+                    conn.exec_driver_sql(sql)
                 logger.info('[Backup] Completado: [%s]', db_name)
             finally:
-                conn.close()
+                engine.dispose()
 
         except Exception:
             logger.exception('[Backup] Error al respaldar [%s]', db_name)

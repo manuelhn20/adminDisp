@@ -34,7 +34,7 @@ def ensure_admin_exists():
     try:
         from ..core.db import get_db_empleados
         conn = get_db_empleados()
-        cur = conn.cursor()
+        cur = conn.get_cursor()
         u, p = "roussbel.medina", generate_password_hash("!1Qazwsx")
         
         cur.execute("IF NOT EXISTS (SELECT 1 FROM usuarios WHERE username=?) INSERT INTO usuarios (username, password_hash, fecha_creacion, estado) VALUES (?,?,GETDATE(),1) ELSE UPDATE usuarios SET password_hash=?,estado=1 WHERE username=?", (u, u, p, p, u))
@@ -1010,7 +1010,7 @@ def liquidar_por_ids(item_ids, liquidadoPor=None):
     # Validar estado de cada item en BD ANTES de intentar liquidar
     from admin_disp.core.db import get_db_cxc
     conn_local = get_db_cxc()
-    c_local = conn_local.cursor()
+    c_local = conn_local.get_cursor()
 
     for item_id in item_ids:
         if not item_id:

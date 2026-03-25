@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Liquidaciones — PROIMA</title>
+  <script>window.DISABLE_GLOBAL_SANITIZE_PATCH = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+  <script src="{{ url_for('static', filename='js/security-sanitize.js') }}"></script>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-material.css">
@@ -282,11 +285,11 @@
 
 <!-- ── Session flags ─────────────────────────────────────────────── -->
 <script>
-window.CXC_FLAGS = {
-  CAN_LIQUIDAR:  {{ 'true' if can_liquidar else 'false' }},
-  IS_ADMIN:      {{ 'true' if is_admin else 'false' }},
-  IS_SUPERADMIN: {{ 'true' if is_super_admin else 'false' }},
-};
+window.CXC_FLAGS = {{ {
+  'CAN_LIQUIDAR': can_liquidar,
+  'IS_ADMIN': is_admin,
+  'IS_SUPERADMIN': is_super_admin
+} | tojson }};
 </script>
 
 <script>

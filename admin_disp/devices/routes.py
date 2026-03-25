@@ -423,7 +423,7 @@ def get_next_identifier_api():
         
         # Buscar el máximo correlativo para esta empresa Y tipo de dispositivo
         svc = DeviceService()
-        cur = svc.conn.cursor()
+        cur = svc.conn.get_cursor()
         
         # Buscar todos los identificadores que empiecen con el prefijo específico: empresa-tipo
         # Ejemplo: PRO-PC-%, PRO-MOU-%, ELM-CEL-%
@@ -491,7 +491,7 @@ def check_serial_api():
         if not numero_serie:
             return jsonify({'exists': False}), 200
         svc = DeviceService()
-        cur = svc.conn.cursor()
+        cur = svc.conn.get_cursor()
         # Consulta case-insensitive usando UPPER
         if device_id:
             cur.execute("""
@@ -556,7 +556,7 @@ def check_identifier_api():
             logger.error('Database connection not available in check_identifier_api')
             return jsonify({'exists': False, 'message': 'Error de conexión a base de datos'}), 500
         
-        cur = svc.conn.cursor()
+        cur = svc.conn.get_cursor()
         
         if device_id:
             # Excluir el dispositivo actual (para edición)
@@ -1058,7 +1058,7 @@ def get_asignaciones_tbody():
     empleados = []
     try:
         conn_emp = get_db_empleados()
-        cur_emp = conn_emp.cursor()
+        cur_emp = conn_emp.get_cursor()
         try:
             cur_emp.execute("SELECT id_empleado, nombre_completo, empresa, puesto FROM empleados ORDER BY nombre_completo")
             rows = cur_emp.fetchall()
@@ -1428,7 +1428,7 @@ def lista_asignaciones():
     empleados = []
     try:
         conn_emp = get_db_empleados()
-        cur_emp = conn_emp.cursor()
+        cur_emp = conn_emp.get_cursor()
         try:
             # Traer campos desde empleados: id_empleado, nombre_completo, empresa, puesto, estado
             cur_emp.execute(
@@ -1663,7 +1663,7 @@ def update_asignacion_api(asignacion_id: int):
             return jsonify({'success': False, 'message': 'Asignación no encontrada'}), 404
         svc.update_asignacion_end_date(asignacion_id, fecha_fin)
         if observ is not None:
-            cur = svc.conn.cursor()
+            cur = svc.conn.get_cursor()
             cur.execute("UPDATE asignacion SET observaciones = ? WHERE id_asignacion = ?", (observ, asignacion_id))
             svc.conn.commit()
         usuario = session.get('username', 'UNKNOWN')
@@ -1752,7 +1752,7 @@ def get_reclamo_api(reclamo_id: int):
         return jsonify({'error': 'Reclamo no encontrado'}), 404
     # Detect presence of stored images to allow previews without fetching binary yet
     try:
-        cur = svc.conn.cursor()
+        cur = svc.conn.get_cursor()
         cur.execute("SELECT CASE WHEN img_evidencia IS NULL THEN 0 ELSE 1 END AS has_evid, CASE WHEN img_form IS NULL THEN 0 ELSE 1 END AS has_form FROM reclamo_seguro WHERE id_reclamo = ?", (reclamo_id,))
         row = cur.fetchone()
         if row:
@@ -1789,7 +1789,7 @@ def get_reclamo_api(reclamo_id: int):
 @require_roles(['operador','admin'], sistema='dispositivos')
 def get_reclamo_evidencia(reclamo_id: int):
     svc = DeviceService()
-    cur = svc.conn.cursor()
+    cur = svc.conn.get_cursor()
     cur.execute("SELECT img_evidencia FROM reclamo_seguro WHERE id_reclamo = ?", (reclamo_id,))
     row = cur.fetchone()
     if not row or not row[0]:
@@ -1803,7 +1803,7 @@ def get_reclamo_evidencia(reclamo_id: int):
 @require_roles(['operador','admin'], sistema='dispositivos')
 def get_reclamo_form_image(reclamo_id: int):
     svc = DeviceService()
-    cur = svc.conn.cursor()
+    cur = svc.conn.get_cursor()
     cur.execute("SELECT img_form FROM reclamo_seguro WHERE id_reclamo = ?", (reclamo_id,))
     row = cur.fetchone()
     if not row or not row[0]:
@@ -1948,7 +1948,7 @@ def create_device():
             numero_serie_val = (form.get('numero_serie') or '').strip()
             imei_val = (form.get('imei') or '').strip()
             imei2_val = (form.get('imei2') or '').strip()
-            cur = svc.conn.cursor()
+            cur = svc.conn.get_cursor()
             if numero_serie_val:
                 cur.execute("SELECT id_dispositivo FROM dispositivo WHERE numero_serie = ?", (numero_serie_val,))
                 if cur.fetchone():
@@ -2184,7 +2184,7 @@ def copy_components_api(device_id: int):
     
     svc = DeviceService()
     try:
-        cur = svc.conn.cursor()
+        cur = svc.conn.get_cursor()
 
         # Eliminar todos los componentes existentes del dispositivo (los vacíos creados por defecto)
         # para evitar duplicados al copiar la sugerencia.
@@ -2481,7 +2481,7 @@ def update_device_api(device_id: int):
                     estado_int = 0
                 elif txt in ('asignado', 'asignada'):
                     estado_int = 1
-                elif txt in ('en reparacion', 'en_reparacion', 'en-reparacion', 'en reparaciÃ³n', 'en reparación'):
+                elif txt in ('en reparacion', 'en_reparacion', 'en-reparacion', 'en reparación'):
                     estado_int = 2
                 elif txt in ('eliminado', 'eliminada'):
                     estado_int = 3
@@ -2665,7 +2665,7 @@ def get_current_user():
         nombre = username
         try:
             svc = DeviceService()
-            cur = get_db_empleados().cursor()
+            cur = get_db_empleados().get_cursor()
             cur.execute("SELECT fk_id_empleado FROM empleados.dbo.usuarios WHERE id_usuario = ?", (session['user_id'],))
             user_row = cur.fetchone()
             if user_row and user_row[0]:
@@ -2792,7 +2792,7 @@ def update_empleado_pasaporte(empleado_id: int):
     
     try:
         conn = get_db_empleados()
-        cur = conn.cursor()
+        cur = conn.get_cursor()
         
         # Verificar que el empleado existe
         cur.execute("SELECT id_empleado FROM empleados.dbo.empleados WHERE id_empleado = ?", (empleado_id,))
@@ -3391,7 +3391,7 @@ def generate_and_upload(asignacion_id: int):
         try:
             from flask import session
             if 'user_id' in session:
-                cur_emp = get_db_empleados().cursor()
+                cur_emp = get_db_empleados().get_cursor()
                 cur_emp.execute("SELECT id_usuario, fk_id_empleado FROM empleados.dbo.usuarios WHERE id_usuario = ?", (session['user_id'],))
                 user_row = cur_emp.fetchone()
                 if user_row:
@@ -3554,7 +3554,7 @@ def generate_and_upload(asignacion_id: int):
         from .correlativo_helper import obtener_o_generar_correlativo, extraer_numero_correlativo
         
         try:
-            cur_corr = svc.conn.cursor()
+            cur_corr = svc.conn.get_cursor()
             cur_corr.execute("SELECT correlativo FROM asignacion WITH (UPDLOCK, HOLDLOCK) WHERE id_asignacion = ?", (asignacion_id,))
             row_corr = cur_corr.fetchone()
             correlativo_actual = row_corr[0] if row_corr else None
@@ -3810,7 +3810,7 @@ def seleccionar_tipo_documentacion(asignacion_id: int):
         correlativo_str = None
         try:
             db = get_db_main()
-            cur_corr = db.cursor()
+            cur_corr = db.get_cursor()
             
             # Verificar estado_documentacion y si ya existe CORRELATIVO
             cur_corr.execute("SELECT estado_documentacion, correlativo FROM dbo.asignacion WHERE id_asignacion = ?", (asignacion_id,))
@@ -4325,7 +4325,7 @@ def generate_documentation(asignacion_id: int):
         puesto_usuario = '[PUESTO]'
         try:
             if 'user_id' in session:
-                cur_user = db.cursor()
+                cur_user = db.get_cursor()
                 cur_user.execute("SELECT fk_id_empleado FROM empleados.dbo.usuarios WHERE id_usuario = ?", (session['user_id'],))
                 user_row = cur_user.fetchone()
                 if user_row and user_row[0]:
@@ -4383,7 +4383,7 @@ def generate_documentation(asignacion_id: int):
         correlativos_dict = {}
         try:
             db = get_db_main()
-            cur_corr = db.cursor()
+            cur_corr = db.get_cursor()
 
             # Verificar si ya tiene correlativo generado
             try:
@@ -4557,7 +4557,7 @@ def generate_documentation(asignacion_id: int):
         try:
             if 'user_id' in session:
                 db_empleados = get_db_empleados()
-                cur_usr = db_empleados.cursor()
+                cur_usr = db_empleados.get_cursor()
                 cur_usr.execute(
                     "SELECT fk_id_empleado FROM dbo.usuarios WHERE id_usuario = ?",
                     (session['user_id'],)
@@ -5439,7 +5439,7 @@ def submit_signatures(asignacion_id: int):
         puesto_usuario = '[PUESTO]'
         try:
             if 'user_id' in session:
-                cur_user = get_db_empleados().cursor()
+                cur_user = get_db_empleados().get_cursor()
                 cur_user.execute("SELECT fk_id_empleado FROM empleados.dbo.usuarios WHERE id_usuario = ?", (session['user_id'],))
                 user_row = cur_user.fetchone()
                 if user_row and user_row[0]:
@@ -5865,7 +5865,7 @@ def apply_signatures(asignacion_id: int):
         try:
             if 'user_id' in session:
                 db_main = get_db_main()
-                cur_usr = db_main.cursor()
+                cur_usr = db_main.get_cursor()
                 cur_usr.execute("SELECT fk_id_empleado FROM empleados.dbo.usuarios WHERE id_usuario = ?", (session['user_id'],))
                 usr_row = cur_usr.fetchone()
                 cur_usr.close()
@@ -5905,7 +5905,7 @@ def apply_signatures(asignacion_id: int):
         try:
             if 'user_id' in session:
                 db_main = get_db_main()
-                cur_usr = db_main.cursor()
+                cur_usr = db_main.get_cursor()
                 cur_usr.execute("SELECT fk_id_empleado FROM empleados.dbo.usuarios WHERE id_usuario = ?", (session['user_id'],))
                 usr_row = cur_usr.fetchone()
                 cur_usr.close()
