@@ -100,3 +100,21 @@
 - Restaurados archivos afectados y reaplicado únicamente el cambio funcional `.cursor(` -> `.get_cursor(` con escritura UTF-8 segura.
 - Repuesta migración engine-only en `admin_disp/devices/service.py` para métodos de escritura cubiertos por TDD (`create/update/delete_componente`, `create/update/delete_marca`, `create/update/delete_modelo`, `set_*_estado`).
 - Validación final en verde: `py_compile` de módulos críticos + `python -m unittest tests.test_sa_compat tests.test_devices_service_orm -v` (9/9 OK).
+
+## 2026-03-25 (Fix flujo asignaciones - modal documentos)
+- Investigado bloqueo de avance en paso "Documentos en OneDrive" dentro de Asignaciones (Devices).
+- Causa raíz: handlers inline (`onclick`) en HTML dinámico eran removidos por sanitización global, dejando botones visibles pero sin acción.
+- Fix aplicado en `admin_disp/static/js/asignaciones.js`: reemplazo de handlers inline por `addEventListener` para botones de Continuar, Descargar, Cancelar, Regenerar y Confirmar.
+- Hardening adicional: normalización de `estado` a número para evitar desvíos por comparación estricta de tipos (`'21'` vs `21`).
+
+## 2026-03-25 (Rollback CxC LIQ-00026)
+- Ejecutada reversión transaccional solicitada para `LIQ-00026` (lote `id=109`) en base CxC.
+- Cobros asociados actualizados a estado recibido y sin liquidación: `estado=0`, `liquidado=NULL`, `liquidadoPor=NULL`, `fechaLiquidado=NULL`, `loteId=NULL`.
+- Eliminado el lote de liquidación `LIQ-00026` de tabla `lote`.
+- Verificación posterior completada: `LOTE_LIQ00026_COUNT=0`, `COBROS_WITH_LOTE_109=0`, `COBROS_LOTE_109_ESTADO2_LIQSI=0`.
+
+## 2026-03-25 (Fix AG Grid Kardex productos + modales)
+- Investigado fallo en vista `kardex/productos`: no renderizaba AG Grid ni acciones de modales de Marcas/Almacenes/Períodos.
+- Causa confirmada: `security-sanitize.js` con parche global activo en `base_kardex.html` interfería con render dinámico de AG Grid.
+- Fix aplicado: soporte de desactivación por vista en `base_kardex.html` mediante flag `disable_global_sanitize_patch` antes de cargar sanitizer.
+- Activado flag solo para `productos_view` en `admin_disp/kardex/routes.py` (`disable_global_sanitize_patch=True`).

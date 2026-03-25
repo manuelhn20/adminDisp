@@ -40,3 +40,6 @@ Agregar configuración de despliegue en contenedor con dependencias ODBC de Linu
 - [complete] 24. Corregir render malformado de tabla Devices tras editar/guardar
 - [complete] 25. Completar migración final de conexiones legacy a capa SQLAlchemy compat
 - [complete] 26. Reparar corrupción de codificación (mojibake/BOM) y revalidar tests ORM
+- [complete] 27. Corregir bloqueo de Continuar en modal de documentos de Asignaciones
+- [complete] 28. Revertir liquidación LIQ-00026 y restaurar cobros asociados
+- [complete] 29. Corregir AG Grid de Kardex Productos y modales de gestión

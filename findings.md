@@ -100,3 +100,24 @@
 - Estrategia aplicada: restaurar los archivos corruptos desde Git y reaplicar únicamente el ajuste funcional de cursor con escritura UTF-8 sin BOM.
 - Se revalidó el estado ORM de `devices/service.py` mediante TDD para evitar regresión funcional tras la restauración.
 - Resultado: sin patrones de mojibake en archivos modificados, sintaxis compilable y tests ORM en verde.
+
+## Debug Findings 2026-03-25 (Asignaciones no continúa)
+
+- El modal de documentos en Asignaciones construía botones con `onclick` inline vía `innerHTML`.
+- Con sanitización global activa, esos atributos inline eran removidos; visualmente el botón aparecía, pero no ejecutaba acción al hacer click.
+- Se migraron las acciones dinámicas a listeners explícitos (`addEventListener`) después del render para que el flujo no dependa de atributos inline.
+- Se normalizó `estado` con `Number(...)` en el flujo del modal para evitar errores de ruteo entre estados manual/digital por comparación estricta de tipo.
+
+## Data Fix Findings 2026-03-25 (LIQ-00026)
+
+- Se confirmó precondición: `LIQ-00026` existía como `lote.id=109` con 4 cobros enlazados en estado liquidado.
+- La corrección requerida por operación fue consistente con el modelo: deshacer liquidación implica limpiar flags de liquidado y desvincular `loteId` en `cobro`, luego eliminar `lote`.
+- La ejecución transaccional afectó exactamente 4 cobros y 1 lote, sin dejar referencias colgantes a `loteId=109`.
+- Validación posterior: no existe `LIQ-00026` y no quedan cobros en estado `estado=2` + `liquidado='Si'` para ese lote.
+
+## Debug Findings 2026-03-25 (Kardex productos AG Grid y modales)
+
+- En `base_kardex.html`, `security-sanitize.js` se cargaba globalmente sin opción por vista y antes del contenido específico.
+- AG Grid de `productos.html` genera HTML dinámico (incluyendo botones de acción en celdas); con parche global activo, se degradaba render/comportamiento del grid.
+- El síntoma reportado (grid no visible y modales de gestión sin flujo correcto) es consistente con esa interferencia, igual al patrón ya observado en CxC.
+- Mitigación aplicada: habilitar `disable_global_sanitize_patch` por vista y activarlo solo en `productos_view` para preservar `safeSetHTML`/DOMPurify sin romper AG Grid.

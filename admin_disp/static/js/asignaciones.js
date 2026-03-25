@@ -2752,6 +2752,7 @@ function generarDocumentacionNuevo(asignacionId, tipoFirma) {
 async function mostrarModalDocumentosOneDrive(archivos, estado) {
   // Estado 11: Mostrar documentos con checkbox para confirmar lectura
   try {
+    const estadoNum = Number(estado);
     const modal = document.getElementById('modalDocumentosOneDrive');
     const container = document.getElementById('pdfCardsContainer');
     
@@ -2772,7 +2773,7 @@ async function mostrarModalDocumentosOneDrive(archivos, estado) {
     try {
       if (typeof setDocumentationProgress === 'function'){
         var targetStep = 2; // default
-        var st = parseInt(estado,10);
+        var st = estadoNum;
         if (st === 13 || st === 22 || st === 23) targetStep = 3;  // Estados 13, 22, 23: paso 3
         else if (st === 11 || st === 21) targetStep = 2;  // Estados 11, 21: paso 2
         else if (st === 14 || st === 24 || st === 90) targetStep = 4;  // Estados finales: paso 4
@@ -2833,16 +2834,16 @@ async function mostrarModalDocumentosOneDrive(archivos, estado) {
     renderPDFCards(files, container);
     
     // Agregar checkbox y botones segín estado
-    if (estado === 11 || estado === 21) {
+    if (estadoNum === 11 || estadoNum === 21) {
       // Estados 11/21: Agregar checkbox "He leído y acepto"
-      agregarCheckboxAceptacion(correlativo, estado);
-    } else if (estado === 22) {
+      agregarCheckboxAceptacion(correlativo, estadoNum);
+    } else if (estadoNum === 22) {
       // Estado 22: Mostrar Botón para subir archivos firmados manualmente
       agregarBotonSubidaManual(correlativo);
-    } else if (estado === 13 || estado === 23) {
+    } else if (estadoNum === 13 || estadoNum === 23) {
       // Estados 13/23: Mostrar botones Confirmar/Regenerar
-      agregarBotonesEstado13(correlativo, estado);
-    } else if (estado === 14 || estado === 24 || estado === 90) {
+      agregarBotonesEstado13(correlativo, estadoNum);
+    } else if (estadoNum === 14 || estadoNum === 24 || estadoNum === 90) {
       // Estados 14, 24, 90: Informativo - solo mostrar boton Cerrar y Descargar
       agregarBotonesEstado90(correlativo);
     }
@@ -2868,8 +2869,6 @@ function agregarCheckboxAceptacion(correlativo, estado) {
     modalBody.appendChild(actionsContainer);
   }
   
-  const tipoFirma = estado === 21 ? 'manual' : 'digital';
-  
   actionsContainer.innerHTML = `
     <div style="text-align: center; margin-bottom: 16px;">
       <div style="font-size: 0.95rem; color: #e5e7eb; font-weight: 500; margin: 0;">Confirma que has revisado todos los documentos antes de continuar con el proceso de firma.</div>
@@ -2881,10 +2880,10 @@ function agregarCheckboxAceptacion(correlativo, estado) {
       </label>
     </div>
     <div style="display: flex; gap: 12px; justify-content: space-between;">
-      <button class="btn" style="background: #10b981; color: white; border: none;" onclick="descargarArchivosZip('${correlativo}')">Descargar archivos</button>
+      <button class="btn" id="btnDownloadDocs" style="background: #10b981; color: white; border: none;">Descargar archivos</button>
       <div style="display: flex; gap: 12px;">
-        <button class="btn" style="background: #f97316; color: white; border: none;" onclick="closeModal('modalDocumentosOneDrive')">Cancelar</button>
-        <button class="btn btn-primary" id="btnContinueDocs" disabled onclick="confirmarLecturaYContinuar('${correlativo}', ${estado})">Continuar</button>
+        <button class="btn" id="btnCancelDocs" style="background: #f97316; color: white; border: none;">Cancelar</button>
+        <button class="btn btn-primary" id="btnContinueDocs" disabled>Continuar</button>
       </div>
     </div>
   `;
@@ -2892,9 +2891,25 @@ function agregarCheckboxAceptacion(correlativo, estado) {
   // Attach checkbox listener to toggle Continue button
   const chk = actionsContainer.querySelector('#chkAceptoTerminos');
   const btn = actionsContainer.querySelector('#btnContinueDocs');
+  const btnDownload = actionsContainer.querySelector('#btnDownloadDocs');
+  const btnCancel = actionsContainer.querySelector('#btnCancelDocs');
+  const estadoNum = Number(estado);
   if (chk && btn) {
     chk.addEventListener('change', function() {
       btn.disabled = !this.checked;
+    });
+    btn.addEventListener('click', function() {
+      confirmarLecturaYContinuar(correlativo, estadoNum);
+    });
+  }
+  if (btnDownload) {
+    btnDownload.addEventListener('click', function() {
+      descargarArchivosZip(correlativo);
+    });
+  }
+  if (btnCancel) {
+    btnCancel.addEventListener('click', function() {
+      closeModal('modalDocumentosOneDrive');
     });
   }
 }
@@ -2924,7 +2939,7 @@ async function confirmarLecturaYContinuar(correlativo, estado) {
   }
   
   // Determinar si es firma digital o manual
-  const esManual = estado === 21;
+  const esManual = Number(estado) === 21;
   const endpoint = esManual ? 'mark-manual-documents-read' : 'mark-documents-read';
   
   // Mostrar loading
@@ -2999,10 +3014,22 @@ function agregarBotonesEstado90(correlativo) {
   }
   actionsContainer.innerHTML = `
     <div style="display:flex; gap:12px; justify-content: space-between; width: 100%;">
-      <button class="btn" style="background: #10b981; color: white; border: none;" onclick="descargarArchivosZip('${correlativo}')">Descargar archivos</button>
-      <button class="btn" style="background: #f97316; color: white; border: none;" onclick="closeModal('modalDocumentosOneDrive')">Cerrar</button>
+      <button class="btn" id="btnDownloadEstado90" style="background: #10b981; color: white; border: none;">Descargar archivos</button>
+      <button class="btn" id="btnCloseEstado90" style="background: #f97316; color: white; border: none;">Cerrar</button>
     </div>
   `;
+  const btnDownload = actionsContainer.querySelector('#btnDownloadEstado90');
+  const btnClose = actionsContainer.querySelector('#btnCloseEstado90');
+  if (btnDownload) {
+    btnDownload.addEventListener('click', function() {
+      descargarArchivosZip(correlativo);
+    });
+  }
+  if (btnClose) {
+    btnClose.addEventListener('click', function() {
+      closeModal('modalDocumentosOneDrive');
+    });
+  }
 }
 
 // ESTADO 22: Botón para subir archivos firmados manualmente
@@ -3034,13 +3061,31 @@ function agregarBotonSubidaManual(correlativo) {
       </div>
     </div>
     <div style="display: flex; gap: 12px; justify-content: space-between;">
-      <button class="btn" style="background: #10b981; color: white; border: none;" onclick="descargarArchivosZip('${correlativo}')">Descargar archivos</button>
+      <button class="btn" id="btnDownloadManualDocs" style="background: #10b981; color: white; border: none;">Descargar archivos</button>
       <div style="display: flex; gap: 12px;">
-        <button class="btn" style="background: #f97316; color: white; border: none;" onclick="closeModal('modalDocumentosOneDrive')">Cancelar</button>
-        <button class="btn btn-primary" onclick="abrirModalSubidaFirmaManual()">Subir archivos firmados</button>
+        <button class="btn" id="btnCancelManualDocs" style="background: #f97316; color: white; border: none;">Cancelar</button>
+        <button class="btn btn-primary" id="btnOpenUploadManual">Subir archivos firmados</button>
       </div>
     </div>
   `;
+  const btnDownload = actionsContainer.querySelector('#btnDownloadManualDocs');
+  const btnCancel = actionsContainer.querySelector('#btnCancelManualDocs');
+  const btnOpenUpload = actionsContainer.querySelector('#btnOpenUploadManual');
+  if (btnDownload) {
+    btnDownload.addEventListener('click', function() {
+      descargarArchivosZip(correlativo);
+    });
+  }
+  if (btnCancel) {
+    btnCancel.addEventListener('click', function() {
+      closeModal('modalDocumentosOneDrive');
+    });
+  }
+  if (btnOpenUpload) {
+    btnOpenUpload.addEventListener('click', function() {
+      abrirModalSubidaFirmaManual();
+    });
+  }
 }
 
 // ESTADO 22: Abrir modal para subir archivos firmados manualmente
@@ -3787,16 +3832,16 @@ function agregarBotonesEstado13(correlativo, estado) {
     modalBody.appendChild(actionsContainer);
   }
   
-  const confirmarFn = estado === 23 ? 'confirmarDocumentosManualesFinales' : 'confirmarDocumentosFinales';
+  const confirmarFn = estado === 23 ? confirmarDocumentosManualesFinales : confirmarDocumentosFinales;
   
   actionsContainer.innerHTML = `
     <div style="display: flex; gap: 12px; justify-content: space-between; margin-bottom: 10px;">
-      <button class="btn" style="background: #10b981; color: white; border: none;" onclick="descargarArchivosZip('${correlativo}')">Descargar archivos</button>
+      <button class="btn" id="btnDownloadEstado13" style="background: #10b981; color: white; border: none;">Descargar archivos</button>
       <div style="display: flex; gap: 12px;">
-        <button class="btn btn-warning" onclick="regenerarDocumentos('${correlativo}')">
+        <button class="btn btn-warning" id="btnRegenerarEstado13">
           Regenerar Documentos
         </button>
-        <button class="btn btn-success" onclick="${confirmarFn}('${correlativo}')">
+        <button class="btn btn-success" id="btnConfirmarEstado13">
           Confirmar Documentos
         </button>
       </div>
@@ -3806,6 +3851,25 @@ function agregarBotonesEstado13(correlativo, estado) {
       <strong>Confirmar:</strong> Marca los documentos como finales y completa el proceso.
     </p>
   `;
+
+  const btnDownload = actionsContainer.querySelector('#btnDownloadEstado13');
+  const btnRegenerar = actionsContainer.querySelector('#btnRegenerarEstado13');
+  const btnConfirmar = actionsContainer.querySelector('#btnConfirmarEstado13');
+  if (btnDownload) {
+    btnDownload.addEventListener('click', function() {
+      descargarArchivosZip(correlativo);
+    });
+  }
+  if (btnRegenerar) {
+    btnRegenerar.addEventListener('click', function() {
+      regenerarDocumentos(correlativo);
+    });
+  }
+  if (btnConfirmar) {
+    btnConfirmar.addEventListener('click', function() {
+      confirmarFn(correlativo);
+    });
+  }
 }
 
 // ESTADO 13 ? 14: Confirmar documentos finales

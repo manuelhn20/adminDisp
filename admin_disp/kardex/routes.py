@@ -54,6 +54,7 @@ def productos_view():
         "productos.html",
         page_title="Productos",
         periodo_activo=periodo_activo,
+        disable_global_sanitize_patch=True,
     )
 
 
