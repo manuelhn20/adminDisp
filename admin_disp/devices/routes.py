@@ -10,10 +10,12 @@ import os
 import base64
 import time
 import shutil
+import io
 from werkzeug.utils import secure_filename
 import zipfile
 import sys
 from pathlib import Path
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 onedrive_logger = logging.getLogger('admin_disp.onedrive')
@@ -121,6 +123,21 @@ def extract_country_code_and_number(numero_linea):
     return numero_limpio, ''
 
 
+def _normalize_celulares_phone_fields(devices_celulares):
+    """Normaliza código de país y número en cada celular para uso de UI/API."""
+    for c in devices_celulares:
+        numero_linea = c.get('numero_linea') or ''
+        parts = numero_linea.strip().split()
+        if len(parts) >= 2:
+            c['codigo_pais'] = parts[0]
+            c['numero_sin_codigo'] = parts[1]
+        else:
+            code, number = extract_country_code_and_number(numero_linea)
+            c['codigo_pais'] = code
+            c['numero_sin_codigo'] = number
+    return devices_celulares
+
+
 def _get_componente_especifico(componentes: list, tipo: str) -> str:
     """
     Extrae datos específicos de un componente según su tipo.
@@ -200,6 +217,65 @@ def _get_componente_especifico(componentes: list, tipo: str) -> str:
 devices_bp = Blueprint('devices', __name__)
 
 
+def _infer_blob_mimetype(data: bytes) -> str:
+    if not data:
+        return 'application/octet-stream'
+    if data.startswith(b'%PDF-'):
+        return 'application/pdf'
+    if data.startswith(b'\x89PNG\r\n\x1a\n'):
+        return 'image/png'
+    if data.startswith(b'\xff\xd8\xff'):
+        return 'image/jpeg'
+    if data.startswith(b'GIF87a') or data.startswith(b'GIF89a'):
+        return 'image/gif'
+    return 'application/octet-stream'
+
+
+def _build_pdf_from_images(image_bytes_list):
+    images = []
+    for img_bytes in image_bytes_list:
+        with Image.open(io.BytesIO(img_bytes)) as img:
+            images.append(img.convert('RGB'))
+    if not images:
+        raise ValueError('No hay imágenes para generar PDF')
+    output = io.BytesIO()
+    head, tail = images[0], images[1:]
+    head.save(output, format='PDF', save_all=True, append_images=tail)
+    for im in images:
+        try:
+            im.close()
+        except Exception:
+            pass
+    return output.getvalue()
+
+
+def _normalize_upload_to_pdf_or_binary(uploaded_files):
+    files = [f for f in (uploaded_files or []) if f and getattr(f, 'filename', '')]
+    if not files:
+        return None
+
+    file_payloads = []
+    for f in files:
+        raw = f.read()
+        if not raw:
+            continue
+        filename = (f.filename or '').lower()
+        mimetype = (f.mimetype or '').lower()
+        is_pdf = filename.endswith('.pdf') or mimetype == 'application/pdf' or raw.startswith(b'%PDF-')
+        file_payloads.append((raw, is_pdf))
+
+    if not file_payloads:
+        return None
+
+    if any(is_pdf for _, is_pdf in file_payloads):
+        if len(file_payloads) > 1:
+            raise ValueError('No mezcle PDF con fotos en el mismo campo.')
+        return file_payloads[0][0]
+
+    # Solo fotos -> generar PDF
+    return _build_pdf_from_images([raw for raw, _ in file_payloads])
+
+
 # Log incoming asignacion/documentation requests to asignaciones.log for diagnostics
 @devices_bp.before_app_request
 def _log_asignaciones_requests():
@@ -231,18 +307,7 @@ def ui_list():
         logger.info("Obteniendo celulares...")
         devices_celulares = svc.list_celulares()
         logger.info(f"Celulares obtenidos: {len(devices_celulares)}")
-        
-        # Procesar números de línea de celulares para separar código de país y número
-        for c in devices_celulares:
-            numero_linea = c.get('numero_linea') or ''
-            parts = numero_linea.strip().split()
-            if len(parts) >= 2:
-                c['codigo_pais'] = parts[0]
-                c['numero_sin_codigo'] = parts[1]
-            else:
-                code, number = extract_country_code_and_number(numero_linea)
-                c['codigo_pais'] = code
-                c['numero_sin_codigo'] = number
+        devices_celulares = _normalize_celulares_phone_fields(devices_celulares)
         
         logger.info("Obteniendo marcas y modelos...")
         marcas = svc.list_marcas()
@@ -250,7 +315,15 @@ def ui_list():
         logger.info(f"Marcas: {len(marcas)}, Modelos: {len(modelos)}")
         
         logger.info("Renderizando template dispositivos.html")
-        return render_template('dispositivos.html', devices=devices, devices_eliminados=devices_eliminados, devices_celulares=devices_celulares, marcas_options=marcas, modelos_options=modelos)
+        return render_template(
+            'dispositivos.html',
+            devices=devices,
+            devices_eliminados=devices_eliminados,
+            devices_celulares=devices_celulares,
+            marcas_options=marcas,
+            modelos_options=modelos,
+            disable_global_sanitize_patch=True,
+        )
     except Exception as e:
         logger.exception(f"ERROR CRÍTICO en ui_list: {e}")
         return f"Error cargando dispositivos: {str(e)}", 500
@@ -668,7 +741,7 @@ def lista_planes():
             code, number = extract_country_code_and_number(numero_linea)
             p['codigo_pais'] = code
             p['numero_sin_codigo'] = number
-    return render_template('planes.html', planes=planes)
+    return render_template('planes.html', planes=planes, disable_global_sanitize_patch=True)
 
 
 @devices_bp.get('/planes/notifications')
@@ -1060,7 +1133,7 @@ def get_asignaciones_tbody():
         conn_emp = get_db_empleados()
         cur_emp = conn_emp.get_cursor()
         try:
-            cur_emp.execute("SELECT id_empleado, nombre_completo, empresa, puesto FROM empleados ORDER BY nombre_completo")
+            cur_emp.execute("SELECT id_empleado, nombre_completo, empresa, puesto, sucursal FROM empleados ORDER BY nombre_completo")
             rows = cur_emp.fetchall()
         except Exception:
             rows = []
@@ -1072,6 +1145,7 @@ def get_asignaciones_tbody():
                     'NombreCompleto': r[1],
                     'Empresa': r[2],
                     'Cargo': r[3],
+                    'Sucursal': r[4],
                 })
             except Exception:
                 continue
@@ -1097,10 +1171,15 @@ def get_asignaciones_tbody():
         except Exception:
             e['DispositivosCount'] = 0
 
-    # Render both partials and return JSON so the frontend can update both tables
+    # Render both partials and return JSON so the frontend can update both tables/grids
     historico_html = render_template('asignacionesTbody.html', asignaciones=asignaciones)
     resumen_html = render_template('asignacionesResumen.html', empleados_options=empleados)
-    return jsonify({'historico': historico_html, 'resumen': resumen_html})
+    return jsonify({
+        'historico': historico_html,
+        'resumen': resumen_html,
+        'historico_data': asignaciones,
+        'resumen_data': empleados,
+    })
 
 
 @devices_bp.get('/asignaciones/active')
@@ -1432,7 +1511,7 @@ def lista_asignaciones():
         try:
             # Traer campos desde empleados: id_empleado, nombre_completo, empresa, puesto, estado
             cur_emp.execute(
-                "SELECT id_empleado, nombre_completo, empresa, puesto, estado FROM empleados ORDER BY nombre_completo"
+                "SELECT id_empleado, nombre_completo, empresa, puesto, sucursal, estado FROM empleados ORDER BY nombre_completo"
             )
             rows = cur_emp.fetchall()
         except Exception:
@@ -1442,7 +1521,7 @@ def lista_asignaciones():
             try:
                 estado_raw = None
                 try:
-                    estado_raw = r[4]
+                    estado_raw = r[5]
                 except Exception:
                     estado_raw = None
                 is_active = True
@@ -1455,7 +1534,8 @@ def lista_asignaciones():
                     'IdEmpleado': r[0],
                     'NombreCompleto': r[1],
                     'Empresa': r[2],
-                            'Cargo': r[3],  # puesto from empleados
+                    'Cargo': r[3],  # puesto from empleados
+                    'Sucursal': r[4],
                     'Estado': estado_raw,
                     'IsActive': is_active
                 })
@@ -1485,7 +1565,13 @@ def lista_asignaciones():
         except Exception:
             e['DispositivosCount'] = 0
 
-    return render_template('asignaciones.html', asignaciones=asignaciones, dispositivos_options=dispositivos_sin_asignar, empleados_options=empleados)
+    return render_template(
+        'asignaciones.html',
+        asignaciones=asignaciones,
+        dispositivos_options=dispositivos_sin_asignar,
+        empleados_options=empleados,
+        disable_global_sanitize_patch=True,
+    )
 
 
 @devices_bp.get('/<int:device_id>/asignaciones/device')
@@ -1679,7 +1765,7 @@ def lista_reclamos():
     reclamos = svc.list_reclamos()
     # Para crear un nuevo reclamo solo permitimos asignaciones activas (empleados con dispositivo actualmente vinculado)
     asignaciones = svc.list_active_asignaciones()
-    return render_template('reclamos.html', reclamos=reclamos, asignaciones_options=asignaciones)
+    return render_template('reclamos.html', reclamos=reclamos, asignaciones_options=asignaciones, disable_global_sanitize_patch=True)
 
 
 @devices_bp.delete('/reclamo/<int:reclamo_id>')
@@ -1699,42 +1785,79 @@ def create_reclamo():
     form = request.form
     svc = DeviceService()
     try:
-        # Procesar imágenes si existen
-        img_evidencia = None
-        img_form = None
-        
-        if 'img_evidencia' in request.files:
-            file_evidencia = request.files['img_evidencia']
-            if file_evidencia and file_evidencia.filename != '':
-                img_evidencia = file_evidencia.read()
-        
-        if 'img_form' in request.files:
-            file_form = request.files['img_form']
-            if file_form and file_form.filename != '':
-                img_form = file_form.read()
+        tipo_reclamo_raw = form.get('tipo_reclamo', '').strip()
+        if tipo_reclamo_raw not in ('0', '1'):
+            return jsonify({
+                'success': False,
+                'message': 'Debe seleccionar el tipo de reclamo (Robo o Daño).'
+            }), 400
+        tipo_reclamo = int(tipo_reclamo_raw)
+
+        empresa = (form.get('empresa') or '').strip()
+        fk_id_asignacion = (form.get('fk_id_asignacion') or '').strip()
+        estado_proceso = (form.get('estado_proceso') or '').strip()
+
+        if not empresa:
+            return jsonify({'success': False, 'message': 'La empresa es obligatoria.'}), 400
+        if not fk_id_asignacion:
+            return jsonify({'success': False, 'message': 'La asignación es obligatoria.'}), 400
+        if estado_proceso not in ('0', '1'):
+            return jsonify({'success': False, 'message': 'El estado del proceso es obligatorio.'}), 400
+
+        # Procesar archivo único: PDF directo o fotos convertidas a PDF
+        archivo_reclamo_pdf = _normalize_upload_to_pdf_or_binary(request.files.getlist('archivo_reclamo_pdf'))
         
         # Support new optional incident fields: 'fecha_incidencia' and 'lugar_incidencia'
         fecha_incidencia = form.get('fecha_incidencia') or form.get('fecha_robo')
-        lugar_incidencia = form.get('lugar_incidencia') or form.get('lugar_robo')
+        lugar_incidencia = (form.get('lugar_incidencia') or form.get('lugar_robo') or '').strip()
+        fecha_inicio_reclamo = (form.get('fecha_inicio_reclamo') or '').strip()
+        lugar_reclamo = (form.get('lugar_reclamo') or '').strip()
+        observaciones = (form.get('observaciones') or '').strip()
+
+        if not fecha_inicio_reclamo:
+            return jsonify({'success': False, 'message': 'La fecha de inicio del reclamo es obligatoria.'}), 400
+        if not lugar_incidencia:
+            return jsonify({'success': False, 'message': 'El lugar de la incidencia es obligatorio.'}), 400
+        if not observaciones:
+            return jsonify({'success': False, 'message': 'Las observaciones son obligatorias.'}), 400
+        if not archivo_reclamo_pdf:
+            return jsonify({'success': False, 'message': 'Debe adjuntar el documento del reclamo (PDF o fotos).'}), 400
+
+        if tipo_reclamo == 0:
+            if not fecha_incidencia:
+                return jsonify({'success': False, 'message': 'Para reclamo por Robo, la fecha de incidencia es obligatoria.'}), 400
+            if not lugar_reclamo:
+                return jsonify({'success': False, 'message': 'Para reclamo por Robo, el lugar del reclamo es obligatorio.'}), 400
+
+        if tipo_reclamo == 1:
+            fecha_incidencia = None
+            lugar_reclamo = None
+
         reclamo_id = svc.create_reclamo(
-            form.get('fk_id_asignacion'),
+            fk_id_asignacion,
             fecha_incidencia,
             lugar_incidencia,
-            form.get('fecha_inicio_reclamo'),
-            form.get('lugar_reclamo'),
-            form.get('estado_proceso'),
+            fecha_inicio_reclamo,
+            lugar_reclamo,
+            estado_proceso,
             None,
-            img_evidencia,
-            img_form
+            archivo_reclamo_pdf,
+            tipo_reclamo=tipo_reclamo,
+            observaciones=observaciones,
         )
         # Log auditoria
         usuario = session.get('username', 'UNKNOWN')
-        asignacion_id = form.get('fk_id_asignacion')
+        asignacion_id = fk_id_asignacion
         svc.log_auditoria(usuario, 'CREATE', 'reclamo', reclamo_id, f'Asignación ID: {asignacion_id}')
         return jsonify({
             'success': True,
             'message': 'Reclamo creado exitosamente'
         })
+    except ValueError as ve:
+        return jsonify({
+            'success': False,
+            'message': str(ve)
+        }), 400
     except Exception as e:
         logger.exception('Error creating reclamo')
         return jsonify({
@@ -1750,22 +1873,19 @@ def get_reclamo_api(reclamo_id: int):
     r = svc.get_reclamo(reclamo_id)
     if not r:
         return jsonify({'error': 'Reclamo no encontrado'}), 404
-    # Detect presence of stored images to allow previews without fetching binary yet
+    # Detect presence of stored document to allow UI hints without fetching binary yet
     try:
         cur = svc.conn.get_cursor()
-        cur.execute("SELECT CASE WHEN img_evidencia IS NULL THEN 0 ELSE 1 END AS has_evid, CASE WHEN img_form IS NULL THEN 0 ELSE 1 END AS has_form FROM reclamo_seguro WHERE id_reclamo = ?", (reclamo_id,))
+        cur.execute("SELECT CASE WHEN archivo_reclamo_pdf IS NULL THEN 0 ELSE 1 END AS has_documento FROM reclamo_seguro WHERE id_reclamo = ?", (reclamo_id,))
         row = cur.fetchone()
         if row:
-            r['has_img_evidencia'] = bool(row[0])
-            r['has_img_form'] = bool(row[1])
+            r['has_archivo_reclamo_pdf'] = bool(row[0])
         else:
-            r['has_img_evidencia'] = False
-            r['has_img_form'] = False
+            r['has_archivo_reclamo_pdf'] = False
     except Exception:
-        r['has_img_evidencia'] = False
-        r['has_img_form'] = False
+        r['has_archivo_reclamo_pdf'] = False
     # Normalize date fields to ISO 'YYYY-MM-DD' so <input type="date"> accepts them
-    for dkey in ('fecha_robo', 'fecha_inicio_reclamo', 'fecha_fin_reclamo'):
+    for dkey in ('fecha_incidencia', 'fecha_robo', 'fecha_inicio_reclamo', 'fecha_fin_reclamo'):
         try:
             val = r.get(dkey)
             if val is None:
@@ -1785,32 +1905,18 @@ def get_reclamo_api(reclamo_id: int):
     return jsonify(r), 200
 
 
-@devices_bp.get('/reclamo/<int:reclamo_id>/evidencia')
+@devices_bp.get('/reclamo/<int:reclamo_id>/documento')
 @require_roles(['operador','admin'], sistema='dispositivos')
-def get_reclamo_evidencia(reclamo_id: int):
+def get_reclamo_documento(reclamo_id: int):
     svc = DeviceService()
     cur = svc.conn.get_cursor()
-    cur.execute("SELECT img_evidencia FROM reclamo_seguro WHERE id_reclamo = ?", (reclamo_id,))
+    cur.execute("SELECT archivo_reclamo_pdf FROM reclamo_seguro WHERE id_reclamo = ?", (reclamo_id,))
     row = cur.fetchone()
     if not row or not row[0]:
         return ('', 404)
     data = row[0]
     from flask import Response
-    return Response(data, mimetype='image/*')
-
-
-@devices_bp.get('/reclamo/<int:reclamo_id>/form')
-@require_roles(['operador','admin'], sistema='dispositivos')
-def get_reclamo_form_image(reclamo_id: int):
-    svc = DeviceService()
-    cur = svc.conn.get_cursor()
-    cur.execute("SELECT img_form FROM reclamo_seguro WHERE id_reclamo = ?", (reclamo_id,))
-    row = cur.fetchone()
-    if not row or not row[0]:
-        return ('', 404)
-    data = row[0]
-    from flask import Response
-    return Response(data, mimetype='image/*')
+    return Response(data, mimetype=_infer_blob_mimetype(data))
 
 
 @devices_bp.put('/reclamo/<int:reclamo_id>')
@@ -1825,20 +1931,10 @@ def update_reclamo_api(reclamo_id: int):
     # Normalize empty strings to None so date columns receive NULL instead of ''
     fecha_fin = data.get('fecha_fin_reclamo') or None
     lugar = data.get('lugar_reclamo') or None
+    observaciones = data.get('observaciones') if isinstance(data, dict) else request.form.get('observaciones')
+    tipo_reclamo = data.get('tipo_reclamo') if isinstance(data, dict) else request.form.get('tipo_reclamo')
     
-    # Procesar imágenes si existen
-    img_evidencia = None
-    img_form = None
-    
-    if 'img_evidencia' in request.files:
-        file_evidencia = request.files['img_evidencia']
-        if file_evidencia and file_evidencia.filename != '':
-            img_evidencia = file_evidencia.read()
-    
-    if 'img_form' in request.files:
-        file_form = request.files['img_form']
-        if file_form and file_form.filename != '':
-            img_form = file_form.read()
+    lugar_incidencia = data.get('lugar_incidencia') or None
     
     try:
         estado_val = 1 if str(estado) in ['1', 'true', 'True', True] else 0
@@ -1862,10 +1958,23 @@ def update_reclamo_api(reclamo_id: int):
         pass
     svc = DeviceService()
     try:
+        # Procesar archivo único: PDF directo o fotos convertidas a PDF
+        archivo_reclamo_pdf = _normalize_upload_to_pdf_or_binary(request.files.getlist('archivo_reclamo_pdf'))
         # Support removal flags from form ('1'|'0')
-        remove_evid = (request.form.get('remove_img_evidencia') in ('1','true','True','on')) if request.form else False
-        remove_form = (request.form.get('remove_img_form') in ('1','true','True','on')) if request.form else False
-        svc.update_reclamo(reclamo_id, estado_val, fecha_fin, lugar, img_evidencia, img_form, remove_img_evidencia=remove_evid, remove_img_form=remove_form, fecha_robo=fecha_robo, fecha_inicio_reclamo=fecha_inicio)
+        remove_archivo = (request.form.get('remove_archivo_reclamo_pdf') in ('1','true','True','on')) if request.form else False
+        svc.update_reclamo(
+            reclamo_id,
+            estado_val,
+            fecha_fin,
+            lugar,
+            archivo_reclamo_pdf,
+            remove_archivo_reclamo_pdf=remove_archivo,
+            fecha_robo=fecha_robo,
+            fecha_inicio_reclamo=fecha_inicio,
+            lugar_incidencia=lugar_incidencia,
+            tipo_reclamo=tipo_reclamo,
+            observaciones=observaciones,
+        )
         return jsonify({'success': True, 'message': 'Reclamo actualizado correctamente'}), 200
     except ValueError as ve:
         return jsonify({'success': False, 'message': str(ve)}), 400
@@ -2916,6 +3025,15 @@ def list_deleted_devices():
     """API: lista dispositivos eliminados"""
     svc = DeviceService()
     return jsonify(svc.list_deleted_devices())
+
+
+@devices_bp.get('/celulares/')
+@require_roles(['reporteria','operador','admin','auditor'], sistema='dispositivos')
+def list_celulares_devices():
+    """API: lista celulares con datos normalizados para AG Grid."""
+    svc = DeviceService()
+    celulares = svc.list_celulares()
+    return jsonify(_normalize_celulares_phone_fields(celulares))
 
 
 @devices_bp.post('/deleted/<int:device_id>/restore')

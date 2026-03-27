@@ -43,4 +43,32 @@ Agregar configuración de despliegue en contenedor con dependencias ODBC de Linu
 - [complete] 27. Corregir bloqueo de Continuar en modal de documentos de Asignaciones
 - [complete] 28. Revertir liquidación LIQ-00026 y restaurar cobros asociados
 - [complete] 29. Corregir AG Grid de Kardex Productos y modales de gestión
-- [complete] 30. Remediar hallazgos de seguridad Problems #1/#2/#3
+- [complete] 30. Migrar Devices fase 1 a AG Grid (activos + modales de eliminados/celulares)
+- [complete] 31. Corregir visibilidad AG Grid y layout de modales en Devices
+- [complete] 32. Ajustar UX AG Grid Devices (tema negro, selección/copia y acciones)
+- [complete] 33. Remover checkboxes de selección de filas, mantener text selection
+- [complete] 34. Corregir colores en campo Estado de grilla celulares
+- [complete] 35. Aumentar tamaño modal celulares y visibilidad campo Nombre
+- [complete] 36. Ajustar ancho modal eliminados y campos Observaciones/Acciones
+- [complete] 37. Compactar columnas Modelo/Marca/IP y botón Acciones
+- [complete] 38. Migrar Asignaciones a AG Grid (principal, transfer, histórico modal + búsqueda)
+- [complete] 39. Corregir tema AG Grid en Asignaciones (fondo negro como Devices)
+- [complete] 40. Actualizar selección AG Grid deprecada y autoaltura (max 6 filas)
+
+## Planes/Reclamos AG Grid (2026-03-26)
+- [complete] 41. Crear pruebas RED para migración AG Grid de Planes y Reclamos
+- [complete] 42. Implementar AG Grid en Planes manteniendo compatibilidad con flujos legacy
+- [complete] 43. Implementar AG Grid en Reclamos manteniendo compatibilidad con flujos legacy
+- [complete] 44. Validar GREEN en pruebas y ausencia de errores de sintaxis
+- [complete] 45. Migrar Historico de Planes a modal AG Grid con buscador dedicado
+- [complete] 46. Corregir Reclamos AG Grid en modo oscuro (tema negro consistente)
+- [complete] 47. Aplicar switch global de AG Grid por tema (oscuro/claro)
+- [complete] 48. Unificar modales AG Grid de Dispositivos con patrón Kardex (search + sin footer cerrar)
+- [complete] 49. Completar implementación faltante en histórico planes/asignaciones y modalPrinterHistory
+- [complete] 50. Migrar historial de impresoras a AG Grid y homogeneizar buscador de histórico asignaciones
+- [complete] 51. Corregir stacking de confirmaciones (regenerar/confirmar documentos), ajustar anchos de impresión/search y reparar auditoría de permisos iniciales
+- [complete] 52. Extender modal celulares con fin de plan/días restantes y crear flujo condicional de reclamos por tipo (Robo/Daño)
+- [complete] 53. Ajustar reglas finales de reclamos y headers de celulares según feedback (tipo obligatorio, ciudad placeholder, columna Tipo Reclamo)
+- [complete] 54. Reestructurar modal Editar Reclamo para mostrar campos capturados en orden de alta (Robo/Daño) con solo lectura en campos de contexto
+- [complete] 55. Corregir Editar Reclamo: empresa desde empleado asignado y habilitar edición de todos los campos excepto tipo/empresa
+- [complete] 56. Unificar Reclamos a archivo único PDF (fotos o PDF) en nueva columna `archivo_reclamo_pdf`

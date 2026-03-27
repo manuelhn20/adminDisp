@@ -77,7 +77,7 @@
       "timestamp": "2026-02-04T08:33:22.214077"
     },
     {
-      "ip": "192.168.2.202",
+      "ip": "192.168.2.20",
       "description": "Elmigo SPS",
       "status": "Fracaso",
       "tinta_levels": {},

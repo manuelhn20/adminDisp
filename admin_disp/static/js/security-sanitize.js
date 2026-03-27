@@ -32,16 +32,18 @@
         if (tag === 'tbody' || tag === 'thead' || tag === 'tfoot') {
           var wrappedSection = '<table><' + tag + '>' + raw + '</' + tag + '></table>';
           var cleanSection = window.DOMPurify.sanitize(wrappedSection, { USE_PROFILES: { html: true } });
-          var sectionDoc = new window.DOMParser().parseFromString(cleanSection, 'text/html');
-          var sectionNode = sectionDoc.querySelector(tag);
+          var sectionTpl = document.createElement('template');
+          sectionTpl.innerHTML = cleanSection;
+          var sectionNode = sectionTpl.content.querySelector(tag);
           return sectionNode ? sectionNode.innerHTML : '';
         }
 
         if (tag === 'tr') {
           var wrappedRow = '<table><tbody><tr>' + raw + '</tr></tbody></table>';
           var cleanRow = window.DOMPurify.sanitize(wrappedRow, { USE_PROFILES: { html: true } });
-          var rowDoc = new window.DOMParser().parseFromString(cleanRow, 'text/html');
-          var rowNode = rowDoc.querySelector('tr');
+          var rowTpl = document.createElement('template');
+          rowTpl.innerHTML = cleanRow;
+          var rowNode = rowTpl.content.querySelector('tr');
           return rowNode ? rowNode.innerHTML : '';
         }
 

@@ -4,10 +4,40 @@
 {% block extra_head %}
 <!-- Telephone input CSS and Iconify -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/telephone-input.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-material.css">
 <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
 {% endblock %}
 {% block content %}
 <style>
+  .planes-ag-grid.ag-theme-material {
+    --ag-foreground-color: #f5f5f5;
+    --ag-background-color: #070707;
+    --ag-header-foreground-color: #ffffff;
+    --ag-header-background-color: #000000;
+    --ag-odd-row-background-color: #0d0d0d;
+    --ag-border-color: #222222;
+    --ag-row-hover-color: rgba(255, 255, 255, 0.08);
+    --ag-selected-row-background-color: rgba(255, 255, 255, 0.16);
+  }
+  .planes-ag-grid.ag-theme-material .ag-root-wrapper,
+  .planes-ag-grid.ag-theme-material .ag-header,
+  .planes-ag-grid.ag-theme-material .ag-paging-panel {
+    background-color: var(--ag-background-color);
+    border-color: var(--ag-border-color);
+  }
+  .planes-ag-grid.ag-theme-material .ag-header-cell,
+  .planes-ag-grid.ag-theme-material .ag-cell,
+  .planes-ag-grid.ag-theme-material .ag-paging-panel,
+  .planes-ag-grid.ag-theme-material .ag-floating-filter,
+  .planes-ag-grid.ag-theme-material .ag-input-field-input {
+    color: var(--ag-foreground-color);
+  }
+  .planes-ag-grid.ag-theme-material .ag-header-cell-label {
+    font-weight: 700;
+  }
+
   /* Improve form inputs inside the modals for better presentation */
   .modal .modal-body label { display: block; margin-bottom: 0.75rem; }
   .modal .label-title { display: block; font-weight: 600; margin-bottom: 0.25rem; }
@@ -197,27 +227,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Toggle between resumen and historico views
 function toggleHistoricoView() {
-  const vr = document.getElementById('viewResumen');
-  const vh = document.getElementById('viewHistorico');
-  if (!vr || !vh) return;
-  const wasResumen = (vr.style.display !== 'none');
-  const btnHist = document.getElementById('btnHistoricoPlanes');
-  const btnVol = document.getElementById('btnVolverResumenPlanes');
-  if (wasResumen) {
-    vr.style.display = 'none';
-    vh.style.display = 'block';
-    if (btnHist) btnHist.style.display = 'none';
-    if (btnVol) btnVol.style.display = 'inline-block';
-    // load historico tbody
-    reloadHistoricoTbody();
-  } else {
-    vr.style.display = 'block';
-    vh.style.display = 'none';
-    if (btnHist) btnHist.style.display = 'inline-block';
-    if (btnVol) btnVol.style.display = 'none';
-  }
-  // apply search filter to visible container if helper exists
-  try { const q = (document.getElementById('planesPageSearch') || {}).value || ''; const container = wasResumen ? document.getElementById('viewHistorico') : document.getElementById('viewResumen'); if (typeof applyTableSearchFilter === 'function') applyTableSearchFilter(q, container); } catch(e) {}
+  openHistoricoPlanesModal();
+}
+
+function openHistoricoPlanesModal() {
+  openModal('modalHistoricoPlanes', true);
+  reloadHistoricoTbody();
+  setTimeout(() => {
+    try { if (typeof initHistoricoPlanesAgGrid === 'function') initHistoricoPlanesAgGrid(); } catch(e) {}
+    try { if (typeof refreshHistoricoPlanesGridFromLegacy === 'function') refreshHistoricoPlanesGridFromLegacy(); } catch(e) {}
+  }, 0);
+}
+
+function closeHistoricoPlanesModal() {
+  closeModal('modalHistoricoPlanes');
 }
 
 async function reloadHistoricoTbody() {
@@ -227,8 +250,7 @@ async function reloadHistoricoTbody() {
     const html = await resp.text();
     const tbody = document.getElementById('historico-planes-tbody');
     if (tbody) tbody.innerHTML = html;
-    // apply search filter if any
-    try { const q = (document.getElementById('planesPageSearch') || {}).value || ''; if (typeof applyTableSearchFilter === 'function') applyTableSearchFilter(q, document.getElementById('viewHistorico')); } catch(e) {}
+    try { if (typeof refreshHistoricoPlanesGridFromLegacy === 'function') refreshHistoricoPlanesGridFromLegacy(); } catch(e) {}
   } catch (e) { console.warn('No se pudo cargar histórico de planes', e); }
 }
 
@@ -240,11 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="button-group" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:1rem;">
   <div style="display:flex;gap:12px;">
   <button class="btn btn-primary offset-btn" onclick="openNewPlanModal()">Nuevo plan</button>
-  <button class="btn btn-primary offset-btn" onclick="toggleHistoricoView()" id="btnHistoricoPlanes">Ver Histórico Planes</button>
-    <button class="btn btn-primary offset-btn" onclick="toggleHistoricoView()" id="btnVolverResumenPlanes" style="display:none;">
-      <img src="{{ url_for('static', filename='img/backw.png') }}" alt="Volver" style="height:16px; vertical-align:middle; margin-right:8px;">
-      <span style="position:relative; top:2px; display:inline-block;">Volver al Resumen</span>
-    </button>
+  <button class="btn btn-primary offset-btn" onclick="openHistoricoPlanesModal()" id="btnHistoricoPlanes">Ver Histórico Planes</button>
     <span id="planes-loading" class="htmx-indicator" style="color:var(--text-gray);font-size:14px;display:flex;align-items:center;gap:6px;">
       <span class="spinner" style="display:inline-block;width:16px;height:16px;border:2px solid var(--text-gray);border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span>
       Actualizando...
@@ -257,6 +275,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- Views: resumen / historico -->
 <div id="viewResumen">
+
+  <div id="planesGrid" class="ag-theme-material planes-ag-grid" style="width:100%;height:68vh;min-height:520px;border:1px solid #1f2937;border-radius:10px;overflow:hidden;margin-bottom:8px;"></div>
 
 <style>
   .sort-icon { height:18px; width:18px; vertical-align:middle; margin-left:8px; transition: transform .15s ease, opacity .15s ease; opacity:0; visibility:hidden; transform:rotate(0deg); }
@@ -291,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </style>
 
   {% if planes %}
-    <table role="grid" id="planesTable">
+    <table role="grid" id="planesTable" style="display:none;">
     <thead>
       <tr>
         <th data-sortable="numero">Número de línea <img id="sortIndicator_planes_numero" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
@@ -324,23 +344,33 @@ document.addEventListener('DOMContentLoaded', () => {
     {% endif %}
   </div>
 
-  <div id="viewHistorico" style="display:none;">
-    <div style="margin-top:8px;">
-      <table role="grid" id="historicoPlanesTable">
-        <thead>
-          <tr>
-            <th>Número de línea</th>
-            <th>Fecha operación</th>
-            <th>Inicio</th>
-            <th>Fin</th>
-            <th>Costo</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="historico-planes-tbody">
-          <!-- cargado vía AJAX -->
-        </tbody>
-      </table>
+  <div id="modalHistoricoPlanes" class="modal-overlay">
+    <div class="modal" style="width:min(1120px, 96vw); max-width:min(1120px, 96vw);">
+      <div class="modal-header">
+        <h3>Historico de planes</h3>
+        <button class="modal-close" onclick="closeHistoricoPlanesModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px;">
+          <input id="historicoPlanesSearch" class="global-table-search" placeholder="Buscar en historico..." style="width:260px;" />
+        </div>
+        <div id="historicoPlanesGrid" class="ag-theme-material planes-ag-grid" style="width:100%;height:62vh;min-height:460px;border:1px solid #1f2937;border-radius:10px;overflow:hidden;"></div>
+        <table role="grid" id="historicoPlanesTable" style="display:none;">
+          <thead>
+            <tr>
+              <th>Número de línea</th>
+              <th>Fecha operación</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+              <th>Costo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="historico-planes-tbody">
+            <!-- cargado vía AJAX -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -361,6 +391,40 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <script>
+  async function openHistoricoDevicesModal(historicoId) {
+    if (!historicoId) return;
+    try {
+      const resp = await fetch(`/devices/planes/historico/${historicoId}/devices`);
+      if (!resp.ok) throw new Error('No se pudo obtener dispositivos');
+      const data = await resp.json();
+      const list = document.getElementById('historicoDevicesList');
+      if (!list) return;
+      if (!data.success || !Array.isArray(data.devices) || data.devices.length === 0) {
+        list.innerHTML = '<div>No hay dispositivos vinculados a este histórico.</div>';
+      } else {
+        const html = data.devices.map(d => `
+          <div style="padding:10px 0; border-bottom:1px solid #f3f3f3;">
+            <div style="font-weight:700; color:#1f2a37; margin-bottom:8px;">${escapeHtmlSidebar(d.nombre_marca || '-') } ${escapeHtmlSidebar(d.nombre_modelo || '')} - ${escapeHtmlSidebar(d.numero_serie || '-')}</div>
+            <div style="color:#444; margin-bottom:6px;"><strong>Tipo de dispositivo:</strong> <strong>${escapeHtmlSidebar(d.categoria || '-')}</strong></div>
+            <div style="color:#444; margin-bottom:6px;"><strong>Marca:</strong> <strong>${escapeHtmlSidebar(d.nombre_marca || '-')}</strong></div>
+            <div style="color:#444; margin-bottom:6px;"><strong>Modelo:</strong> <strong>${escapeHtmlSidebar(d.nombre_modelo || '-')}</strong></div>
+            <div style="color:#444; margin-bottom:6px;"><strong>IMEI:</strong> <strong>${escapeHtmlSidebar(d.imei || '-')}</strong></div>
+            <div style="color:#444; margin-bottom:6px;"><strong>MAC:</strong> <strong>${escapeHtmlSidebar(d.direccion_mac || '-')}</strong></div>
+            <div style="color:#444; margin-bottom:6px;"><strong>IP:</strong> <strong>${escapeHtmlSidebar(d.ip_asignada || d.ip || d.ip_address || '-')}</strong></div>
+            <div style="color:#666; margin-bottom:6px;"><strong>Tamaño:</strong> <strong>${escapeHtmlSidebar(d.tamano || '-')}</strong></div>
+            <div style="color:#666; margin-bottom:6px;"><strong>Color:</strong> <strong>${escapeHtmlSidebar(d.color || '-')}</strong></div>
+            <div style="color:#666;"><strong>Observaciones:</strong> <strong>${escapeHtmlSidebar(d.observaciones || '-')}</strong></div>
+          </div>
+        `).join('');
+        list.innerHTML = html;
+      }
+      openModal('modalHistoricoDevices', true);
+    } catch (e) {
+      console.warn('Error cargando dispositivos historico', e);
+      openGlobalErrorModal('No se pudieron cargar los dispositivos relacionados.');
+    }
+  }
+
   // Bind click handlers for 'Ver' buttons in historico tbody
   document.addEventListener('DOMContentLoaded', () => {
     // delegate since tbody is loaded via AJAX
@@ -373,36 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!row) return;
       const historicoId = row.getAttribute('data-id');
       if (!historicoId) return;
-      try {
-        const resp = await fetch(`/devices/planes/historico/${historicoId}/devices`);
-        if (!resp.ok) throw new Error('No se pudo obtener dispositivos');
-        const data = await resp.json();
-        const list = document.getElementById('historicoDevicesList');
-        if (!list) return;
-        if (!data.success || !Array.isArray(data.devices) || data.devices.length === 0) {
-          list.innerHTML = '<div>No hay dispositivos vinculados a este histórico.</div>';
-        } else {
-          const html = data.devices.map(d => `
-            <div style="padding:10px 0; border-bottom:1px solid #f3f3f3;">
-              <div style="font-weight:700; color:#1f2a37; margin-bottom:8px;">${escapeHtmlSidebar(d.nombre_marca || '-') } ${escapeHtmlSidebar(d.nombre_modelo || '')} - ${escapeHtmlSidebar(d.numero_serie || '-')}</div>
-              <div style="color:#444; margin-bottom:6px;"><strong>Tipo de dispositivo:</strong> <strong>${escapeHtmlSidebar(d.categoria || '-')}</strong></div>
-              <div style="color:#444; margin-bottom:6px;"><strong>Marca:</strong> <strong>${escapeHtmlSidebar(d.nombre_marca || '-')}</strong></div>
-              <div style="color:#444; margin-bottom:6px;"><strong>Modelo:</strong> <strong>${escapeHtmlSidebar(d.nombre_modelo || '-')}</strong></div>
-              <div style="color:#444; margin-bottom:6px;"><strong>IMEI:</strong> <strong>${escapeHtmlSidebar(d.imei || '-')}</strong></div>
-              <div style="color:#444; margin-bottom:6px;"><strong>MAC:</strong> <strong>${escapeHtmlSidebar(d.direccion_mac || '-')}</strong></div>
-              <div style="color:#444; margin-bottom:6px;"><strong>IP:</strong> <strong>${escapeHtmlSidebar(d.ip_asignada || d.ip || d.ip_address || '-')}</strong></div>
-              <div style="color:#666; margin-bottom:6px;"><strong>Tamaño:</strong> <strong>${escapeHtmlSidebar(d.tamano || '-')}</strong></div>
-              <div style="color:#666; margin-bottom:6px;"><strong>Color:</strong> <strong>${escapeHtmlSidebar(d.color || '-')}</strong></div>
-              <div style="color:#666;"><strong>Observaciones:</strong> <strong>${escapeHtmlSidebar(d.observaciones || '-')}</strong></div>
-            </div>
-          `).join('');
-          list.innerHTML = html;
-        }
-        openModal('modalHistoricoDevices', true);
-      } catch (e) {
-        console.warn('Error cargando dispositivos historico', e);
-        openGlobalErrorModal('No se pudieron cargar los dispositivos relacionados.');
-      }
+      await openHistoricoDevicesModal(historicoId);
     });
   });
   </script>
@@ -1241,6 +1276,8 @@ function closeEditPlaneModal() {
 
 // Employees modal moved to Asignaciones page
 </script>
+
+<script src="{{ url_for('static', filename='js/planes_aggrid.js') }}"></script>
 
 {% endblock %}
 

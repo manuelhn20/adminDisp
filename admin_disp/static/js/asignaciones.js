@@ -5,6 +5,14 @@
 // ============================================================================
 let currentView = 'resumen'; // 'resumen' o 'historico'
 
+let asignacionesGridApi = null;
+let transferSourceGridApi = null;
+let transferTargetGridApi = null;
+let historicoAsignacionesGridApi = null;
+
+let asignacionesResumenData = Array.isArray(window.__ASIGNACIONES_RESUMEN_DATA) ? window.__ASIGNACIONES_RESUMEN_DATA : [];
+let asignacionesHistoricoData = Array.isArray(window.__ASIGNACIONES_HISTORICO_DATA) ? window.__ASIGNACIONES_HISTORICO_DATA : [];
+
 // Variable global para documentación
 let _asignacionIdDocumentacion = null;
 
@@ -22,22 +30,248 @@ function formatearCorrelativo(correlativo) {
   return String(correlativo).padStart(6, '0');
 }
 
-function _setSafeHTML(el, html) {
-  if (!el) return;
-    if (typeof window.safeSetHTML === 'function') { 
-    window.safeSetHTML(el, html);
-    return;
+/**
+ * Formatea una fecha en formato DD-MM-YYYY
+ * @param {string|Date} fecha - La fecha a formatear (ISO string o Date)
+ * @returns {string} - Fecha formateada (ej: "26-03-2026")
+ */
+function formatearFecha(fecha) {
+  if (!fecha) return '-';
+  try {
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return '-';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
+  } catch (e) {
+    return '-';
   }
-  el.textContent = String(html == null ? '' : html);
 }
 
-function _escapeHtmlText(value) {
-  return String(value == null ? '' : value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+function _asigRefreshGridLayout(gridApi, containerId) {
+  if (!gridApi) return;
+  try { if (typeof gridApi.refreshCells === 'function') gridApi.refreshCells({ force: true }); } catch(e) {}
+  try { if (typeof gridApi.resetRowHeights === 'function') gridApi.resetRowHeights(); } catch(e) {}
+  try {
+    const container = containerId ? document.getElementById(containerId) : null;
+    const visible = !!(container && container.offsetParent !== null && container.clientWidth > 0 && container.clientHeight > 0);
+    if (visible && typeof gridApi.sizeColumnsToFit === 'function') gridApi.sizeColumnsToFit();
+  } catch(e) {}
+}
+
+function _asigAutoHeightForDevicesGrid(containerId, rowCount, maxRows) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const limit = Number(maxRows || 6);
+  const minRows = 3;
+  const rows = Math.max(minRows, Math.min(limit, Number(rowCount) || 0));
+  const headerHeight = 54;
+  const rowHeight = 50;
+  const pagerHeight = 52;
+  const chrome = 20;
+  const h = headerHeight + (rows * rowHeight) + pagerHeight + chrome;
+  el.style.height = `${h}px`;
+  el.style.minHeight = `${h}px`;
+}
+
+function _renderResumenEmpleadoCell(p) {
+  const d = p.data || {};
+  const count = Number(d.DispositivosCount || 0);
+  const inactive = (d.IsActive !== undefined && !d.IsActive)
+    ? '<span class="inactive-badge" title="Empleado inactivo">Inactivo</span>'
+    : '';
+  return `
+    <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+      <div style="flex:1; min-width:0;">${d.NombreCompleto || '-'}</div>
+      <div style="flex:0 0 auto; margin-left:8px; text-align:right; display:flex; align-items:center; gap:8px;">
+        ${inactive}
+        <span class="device-count-badge ${count > 0 ? 'has-count' : ''}">${count}</span>
+      </div>
+    </div>`;
+}
+
+function _renderResumenAccionesCell(p) {
+  const id = Number((p.data && p.data.IdEmpleado) || 0);
+  if (!id) return '';
+  return `
+    <div class="asig-actions-cell">
+      <button class="btn btn-primary btn-small" data-action="open-empleado-devices" data-empleado-id="${id}" style="display:inline-flex;align-items:center;gap:8px;">
+        <span>Ver</span>
+        <img src="/static/img/devicesb.png" alt="Dispositivos" style="width:30px; height:30px; vertical-align:middle;">
+      </button>
+    </div>`;
+}
+
+function _renderHistoricoAccionesCell(p) {
+  const d = p.data || {};
+  const asignId = Number(d.id_asignacion || 0);
+  if (!asignId) return '';
+  return `
+    <div class="asig-actions-cell">
+      <button class="btn btn-primary btn-small" title="Editar asignación" data-action="edit-asignacion" data-asignacion-id="${asignId}" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:none;position:relative;margin-right:6px;"><div style="width:42px;height:42px;border-radius:50%;background:#06a7e6;position:absolute;"></div><img src="/static/img/edi.png" alt="Editar" style="width:28px;height:28px;position:relative;z-index:1;"></button>
+      <button class="btn btn-primary btn-small" title="Generar documentacion" data-action="doc-asignacion" data-asignacion-id="${asignId}" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:1.0rem;background:transparent;border:none;position:relative;"><div style="width:42px;height:42px;border-radius:50%;background:transparent;position:absolute;"></div><img src="/static/img/docgen.png" alt="Generar documentación" style="width:38px;height:38px;position:relative;z-index:1;"></button>
+    </div>`;
+}
+
+function _bindAsignacionesGridActions() {
+  const resumenEl = document.getElementById('asignacionesGrid');
+  if (resumenEl && !resumenEl._boundActions) {
+    resumenEl.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-action="open-empleado-devices"]');
+      if (!btn) return;
+      const empId = Number(btn.getAttribute('data-empleado-id') || 0);
+      if (empId) openEmpleadoDevicesModalFromResumen(empId);
+    });
+    resumenEl._boundActions = true;
+  }
+
+  const histEl = document.getElementById('historicoAsignacionesGrid');
+  if (histEl && !histEl._boundActions) {
+    histEl.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-action]');
+      if (!btn) return;
+      const asignId = Number(btn.getAttribute('data-asignacion-id') || 0);
+      if (!asignId) return;
+      const action = btn.getAttribute('data-action');
+      if (action === 'edit-asignacion') {
+        openEditAsignacionModal(asignId);
+        return;
+      }
+      if (action === 'doc-asignacion') {
+        abrirModalSeleccionarTipoDocumentacion(asignId);
+      }
+    });
+    histEl._boundActions = true;
+  }
+}
+
+function initAsignacionesAgGrids() {
+  if (typeof agGrid === 'undefined') return;
+
+  if (!asignacionesGridApi) {
+    const el = document.getElementById('asignacionesGrid');
+    if (el) {
+      asignacionesGridApi = agGrid.createGrid(el, {
+        columnDefs: [
+          { headerName: 'Empleado', field: 'NombreCompleto', minWidth: 260, flex: 1.5, cellRenderer: _renderResumenEmpleadoCell },
+          { headerName: 'Empresa', field: 'Empresa', minWidth: 140, flex: 1 },
+          { headerName: 'Sucursal', field: 'Sucursal', minWidth: 130, flex: 0.95 },
+          { headerName: 'Puesto Asignado', field: 'Cargo', minWidth: 170, flex: 1 },
+          { headerName: 'Acciones', field: 'IdEmpleado', minWidth: 130, maxWidth: 170, sortable: false, filter: false, headerClass: 'ag-actions-header', cellRenderer: _renderResumenAccionesCell },
+        ],
+        rowData: asignacionesResumenData,
+        defaultColDef: { sortable: true, filter: true, resizable: true },
+        enableCellTextSelection: true,
+        copyHeadersToClipboard: true,
+        pagination: true,
+        paginationPageSize: 25,
+        paginationPageSizeSelector: [25, 50, 100],
+        suppressCellFocus: false,
+        animateRows: true,
+      });
+      _bindAsignacionesGridActions();
+      setTimeout(() => _asigRefreshGridLayout(asignacionesGridApi, 'asignacionesGrid'), 0);
+    }
+  }
+
+  if (!transferSourceGridApi) {
+    const el = document.getElementById('transferSourceGrid');
+    if (el) {
+      transferSourceGridApi = agGrid.createGrid(el, {
+        columnDefs: [
+          { headerName: 'Tipo', field: 'categoria', minWidth: 90, maxWidth: 120, flex: 0.7 },
+          { headerName: 'No de Serie', field: 'numero_serie', minWidth: 120, maxWidth: 165, flex: 1.2, cellRenderer: p => `<code>${p.value || ''}</code>` },
+          { headerName: 'Marca', field: 'nombre_marca', minWidth: 100, maxWidth: 140, flex: 0.8 },
+          { headerName: 'Modelo', field: 'nombre_modelo', minWidth: 110, maxWidth: 150, flex: 0.9 },
+        ],
+        rowData: [],
+        defaultColDef: { sortable: true, filter: true, resizable: true },
+        rowSelection: {
+          mode: 'multiRow',
+          checkboxes: true,
+          headerCheckbox: true,
+        },
+        enableCellTextSelection: true,
+        copyHeadersToClipboard: true,
+        pagination: true,
+        paginationPageSize: 10,
+        paginationPageSizeSelector: [10, 25, 50],
+        suppressCellFocus: false,
+        animateRows: true,
+        onSelectionChanged: () => updateTransferNotice(),
+      });
+      _asigAutoHeightForDevicesGrid('transferSourceGrid', 0, 6);
+      setTimeout(() => _asigRefreshGridLayout(transferSourceGridApi, 'transferSourceGrid'), 0);
+    }
+  }
+
+  if (!transferTargetGridApi) {
+    const el = document.getElementById('transferTargetGrid');
+    if (el) {
+      transferTargetGridApi = agGrid.createGrid(el, {
+        columnDefs: [
+          { headerName: 'Tipo', field: 'categoria', minWidth: 90, maxWidth: 120, flex: 0.7 },
+          { headerName: 'No de Serie', field: 'numero_serie', minWidth: 120, maxWidth: 165, flex: 1.2, cellRenderer: p => `<code>${p.value || ''}</code>` },
+          { headerName: 'Marca', field: 'nombre_marca', minWidth: 100, maxWidth: 140, flex: 0.8 },
+          { headerName: 'Modelo', field: 'nombre_modelo', minWidth: 110, maxWidth: 150, flex: 0.9 },
+        ],
+        rowData: [],
+        defaultColDef: { sortable: true, filter: true, resizable: true },
+        enableCellTextSelection: true,
+        copyHeadersToClipboard: true,
+        pagination: true,
+        paginationPageSize: 10,
+        paginationPageSizeSelector: [10, 25, 50],
+        suppressCellFocus: false,
+        animateRows: true,
+      });
+      _asigAutoHeightForDevicesGrid('transferTargetGrid', 0, 6);
+      setTimeout(() => _asigRefreshGridLayout(transferTargetGridApi, 'transferTargetGrid'), 0);
+    }
+  }
+
+  if (!historicoAsignacionesGridApi) {
+    const el = document.getElementById('historicoAsignacionesGrid');
+    if (el) {
+      historicoAsignacionesGridApi = agGrid.createGrid(el, {
+        columnDefs: [
+          { headerName: 'Dispositivo', field: 'categoria', minWidth: 115, maxWidth: 160, flex: 0.7 },
+          { headerName: 'Empleado', field: 'empleado_nombre', minWidth: 245, flex: 1.5, valueGetter: p => (p.data && (p.data.empleado_nombre || p.data.fk_id_empleado)) || '-' },
+          { headerName: 'Fecha Inicio', field: 'fecha_inicio_asignacion', minWidth: 120, maxWidth: 160, flex: 0.8, valueGetter: p => (p.data && formatearFecha(p.data.fecha_inicio_asignacion)) || '-' },
+          { headerName: 'Fecha Fin', field: 'fecha_fin_asignacion', minWidth: 120, maxWidth: 160, flex: 0.8, valueGetter: p => (p.data && p.data.fecha_fin_asignacion && formatearFecha(p.data.fecha_fin_asignacion)) || '-' },
+          { headerName: 'Correlativo', field: 'correlativo', minWidth: 110, maxWidth: 145, flex: 0.85, valueGetter: p => formatearCorrelativo(p.data && p.data.correlativo) },
+          { headerName: 'Acciones', field: 'id_asignacion', minWidth: 120, maxWidth: 150, sortable: false, filter: false, headerClass: 'ag-actions-header', cellRenderer: _renderHistoricoAccionesCell },
+        ],
+        rowData: asignacionesHistoricoData,
+        defaultColDef: { sortable: true, filter: true, resizable: true },
+        enableCellTextSelection: true,
+        copyHeadersToClipboard: true,
+        pagination: true,
+        paginationPageSize: 25,
+        paginationPageSizeSelector: [25, 50, 100],
+        suppressCellFocus: false,
+        animateRows: true,
+      });
+      _bindAsignacionesGridActions();
+      setTimeout(() => _asigRefreshGridLayout(historicoAsignacionesGridApi, 'historicoAsignacionesGrid'), 0);
+    }
+  }
+}
+
+function applyAsignacionesGridSearchFilter(value) {
+  const v = (value || '').trim();
+  if (currentView === 'historico') {
+    if (historicoAsignacionesGridApi) historicoAsignacionesGridApi.setGridOption('quickFilterText', v);
+    return;
+  }
+  if (asignacionesGridApi) asignacionesGridApi.setGridOption('quickFilterText', v);
+}
+
+function applyTransferGridsSearchFilter(value) {
+  const v = (value || '').trim();
+  if (transferSourceGridApi) transferSourceGridApi.setGridOption('quickFilterText', v);
+  if (transferTargetGridApi) transferTargetGridApi.setGridOption('quickFilterText', v);
 }
 
 // ============================================================================
@@ -52,7 +286,7 @@ const _openModalsStack = [];
 function openModal(id, focusFirst) {
   const el = document.getElementById(id);
   if (el) {
-     // Incrementar z-index para el nuevo modal
+    // Incrementar z-index para la nueva modal
     _modalZIndexCounter += 2;
     const overlayZIndex = _modalZIndexCounter;
     const modalZIndex = _modalZIndexCounter + 1;
@@ -84,7 +318,7 @@ function openModal(id, focusFirst) {
 function closeModal(id) {
   const el = document.getElementById(id);
   try {
-      if (el) { 
+    if (el) {
       // Remover de la pila de modales abiertas
       const index = _openModalsStack.indexOf(id);
       if (index > -1) {
@@ -128,7 +362,7 @@ function abrirModalObservaciones(callback) {
   _observacionesCallback = callback;
   
   // Reset radio buttons
-    document.querySelectorAll('input[name="observacion-estetica"]').forEach(rb => rb.checked = false); 
+  document.querySelectorAll('input[name="observacion-estetica"]').forEach(rb => rb.checked = false);
   document.querySelectorAll('input[name="observacion-accesorios"]').forEach(rb => rb.checked = false);
   
   openModal('modalObservacionesDispositivo');
@@ -201,7 +435,7 @@ async function abrirModalSeleccionarTipoDocumentacion(asignacionId) {
       _tipoFirmaSeleccionado = tipoFirma;
       
       // Llamar a generarDocumentacionNuevo directamente sin pedir datos
-        showLoading('Verificando estado de documentos...'); 
+      // (el backend devolverí los existentes)
       generarDocumentacionNuevo(asignacionId, tipoFirma);
       return;
     }
@@ -311,54 +545,23 @@ function seleccionarTipoDocumentacion(tipo) {
 
 // función para alternar entre vista resumen e Histórico
 function toggleHistoricoView() {
-  const viewResumen = document.getElementById('viewResumen');
-  const viewHistorico = document.getElementById('viewHistorico');
-  if (!viewResumen || !viewHistorico) return;
-  // determine previous state so we can clear filter when opening Histórico
-  const wasResumen = (currentView === 'resumen');
-  if (wasResumen) {
-    viewResumen.style.display = 'none';
-    viewHistorico.style.display = 'block';
+  const modal = document.getElementById('modalHistoricoAsignacionesGrid');
+  if (!modal) return;
+  const opening = !modal.classList.contains('active');
+  if (opening) {
     currentView = 'historico';
-    const btnHist = document.getElementById('btnHistoricoAsignaciones');
-    const btnVol = document.getElementById('btnVolverResumen');
-    if (btnHist) btnHist.style.display = 'none';
-    if (btnVol) btnVol.style.display = 'inline-block';
-    // Update header title to indicate historial view
-    try {
-      const h1 = document.querySelector('.main-header h1');
-      if (h1) h1.textContent = 'Usuarios y Asignaciones (Histórico Asignaciones)';
-    } catch(e) {}
-  } else {
-    viewResumen.style.display = 'block';
-    viewHistorico.style.display = 'none';
-    currentView = 'resumen';
-    const btnHist2 = document.getElementById('btnHistoricoAsignaciones');
-    const btnVol2 = document.getElementById('btnVolverResumen');
-    if (btnHist2) btnHist2.style.display = 'inline-block';
-    if (btnVol2) btnVol2.style.display = 'none';
-    // Restore header title
-    try {
-      const h1 = document.querySelector('.main-header h1');
-      if (h1) h1.textContent = 'Usuarios y Asignaciones';
-    } catch(e) {}
+    openModal('modalHistoricoAsignacionesGrid', true);
+    setTimeout(() => {
+      _asigRefreshGridLayout(historicoAsignacionesGridApi, 'historicoAsignacionesGrid');
+      const q = (document.getElementById('asignacionesPageSearch') || {}).value || '';
+      applyAsignacionesGridSearchFilter(q);
+    }, 30);
+    return;
   }
-
-  // Trigger the 'Acciones' reset on toggle (both directions) so filters/sorts are cleared
-  try {
-    const acciones = document.getElementById('thActionsAsignaciones') || document.getElementById('thActionsHistorico');
-    if (acciones) {
-      try { acciones.click(); } catch(e) { try { acciones.dispatchEvent(new MouseEvent('click')); } catch(_) {} }
-    }
-    const searchEl = document.getElementById('asignacionesPageSearch');
-    const q = (searchEl || {}).value || '';
-    const visible = (currentView === 'resumen') ? document.getElementById('viewResumen') : document.getElementById('viewHistorico');
-    const hidden = (currentView === 'resumen') ? document.getElementById('viewHistorico') : document.getElementById('viewResumen');
-    if (typeof applyTableSearchFilter === 'function') {
-      applyTableSearchFilter(q, visible);
-      applyTableSearchFilter('', hidden);
-    }
-  } catch(e) {}
+  closeModal('modalHistoricoAsignacionesGrid');
+  currentView = 'resumen';
+  const q = (document.getElementById('asignacionesPageSearch') || {}).value || '';
+  applyAsignacionesGridSearchFilter(q);
 }
 
 // función auxiliar para abrir modal desde tabla resumen
@@ -392,8 +595,8 @@ async function reloadDispositivosOptions() {
       }).join('');
     
     // Actualizar ambos selects
-    if (select) _setSafeHTML(select, htmlOptions);
-    if (selectId) _setSafeHTML(selectId, htmlOptions);
+    if (select) select.innerHTML = htmlOptions;
+    if (selectId) selectId.innerHTML = htmlOptions;
     
     // Si el valor anterior ya no existe, dejar vacío
     if (current) {
@@ -442,14 +645,35 @@ async function reloadAsignacionesTable() {
     if (!resp.ok) return;
     const data = await resp.json();
 
+    if (Array.isArray(data.resumen_data)) {
+      asignacionesResumenData = data.resumen_data;
+      if (asignacionesGridApi) {
+        asignacionesGridApi.setGridOption('rowData', asignacionesResumenData);
+        _asigRefreshGridLayout(asignacionesGridApi, 'asignacionesGrid');
+      }
+    }
+
+    if (Array.isArray(data.historico_data)) {
+      asignacionesHistoricoData = data.historico_data;
+      if (historicoAsignacionesGridApi) {
+        historicoAsignacionesGridApi.setGridOption('rowData', asignacionesHistoricoData);
+        _asigRefreshGridLayout(historicoAsignacionesGridApi, 'historicoAsignacionesGrid');
+      }
+    }
+
+    try {
+      const q = (document.getElementById('asignacionesPageSearch') || {}).value || '';
+      applyAsignacionesGridSearchFilter(q);
+    } catch(e) {}
+
     // Update historico tbody if present
     const histTbody = document.querySelector('#historicoTable tbody');
     if (histTbody && data.historico !== undefined) {
-        const tempDiv = document.createElement('div');
-        _setSafeHTML(tempDiv, data.historico.trim());
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = data.historico.trim();
       const rows = tempDiv.querySelectorAll('tr');
       if (rows.length > 0) {
-        histTbody.textContent = '';
+        histTbody.innerHTML = '';
         rows.forEach(row => histTbody.appendChild(row));
       }
       try { 
@@ -461,11 +685,11 @@ async function reloadAsignacionesTable() {
     // Update resumen tbody if present
     const resumenTbody = document.querySelector('#asignacionesTable tbody');
     if (resumenTbody && data.resumen !== undefined) {
-        const tempDiv = document.createElement('div');
-        _setSafeHTML(tempDiv, data.resumen.trim());
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = data.resumen.trim();
       const rows = tempDiv.querySelectorAll('tr');
       if (rows.length > 0) {
-        resumenTbody.textContent = '';
+        resumenTbody.innerHTML = '';
         rows.forEach(row => resumenTbody.appendChild(row));
       }
       try { 
@@ -489,13 +713,17 @@ async function reloadAsignacionesTable() {
 // Bind local search input to shared filter for asignaciones page
 document.addEventListener('DOMContentLoaded', () => {
   try {
+    initAsignacionesAgGrids();
     const s = document.getElementById('asignacionesPageSearch');
     if (s && !s._bound) {
       s.addEventListener('input', () => {
         const v = (s.value || '').trim();
         try {
-          const container = (currentView === 'historico') ? document.getElementById('viewHistorico') : document.getElementById('viewResumen');
-          if (typeof applyTableSearchFilter === 'function') applyTableSearchFilter(v, container);
+          applyAsignacionesGridSearchFilter(v);
+          const transferModal = document.getElementById('modalTransferDevices');
+          if (transferModal && transferModal.classList.contains('active')) {
+            applyTransferGridsSearchFilter(v);
+          }
         } catch(e) {}
       });
       s._bound = true;
@@ -765,7 +993,7 @@ document.addEventListener('DOMContentLoaded', () => {
               const persona = j.asignacion.empleado_nombre || j.asignacion.fk_id_empleado || '-';
               const fecha = j.asignacion.fecha_inicio_asignacion ? new Date(j.asignacion.fecha_inicio_asignacion).toLocaleDateString() : '-';
               const msgEl = document.getElementById('finalizeEmpleadoMessage');
-              if (msgEl) msgEl.textContent = `Finalizar asignación de ${persona} (desde ${fecha}) para el dispositivo ${deviceId}?`;
+              if (msgEl) msgEl.innerHTML = `Finalizar asignación de <strong>${persona}</strong> (desde ${fecha}) para el dispositivo <strong>${deviceId}</strong>?`;
               const ci = document.getElementById('confirmFinalizeEmpleadoInput');
               const btn = document.getElementById('btnConfirmFinalizeEmpleado');
               const err = document.getElementById('finalizeEmpleadoError');
@@ -947,10 +1175,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!modal) return;
       const tbody = modal.querySelector('table tbody');
       if (!tbody) return;
-      tbody.textContent = '';
+      tbody.innerHTML = '';
           // If no devices assigned, show friendly message
           if (!assignedDevicesForSelectedEmployee || assignedDevicesForSelectedEmployee.length === 0) {
-            _setSafeHTML(tbody, `<tr class="empty-state"><td colspan="7" style="text-align:center; padding:12px;">No se han asignado dispositivos aún.</td></tr>`);
+            tbody.innerHTML = `<tr class="empty-state"><td colspan="7" style="text-align:center; padding:12px;">No se han asignado dispositivos aún.</td></tr>`;
             openModal(modalId, true);
             return;
           }
@@ -1002,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (countEmpleadoDevicesEl) countEmpleadoDevicesEl.textContent = String(assignedDevicesForSelectedEmployee.length || 0);
         if (btnShowEmpleadoDevices) btnShowEmpleadoDevices.disabled = assignedDevicesForSelectedEmployee.length === 0;
         if ((assignedDevicesForSelectedEmployee.length || 0) === 0 && tbody) {
-          _setSafeHTML(tbody, `<tr class="empty-state"><td colspan="7" style="text-align:center; padding:12px;">No se han asignado dispositivos aún.</td></tr>`);
+          tbody.innerHTML = `<tr class="empty-state"><td colspan="7" style="text-align:center; padding:12px;">No se han asignado dispositivos aún.</td></tr>`;
         }
       }
       // If empleadoId provided, decrement resumen badge
@@ -1027,6 +1255,32 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateHistoricoFechaFin(asignacionId, fechaFinStr) {
     try {
       if (!asignacionId) return;
+
+      let out = '-';
+      try {
+        if (fechaFinStr) {
+          let d = (fechaFinStr instanceof Date) ? fechaFinStr : new Date(fechaFinStr);
+          if (!isNaN(d.getTime())) {
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            out = `${yyyy}-${mm}-${dd}`;
+          } else {
+            const m = String(fechaFinStr).match(/(\d{4}-\d{2}-\d{2})/);
+            out = m ? m[1] : String(fechaFinStr);
+          }
+        }
+      } catch(e) { console.warn('format fechaFin failed', e); out = String(fechaFinStr || '-'); }
+
+      const idx = asignacionesHistoricoData.findIndex(r => Number(r.id_asignacion || 0) === Number(asignacionId));
+      if (idx >= 0) {
+        asignacionesHistoricoData[idx] = { ...asignacionesHistoricoData[idx], fecha_fin_asignacion: out };
+        if (historicoAsignacionesGridApi) {
+          historicoAsignacionesGridApi.setGridOption('rowData', asignacionesHistoricoData);
+          _asigRefreshGridLayout(historicoAsignacionesGridApi, 'historicoAsignacionesGrid');
+        }
+      }
+
       const tbody = document.querySelector('#historicoTable tbody');
       if (!tbody) return;
       const row = tbody.querySelector(`tr[data-asignacion-id="${asignacionId}"]`);
@@ -1034,24 +1288,6 @@ document.addEventListener('DOMContentLoaded', () => {
       // Fecha Fin is the 4th cell (0-based index 3)
       const cells = row.children;
       if (cells && cells.length >= 4) {
-        // Normalize fechaFinStr to YYYY-MM-DD to match server-rendered rows
-        let out = '-';
-        try {
-          if (fechaFinStr) {
-            // If it's already a Date object, use it; otherwise try parsing
-            let d = (fechaFinStr instanceof Date) ? fechaFinStr : new Date(fechaFinStr);
-            if (!isNaN(d.getTime())) {
-              const yyyy = d.getFullYear();
-              const mm = String(d.getMonth() + 1).padStart(2, '0');
-              const dd = String(d.getDate()).padStart(2, '0');
-              out = `${yyyy}-${mm}-${dd}`;
-            } else {
-              // Fallback: if string looks like yyyy-mm-dd as prefix, take it
-              const m = String(fechaFinStr).match(/(\d{4}-\d{2}-\d{2})/);
-              out = m ? m[1] : String(fechaFinStr);
-            }
-          }
-        } catch(e) { console.warn('format fechaFin failed', e); out = String(fechaFinStr || '-'); }
         cells[3].textContent = out || '-';
       }
     } catch(e) { console.warn('updateHistoricoFechaFin error', e); }
@@ -1063,19 +1299,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const modal = document.getElementById(modalId);
       if (!modal) return;
 
+      initAsignacionesAgGrids();
+
       const selectSource = modal.querySelector('#selectSourceEmpleado');
       const selectTarget = modal.querySelector('#selectTargetEmpleado');
-      const tbody = modal.querySelector('#transferSourceTbody');
       if (!selectSource || !selectTarget) return;
 
       // populate source and target selects from empleados_options
       const empleados = (window._empleadosOptions || []);
 
       // Do NOT preselect based on the 'Nueva asignación' modal í selects must be independent
-      _setSafeHTML(selectSource, '<option value="">-- Seleccionar empleado origen --</option>' + empleados.map(e => `<option value="${e.id}">${_escapeHtmlText(e.name)}</option>`).join(''));
+      selectSource.innerHTML = '<option value="">-- Seleccionar empleado origen --</option>' + empleados.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
       // populate target excluding the (optional) preselected source (none at open)
       const buildTargetOptions = (excludeId) => '<option value="">-- Seleccionar empleado receptor --</option>' + empleados.filter(e => e.id !== excludeId).map(e => `<option value="${e.id}">${e.name}</option>`).join('');
-      _setSafeHTML(selectTarget, buildTargetOptions(null));
+      selectTarget.innerHTML = buildTargetOptions(null);
 
       // load devices when source changes: populate source table and update target options
       selectSource.onchange = async function (e) {
@@ -1085,7 +1322,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // populate source devices
         await loadSourceDevices(empId);
         // rebuild target options excluding the chosen source
-        _setSafeHTML(selectTarget, buildTargetOptions(empId));
+        selectTarget.innerHTML = buildTargetOptions(empId);
         // restore previous target if still available and not equal to the new source
         if (prevTarget && String(prevTarget) !== String(empId)) {
           const opt = selectTarget.querySelector(`option[value="${prevTarget}"]`);
@@ -1094,7 +1331,7 @@ document.addEventListener('DOMContentLoaded', () => {
           selectTarget.value = '';
         }
         // clear target table content until selection (or reload if restored)
-        document.getElementById('transferTargetTbody').textContent = '';
+        if (transferTargetGridApi) transferTargetGridApi.setGridOption('rowData', []);
         if (selectTarget.value) loadTargetDevices(selectTarget.value);
       };
 
@@ -1105,20 +1342,25 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       // clear previous rows and state, then open modal
-      const tbodyInit = document.getElementById('transferSourceTbody');
-      const tbodyTargetInit = document.getElementById('transferTargetTbody');
-      if (tbodyInit) _setSafeHTML(tbodyInit, `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">Selecciona un empleado origen para ver sus dispositivos</td></tr>`);
-      if (tbodyTargetInit) _setSafeHTML(tbodyTargetInit, `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">Selecciona un empleado receptor para ver sus dispositivos</td></tr>`);
+      if (transferSourceGridApi) transferSourceGridApi.setGridOption('rowData', []);
+      if (transferTargetGridApi) transferTargetGridApi.setGridOption('rowData', []);
       // prompt user to select source until an employee is chosen
       const noticeEl = document.getElementById('transferNotice');
       if (noticeEl) { noticeEl.textContent = 'Selecciona un empleado origen para ver sus dispositivos'; noticeEl.style.display = 'block'; }
       assignedDevicesForSelectedEmployee = [];
-      const selectAllInit = document.getElementById('transferSelectAll');
-      if (selectAllInit) { selectAllInit.checked = false; selectAllInit.indeterminate = false; }
+      try { if (transferSourceGridApi) transferSourceGridApi.deselectAll(); } catch(e) {}
       updateTransferNotice();
       openModal(modalId, true);
       // adjust layout immediately after open
-      setTimeout(adjustTransferModal, 20);
+      setTimeout(() => {
+        adjustTransferModal();
+        _asigAutoHeightForDevicesGrid('transferSourceGrid', transferSourceDevices.length, 6);
+        _asigAutoHeightForDevicesGrid('transferTargetGrid', transferTargetDevices.length, 6);
+        _asigRefreshGridLayout(transferSourceGridApi, 'transferSourceGrid');
+        _asigRefreshGridLayout(transferTargetGridApi, 'transferTargetGrid');
+        const q = (document.getElementById('asignacionesPageSearch') || {}).value || '';
+        applyTransferGridsSearchFilter(q);
+      }, 20);
     }
 
     let transferSourceDevices = [];
@@ -1126,48 +1368,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadSourceDevices(empId) {
       transferSourceDevices = [];
-      const tbody = document.getElementById('transferSourceTbody');
       const label = document.getElementById('transferSourceLabel');
       if (label) label.textContent = empId ? document.querySelector(`#selectSourceEmpleado option[value="${empId}"]`).textContent : '-';
-      if (!empId) { if (tbody) _setSafeHTML(tbody, `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">Selecciona un empleado origen para ver sus dispositivos</td></tr>`); updateTransferNotice(); return; }
+      if (!empId) {
+        if (transferSourceGridApi) transferSourceGridApi.setGridOption('rowData', []);
+        _asigAutoHeightForDevicesGrid('transferSourceGrid', 0, 6);
+        updateTransferNotice();
+        return;
+      }
       try {
         const r = await fetch(`/devices/asignaciones/empleado/${empId}`);
         if (!r.ok) throw new Error('No se pudo obtener dispositivos');
         const j = await r.json();
         const dispositivos = Array.isArray(j.dispositivos) ? j.dispositivos : (j.dispositivos || []);
         transferSourceDevices = dispositivos;
-        if (tbody) {
-          if (!dispositivos || dispositivos.length === 0) {
-            _setSafeHTML(tbody, `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">El empleado seleccionado no tiene dispositivos para transferir</td></tr>`);
-          } else {
-            _setSafeHTML(tbody, dispositivos.map(d => `
-          <tr>
-            <td><input type="checkbox" class="transfer-device-chk" value="${d.id_dispositivo}"></td>
-            <td>${d.categoria || (d.tipo||'')}</td>
-            <td><code>${d.numero_serie || ''}</code></td>
-            <td>${d.nombre_marca || ''}</td>
-            <td>${d.nombre_modelo || ''}</td>
-          </tr>`).join('\n'));
-          }
-        }
-        // wire events
-        Array.from(document.querySelectorAll('#transferSourceTbody .transfer-device-chk')).forEach(c => c.addEventListener('change', updateTransferNotice));
-        const selectAll = document.getElementById('transferSelectAll');
-        if (selectAll) {
-          selectAll.checked = false; selectAll.indeterminate = false;
-          if (!selectAll._bound) {
-            selectAll.addEventListener('change', function(e){
-              const checked = !!e.target.checked;
-              const rows = Array.from(document.querySelectorAll('#transferSourceTbody .transfer-device-chk'));
-              rows.forEach(chk => { chk.checked = checked; chk.dispatchEvent(new Event('change')); });
-            });
-            selectAll._bound = true;
-          }
+        if (transferSourceGridApi) {
+          transferSourceGridApi.setGridOption('rowData', dispositivos || []);
+          _asigAutoHeightForDevicesGrid('transferSourceGrid', (dispositivos || []).length, 6);
+          _asigRefreshGridLayout(transferSourceGridApi, 'transferSourceGrid');
         }
         updateTransferNotice();
       } catch (e) {
         try { openGlobalMessageModal('error', 'Error', e && e.message ? e.message : 'Error cargando dispositivos origen'); } catch(err) {}
-        if (tbody) tbody.textContent = '';
+        if (transferSourceGridApi) transferSourceGridApi.setGridOption('rowData', []);
+        _asigAutoHeightForDevicesGrid('transferSourceGrid', 0, 6);
         transferSourceDevices = [];
         updateTransferNotice();
       }
@@ -1175,33 +1399,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadTargetDevices(empId) {
       transferTargetDevices = [];
-      const tbody = document.getElementById('transferTargetTbody');
       const label = document.getElementById('transferTargetLabel');
       if (label) label.textContent = empId ? document.querySelector(`#selectTargetEmpleado option[value="${empId}"]`).textContent : '-';
-      if (!empId) { if (tbody) _setSafeHTML(tbody, `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">Selecciona un empleado receptor para ver sus dispositivos</td></tr>`); return; }
+      if (!empId) {
+        if (transferTargetGridApi) transferTargetGridApi.setGridOption('rowData', []);
+        _asigAutoHeightForDevicesGrid('transferTargetGrid', 0, 6);
+        return;
+      }
       try {
         const r = await fetch(`/devices/asignaciones/empleado/${empId}`);
         if (!r.ok) throw new Error('No se pudo obtener dispositivos');
         const j = await r.json();
         const dispositivos = Array.isArray(j.dispositivos) ? j.dispositivos : (j.dispositivos || []);
         transferTargetDevices = dispositivos;
-        if (tbody) {
-          if (!dispositivos || dispositivos.length === 0) {
-            _setSafeHTML(tbody, `<tr class="empty-state"><td colspan="5" style="text-align:center; padding:12px;">El empleado seleccionado no tiene dispositivos</td></tr>`);
-          } else {
-            _setSafeHTML(tbody, dispositivos.map(d => `
-          <tr>
-            <td></td>
-            <td>${d.categoria || (d.tipo||'')}</td>
-            <td><code>${d.numero_serie || ''}</code></td>
-            <td>${d.nombre_marca || ''}</td>
-            <td>${d.nombre_modelo || ''}</td>
-          </tr>`).join('\n'));
-          }
+        if (transferTargetGridApi) {
+          transferTargetGridApi.setGridOption('rowData', dispositivos || []);
+          _asigAutoHeightForDevicesGrid('transferTargetGrid', (dispositivos || []).length, 6);
+          _asigRefreshGridLayout(transferTargetGridApi, 'transferTargetGrid');
         }
       } catch (e) {
         try { openGlobalMessageModal('error', 'Error', e && e.message ? e.message : 'Error cargando dispositivos destino'); } catch(err) {}
-        if (tbody) tbody.textContent = '';
+        if (transferTargetGridApi) transferTargetGridApi.setGridOption('rowData', []);
+        _asigAutoHeightForDevicesGrid('transferTargetGrid', 0, 6);
         transferTargetDevices = [];
       }
     }
@@ -1213,10 +1432,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const empleadoTo = selectTarget?.value;
       if (!empleadoFrom || !empleadoTo) return showModalMessage('error', 'Error', 'Seleccione ambos empleados');
 
-      const checks = Array.from(document.querySelectorAll('#transferSourceTbody .transfer-device-chk:checked'));
-      if (checks.length === 0) return showModalMessage('error', 'Error', 'Seleccione al menos un dispositivo');
+      const selectedRows = transferSourceGridApi ? transferSourceGridApi.getSelectedRows() : [];
+      if (!selectedRows || selectedRows.length === 0) return showModalMessage('error', 'Error', 'Seleccione al menos un dispositivo');
 
-      const deviceIds = checks.map(c => parseInt(c.value, 10));
+      const deviceIds = selectedRows.map(r => Number(r.id_dispositivo)).filter(Boolean);
       // ensure we have target devices loaded for conflict detection
       if (!transferTargetDevices || transferTargetDevices.length === 0) {
         await loadTargetDevices(empleadoTo);
@@ -1246,12 +1465,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const listEl = document.getElementById('transferConflictsList');
         const targetName = document.querySelector(`#selectTargetEmpleado option[value="${empleadoTo}"]`)?.textContent || 'Empleado destino';
         if (listEl) {
-          listEl.textContent = '';
+          listEl.innerHTML = '';
           conflictsByType.forEach((_, type) => {
             const targetDevicesOfType = targetTypes.get(type) || [];
             const items = targetDevicesOfType.map(d => `<strong>${d.numero_serie || ''}</strong> (${d.nombre_marca || ''} ${d.nombre_modelo || ''})`).join(', ');
             const li = document.createElement('li');
-            _setSafeHTML(li, `${_escapeHtmlText(type)}: ${items}`);
+            li.innerHTML = `${type}: ${items}`;
             listEl.appendChild(li);
           });
         }
@@ -1295,7 +1514,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateTransferNotice() {
       const modal = document.getElementById('modalTransferDevices');
       const notice = document.getElementById('transferNotice');
-      const tbody = document.getElementById('transferSourceTbody');
       const selectSource = document.getElementById('selectSourceEmpleado');
       if (!notice) return;
       // If no source selected, ask the user to select one
@@ -1304,26 +1522,18 @@ document.addEventListener('DOMContentLoaded', () => {
         notice.style.display = 'block';
         return;
       }
-      const rows = tbody ? Array.from(tbody.children) : [];
+      const rows = transferSourceDevices || [];
       if (rows.length === 0) {
         notice.textContent = 'No cuenta con dispositivos en transferencia de dispositivos';
         notice.style.display = 'block';
         return;
       }
-      const checked = Array.from(modal.querySelectorAll('.transfer-device-chk:checked'));
+      const checked = transferSourceGridApi ? transferSourceGridApi.getSelectedRows() : [];
       if (checked.length === 0) {
         notice.textContent = 'Selecciona los dispositivos a transferir';
         notice.style.display = 'block';
       } else {
         notice.style.display = 'none';
-      }
-      // update select-all checkbox state
-      const selectAll = document.getElementById('transferSelectAll');
-      if (selectAll) {
-        const total = rows.length;
-        const checkedCount = checked.length;
-        selectAll.checked = checkedCount === total && total > 0;
-        selectAll.indeterminate = checkedCount > 0 && checkedCount < total;
       }
     }
 
@@ -1334,7 +1544,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const dialog = modal.querySelector('.modal');
       const header = dialog.querySelector('.modal-header');
       const footer = dialog.querySelector('.modal-footer');
-      const tableContainer = dialog.querySelector('.table-container');
+      const tableContainers = dialog.querySelectorAll('.table-container');
       // compute available height for table container
       const viewportH = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
       const headerH = header ? header.getBoundingClientRect().height : 0;
@@ -1343,10 +1553,12 @@ document.addEventListener('DOMContentLoaded', () => {
       // leave some breathing room
       const padding = 60;
       const available = Math.max(160, Math.floor(viewportH - headerH - footerH - selectsH - padding));
-      if (tableContainer) {
+      tableContainers.forEach((tableContainer) => {
         tableContainer.style.maxHeight = available + 'px';
-        tableContainer.style.overflow = 'auto';
-      }
+        tableContainer.style.overflow = 'hidden';
+      });
+      _asigRefreshGridLayout(transferSourceGridApi, 'transferSourceGrid');
+      _asigRefreshGridLayout(transferTargetGridApi, 'transferTargetGrid');
     }
 
     // Recompute on resize while modal is open
@@ -1364,7 +1576,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // validate selection before showing confirm modal
           const selectSource = document.getElementById('selectSourceEmpleado');
           const selectTarget = document.getElementById('selectTargetEmpleado');
-          const checks = Array.from(document.querySelectorAll('#transferSourceTbody .transfer-device-chk:checked'));
+          const checks = transferSourceGridApi ? transferSourceGridApi.getSelectedRows() : [];
           if (!selectSource || !selectSource.value || !selectTarget || !selectTarget.value) {
             return showModalMessage('error','Error','Seleccione ambos empleados antes de confirmar');
           }
@@ -1492,10 +1704,10 @@ async function updateDeviceRow(deviceId) {
     const cells = targetRow.children;
     if (cells.length >= 6) {
       cells[0].textContent = d.categoria || '';
-      _setSafeHTML(cells[1], `<code>${d.numero_serie || ''}</code>`);
+      cells[1].innerHTML = `<code>${d.numero_serie || ''}</code>`;
       cells[2].textContent = d.nombre_modelo || '';
       cells[3].textContent = d.nombre_marca || '';
-      _setSafeHTML(cells[4], `<span class="text-${statusColor}">${d.estado !== undefined ? d.estado : ''}</span>`);
+      cells[4].innerHTML = `<span class="text-${statusColor}">${d.estado !== undefined ? d.estado : ''}</span>`;
       cells[5].textContent = d.ip_asignada || '';
     }
   } catch (e) { console.warn('updateDeviceRow failed', e); }
@@ -2064,6 +2276,10 @@ async function handleSubmitNewAsignacion(e) {
         }
       } catch (e) { try { if (typeof reloadAsignacionesTable === 'function') await reloadAsignacionesTable(); } catch(_) {} }
 
+      try {
+        if (typeof reloadAsignacionesTable === 'function') await reloadAsignacionesTable();
+      } catch (_) {}
+
       if (typeof reloadDispositivosOptions === 'function') await reloadDispositivosOptions();
       openGlobalSuccessModal(data.message || 'asignación creada exitosamente');
     } else {
@@ -2531,10 +2747,10 @@ function abrirModalRevision(asignacionId, archivos) {
   
   // Generar lista de checkboxes
   const container = document.getElementById('listaArchivosRevision');
-  container.textContent = '';
+  container.innerHTML = '';
   
   if (!_archivosParaRevisar || _archivosParaRevisar.length === 0) {
-    _setSafeHTML(container, '<p style="color:#999; text-align:center;">No hay archivos para revisar</p>');
+    container.innerHTML = '<p style="color:#999; text-align:center;">No hay archivos para revisar</p>';
   } else {
     _archivosParaRevisar.forEach((archivo, idx) => {
       const checkId = `chk_archivo_${idx}`;
@@ -2543,14 +2759,14 @@ function abrirModalRevision(asignacionId, archivos) {
       div.style.display = 'flex';
       div.style.alignItems = 'center';
       div.style.gap = '12px';
-      _setSafeHTML(div, `
+      div.innerHTML = `
         <input type="checkbox" id="${checkId}" class="checkbox-archivo" 
                style="width:18px; height:18px; cursor:pointer;" 
                onchange="verificarCheckboxes()">
         <label for="${checkId}" style="margin:0; cursor:pointer; flex:1;">
           <strong>${archivo}</strong>
         </label>
-      `);
+      `;
       container.appendChild(div);
       _checkboxesEstadoOriginal[checkId] = false;
     });
@@ -2646,18 +2862,18 @@ function abrirModalConfirmacionFinal(asignacionId, archivos) {
   
   // Mostrar archivos
   const container = document.getElementById('listaArchivosFinales');
-  container.textContent = '';
+  container.innerHTML = '';
   
   if (archivos && archivos.length > 0) {
     archivos.forEach((archivo, idx) => {
       const div = document.createElement('div');
       div.style.padding = '8px 0';
       div.style.borderBottom = idx < archivos.length - 1 ? '1px solid #eee' : 'none';
-      _setSafeHTML(div, `<span style="color:#333;">? ${archivo}</span>`);
+      div.innerHTML = `<span style="color:#333;">? ${archivo}</span>`;
       container.appendChild(div);
     });
   } else {
-    _setSafeHTML(container, '<p style="color:#999; text-align:center;">No hay archivos</p>');
+    container.innerHTML = '<p style="color:#999; text-align:center;">No hay archivos</p>';
   }
   
   // Generar enlace para ver carpeta (será relativo a la carpeta del empleado)
@@ -2815,12 +3031,12 @@ async function mostrarModalDocumentosOneDrive(archivos, estado) {
     hideLoading();
 
     if (!data || !data.success) {
-      _setSafeHTML(container, `
+      container.innerHTML = `
         <div class="pdf-cards-empty">
           <p><strong>No se encontraron documentos</strong></p>
           <p>${(data && data.error) ? data.error : 'No hay archivos para mostrar'}</p>
         </div>
-      `);
+      `;
       return;
     }
 
@@ -2887,7 +3103,7 @@ function agregarCheckboxAceptacion(correlativo, estado) {
     modalBody.appendChild(actionsContainer);
   }
   
-  _setSafeHTML(actionsContainer, `
+  actionsContainer.innerHTML = `
     <div style="text-align: center; margin-bottom: 16px;">
       <div style="font-size: 0.95rem; color: #e5e7eb; font-weight: 500; margin: 0;">Confirma que has revisado todos los documentos antes de continuar con el proceso de firma.</div>
     </div>
@@ -2904,7 +3120,7 @@ function agregarCheckboxAceptacion(correlativo, estado) {
         <button class="btn btn-primary" id="btnContinueDocs" disabled>Continuar</button>
       </div>
     </div>
-  `);
+  `;
 
   // Attach checkbox listener to toggle Continue button
   const chk = actionsContainer.querySelector('#chkAceptoTerminos');
@@ -3030,12 +3246,12 @@ function agregarBotonesEstado90(correlativo) {
     const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.modal');
     modalBody.appendChild(actionsContainer);
   }
-  _setSafeHTML(actionsContainer, `
+  actionsContainer.innerHTML = `
     <div style="display:flex; gap:12px; justify-content: space-between; width: 100%;">
       <button class="btn" id="btnDownloadEstado90" style="background: #10b981; color: white; border: none;">Descargar archivos</button>
       <button class="btn" id="btnCloseEstado90" style="background: #f97316; color: white; border: none;">Cerrar</button>
     </div>
-  `);
+  `;
   const btnDownload = actionsContainer.querySelector('#btnDownloadEstado90');
   const btnClose = actionsContainer.querySelector('#btnCloseEstado90');
   if (btnDownload) {
@@ -3064,7 +3280,7 @@ function agregarBotonSubidaManual(correlativo) {
     modalBody.appendChild(actionsContainer);
   }
   
-  _setSafeHTML(actionsContainer, `
+  actionsContainer.innerHTML = `
     <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
       <div style="display: flex; align-items: start; gap: 12px;">
         <svg style="width: 24px; height: 24px; color: #f59e0b; flex-shrink: 0;" fill="currentColor" viewBox="0 0 20 20">
@@ -3085,7 +3301,7 @@ function agregarBotonSubidaManual(correlativo) {
         <button class="btn btn-primary" id="btnOpenUploadManual">Subir archivos firmados</button>
       </div>
     </div>
-  `);
+  `;
   const btnDownload = actionsContainer.querySelector('#btnDownloadManualDocs');
   const btnCancel = actionsContainer.querySelector('#btnCancelManualDocs');
   const btnOpenUpload = actionsContainer.querySelector('#btnOpenUploadManual');
@@ -3122,7 +3338,7 @@ function abrirModalSubidaFirmaManual() {
   if (existingInput) existingInput.value = '';
   
   const fileList = document.getElementById('fileList');
-  if (fileList) fileList.textContent = '';
+  if (fileList) fileList.innerHTML = '';
   
   const btnSubir = document.getElementById('btnSubirArchivos');
   if (btnSubir) btnSubir.disabled = true;
@@ -3211,7 +3427,7 @@ function renderFileList() {
   const btnSubir = document.getElementById('btnSubirArchivos');
   
   if (_archivosManual.length === 0) {
-    fileList.textContent = '';
+    fileList.innerHTML = '';
     btnSubir.disabled = true;
     return;
   }
@@ -3238,7 +3454,7 @@ function renderFileList() {
   }
   
   // Renderizar lista de archivos
-  _setSafeHTML(fileList, '<h4 style="margin: 0 0 12px 0; font-size: 0.9rem; color: #e5e7eb; font-weight: 600;">Archivos seleccionados:</h4>');
+  fileList.innerHTML = '<h4 style="margin: 0 0 12px 0; font-size: 0.9rem; color: #e5e7eb; font-weight: 600;">Archivos seleccionados:</h4>';
   
   _archivosManual.forEach((file, idx) => {
     const sizeKB = (file.size / 1024).toFixed(2);
@@ -3852,7 +4068,7 @@ function agregarBotonesEstado13(correlativo, estado) {
   
   const confirmarFn = estado === 23 ? confirmarDocumentosManualesFinales : confirmarDocumentosFinales;
   
-  _setSafeHTML(actionsContainer, `
+  actionsContainer.innerHTML = `
     <div style="display: flex; gap: 12px; justify-content: space-between; margin-bottom: 10px;">
       <button class="btn" id="btnDownloadEstado13" style="background: #10b981; color: white; border: none;">Descargar archivos</button>
       <div style="display: flex; gap: 12px;">
@@ -3868,7 +4084,7 @@ function agregarBotonesEstado13(correlativo, estado) {
       <strong>Regenerar:</strong> Elimina estos documentos y vuelve al inicio para generar nuevamente.<br>
       <strong>Confirmar:</strong> Marca los documentos como finales y completa el proceso.
     </p>
-  `);
+  `;
 
   const btnDownload = actionsContainer.querySelector('#btnDownloadEstado13');
   const btnRegenerar = actionsContainer.querySelector('#btnRegenerarEstado13');
@@ -4059,11 +4275,11 @@ function mostrarModalDescargaManual(archivos, correlativo) {
   const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.modal');
   if (!modalBody) return;
   
-  _setSafeHTML(modalBody, '<div class="loading">Preparando documentos...</div>');
+  modalBody.innerHTML = '<div class="loading">Preparando documentos...</div>';
   
   // Renderizar contenido del estado 21
   setTimeout(() => {
-    _setSafeHTML(modalBody, `
+    modalBody.innerHTML = `
       <div style="padding: 20px;">
         <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
           <h4 style="margin: 0 0 10px 0; color: #92400e; font-size: 1.1rem;">Firma Manual - Descarga de Documentos</h4>
@@ -4104,7 +4320,7 @@ function mostrarModalDescargaManual(archivos, correlativo) {
           </button>
         </div>
       </div>
-    `);
+    `;
   }, 100);
 }
 
@@ -4169,7 +4385,7 @@ function abrirModalSubirDocumentosFirmados(correlativo, archivosOriginales) {
     uploadModal = document.createElement('div');
     uploadModal.id = 'modalSubirDocumentosFirmados';
     uploadModal.className = 'modal-overlay';
-    _setSafeHTML(uploadModal, `
+    uploadModal.innerHTML = `
       <div class="modal" style="max-width: 800px;">
         <div class="modal-header">
           <h3>Subir Documentos Firmados</h3>
@@ -4177,7 +4393,7 @@ function abrirModalSubirDocumentosFirmados(correlativo, archivosOriginales) {
         </div>
         <div class="modal-body" id="uploadModalBody"></div>
       </div>
-    `);
+    `;
     document.body.appendChild(uploadModal);
   }
   
@@ -4190,7 +4406,7 @@ function abrirModalSubirDocumentosFirmados(correlativo, archivosOriginales) {
     return nombre.replace('.pdf', '_rev.pdf');
   });
   
-  _setSafeHTML(modalBody, `
+  modalBody.innerHTML = `
     <div style="padding: 20px;">
       <div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
         <h5 style="margin: 0 0 10px 0; color: #1e40af;">Archivos Esperados</h5>
@@ -4220,7 +4436,7 @@ function abrirModalSubirDocumentosFirmados(correlativo, archivosOriginales) {
         </button>
       </div>
     </div>
-  `);
+  `;
   
   // Abrir modal
   if (typeof openModal === 'function') {
@@ -4269,7 +4485,7 @@ function abrirModalSubirDocumentosFirmados(correlativo, archivosOriginales) {
 // Mostrar archivos seleccionados y validar nombres
 function mostrarArchivosSeleccionados(files, archivosEsperados, listaDiv, btnSubir) {
   if (files.length === 0) {
-    listaDiv.textContent = '';
+    listaDiv.innerHTML = '';
     btnSubir.disabled = true;
     return;
   }
@@ -4304,7 +4520,7 @@ function mostrarArchivosSeleccionados(files, archivosEsperados, listaDiv, btnSub
     html += '<div style="background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px; margin-top: 10px; color: #991b1b; font-size: 0.85rem;">Los archivos seleccionados no coinciden con los esperados. Verifica los nombres.</div>';
   }
   
-  _setSafeHTML(listaDiv, html);
+  listaDiv.innerHTML = html;
   btnSubir.disabled = !todosValidos;
 }
 
@@ -4398,7 +4614,7 @@ function mostrarModalVerificacionDocumentos(correlativo, archivosSubidos) {
   const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.modal');
   if (!modalBody) return;
   
-  _setSafeHTML(modalBody, `
+  modalBody.innerHTML = `
     <div style="padding: 20px;">
       <div style="background: #d1fae5; border: 1px solid #6ee7b7; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
         <h4 style="margin: 0 0 10px 0; color: #065f46; font-size: 1.1rem;">? Documentos Subidos Correctamente</h4>
@@ -4432,7 +4648,7 @@ function mostrarModalVerificacionDocumentos(correlativo, archivosSubidos) {
         </button>
       </div>
     </div>
-  `);
+  `;
 }
 
 // ESTADO 23 ? 24: Finalizar flujo manual (eliminar originales, renombrar _rev, marcar completado)
@@ -4865,15 +5081,15 @@ function confirmarFirmas() {
 
 function mostrarModalDocumentosFirmados(archivos) {
   const lista = document.getElementById('listaDocumentosFirmados');
-  lista.textContent = '';
+  lista.innerHTML = '';
   
   if (!archivos || archivos.length === 0) {
-    _setSafeHTML(lista, '<p style="color:#999; text-align:center;">No hay documentos disponibles</p>');
+    lista.innerHTML = '<p style="color:#999; text-align:center;">No hay documentos disponibles</p>';
   } else {
     archivos.forEach((archivo, idx) => {
       const div = document.createElement('div');
       div.style.cssText = 'padding:12px; margin-bottom:8px; border:1px solid #28a745; border-radius:6px; background:#f0f8f5; display:flex; justify-content:space-between; align-items:center;';
-      _setSafeHTML(div, `
+      div.innerHTML = `
         <div>
           <span style="font-weight:600; color:#28a745;">${archivo.nombre || archivo}</span>
         </div>
@@ -4885,7 +5101,7 @@ function mostrarModalDocumentosFirmados(archivos) {
             Descargar
           </a>
         </div>
-      `);
+      `;
       lista.appendChild(div);
     });
   }
@@ -5129,12 +5345,12 @@ function abrirModalDescargaManual(asignacionId) {
 
 function renderizarListaDescarga(documentos) {
   const container = document.getElementById('listaDocumentosDescarga');
-  container.textContent = '';
+  container.innerHTML = '';
   
   documentos.forEach((doc, idx) => {
     const div = document.createElement('div');
     div.style.cssText = 'padding:15px; border:1px solid #ddd; border-radius:6px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; background:white;';
-    _setSafeHTML(div, `
+    div.innerHTML = `
       <div style="flex:1;">
         <div style="font-weight:600; color:#333; margin-bottom:4px;">${doc.nombre || 'Documento ' + (idx + 1)}</div>
         <div style="font-size:0.85em; color:#999;">${doc.tipo || ''}</div>
@@ -5142,7 +5358,7 @@ function renderizarListaDescarga(documentos) {
       <button class="btn btn-primary" onclick="descargarDocumento('${doc.url}', '${doc.nombre}')">
         Descargar
       </button>
-    `);
+    `;
     container.appendChild(div);
   });
 }
@@ -5159,7 +5375,7 @@ function descargarDocumento(url, nombre) {
 function abrirModalSubidaFirmados() {
   closeModal('modalDescargaFirmaManual');
   _archivosSeleccionados = [];
-  document.getElementById('listaArchivosSubida').textContent = '';
+  document.getElementById('listaArchivosSubida').innerHTML = '';
   document.getElementById('btnEnviarFirmados').disabled = true;
   document.getElementById('btnEnviarFirmados').style.opacity = '0.5';
   document.getElementById('erroresValidacionSubida').style.display = 'none';
@@ -5205,7 +5421,7 @@ function handleFilesSubida(files) {
 function validarYRenderizarArchivos() {
   const errores = [];
   const container = document.getElementById('listaArchivosSubida');
-  container.textContent = '';
+  container.innerHTML = '';
   
   // Validar que los nombres coincidan exactamente con los esperados
   const nombresEsperados = _archivosEsperados.map(d => d.nombre);
@@ -5228,9 +5444,9 @@ function validarYRenderizarArchivos() {
   // Mostrar errores si hay
   if (errores.length > 0) {
     const divErrores = document.getElementById('erroresValidacionSubida');
-    _setSafeHTML(divErrores, '<strong>Errores de validación:</strong><ul style="margin:10px 0 0 0; padding-left:20px;">' +
+    divErrores.innerHTML = '<strong>Errores de validación:</strong><ul style="margin:10px 0 0 0; padding-left:20px;">' +
       errores.map(e => `<li>${e}</li>`).join('') +
-      '</ul>');
+      '</ul>';
     divErrores.style.display = 'block';
     document.getElementById('btnEnviarFirmados').disabled = true;
     document.getElementById('btnEnviarFirmados').style.opacity = '0.5';
@@ -5245,14 +5461,14 @@ function validarYRenderizarArchivos() {
     const div = document.createElement('div');
     const esValido = nombresEsperados.includes(file.name);
     div.style.cssText = `padding:12px; border:1px solid ${esValido ? '#4CAF50' : '#dc3545'}; border-radius:6px; margin-bottom:8px; display:flex; align-items:center; gap:12px; background:${esValido ? '#f1f8f4' : '#ffe6e6'};`;
-    _setSafeHTML(div, `
+    div.innerHTML = `
       <div style="font-size:1.5em;">${esValido ? 'Vílido' : 'Invílido'}</div>
       <div style="flex:1;">
         <div style="font-weight:600; color:#333;">${file.name}</div>
         <div style="font-size:0.85em; color:#666;">${(file.size / 1024).toFixed(1)} KB</div>
       </div>
       <button class="btn btn-sm btn-danger" onclick="removerArchivo('${file.name}')">Quitar</button>
-    `);
+    `;
     container.appendChild(div);
   });
 }
@@ -5330,12 +5546,12 @@ function abrirModalRevisionDocumentos(asignacionId) {
 
 function renderizarListaRevision(documentos) {
   const container = document.getElementById('listaDocumentosRevision');
-  container.textContent = '';
+  container.innerHTML = '';
   
   documentos.forEach((doc, idx) => {
     const div = document.createElement('div');
     div.style.cssText = 'padding:15px; border:1px solid #ddd; border-radius:6px; margin-bottom:12px; background:white;';
-    _setSafeHTML(div, `
+    div.innerHTML = `
       <div style="display:flex; align-items:flex-start; gap:12px;">
         <input type="checkbox" id="checkDoc${idx}" class="checkbox-revision" onchange="verificarTodosCheckados()" 
                style="width:20px; height:20px; margin-top:4px;">
@@ -5349,7 +5565,7 @@ function renderizarListaRevision(documentos) {
           </button>
         </div>
       </div>
-    `);
+    `;
     container.appendChild(div);
   });
 }
@@ -5475,7 +5691,7 @@ async function openOneDriveModal(asignacionId, archivos, estado) {
     
     if (!data.success || !data.files || data.files.length === 0) {
       try { hideLoading(); } catch(e) {}
-      _setSafeHTML(container, `
+      container.innerHTML = `
         <div class="pdf-cards-empty">
           <svg fill="currentColor" viewBox="0 0 16 16">
             <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
@@ -5483,7 +5699,7 @@ async function openOneDriveModal(asignacionId, archivos, estado) {
           <p><strong>No se encontraron documentos PDF</strong></p>
           <p>${data.message || 'La carpeta está vacía o no existe'}</p>
         </div>
-      `);
+      `;
     }
 
     // Ocultar global loader y renderizar las cards
@@ -5495,12 +5711,12 @@ async function openOneDriveModal(asignacionId, archivos, estado) {
     try { openGlobalMessageModal('error', 'Error', error && error.message ? error.message : 'Error al cargar documentos'); } catch(e) { /* fallback */ }
     const container = document.getElementById('pdfCardsContainer');
     if (container) {
-      _setSafeHTML(container, `
+      container.innerHTML = `
         <div class="pdf-cards-empty">
           <p><strong>Error al cargar documentos</strong></p>
           <p>${error.message || 'Error desconocido'}</p>
         </div>
-      `);
+      `;
     }
   }
 }
@@ -5519,7 +5735,7 @@ function renderPDFCards(files, container) {
     return true;
   });
 
-  container.textContent = '';
+  container.innerHTML = '';
 
   filtered.forEach(file => {
     // Compute a display name using correlativo if available
@@ -5539,7 +5755,7 @@ function renderPDFCards(files, container) {
     
     const size = formatFileSize(file.size);
     
-    _setSafeHTML(card, `
+    card.innerHTML = `
       <div class="pdf-card-icon">
         <img src="/static/img/pdf.png" alt="PDF" style="width: 36px; height: 36px; object-fit: contain;">
       </div>
@@ -5547,18 +5763,18 @@ function renderPDFCards(files, container) {
       <div class="pdf-card-meta">
         <span class="pdf-card-size">${size}</span>
       </div>
-    `);
+    `;
     
     container.appendChild(card);
   });
 
   if (filtered.length === 0) {
-    _setSafeHTML(container, `
+    container.innerHTML = `
       <div class="pdf-cards-empty">
         <p><strong>No se encontraron documentos disponibles en OneDrive</strong></p>
         <p>Si esperabas ver archivos aquí, por favor revisa que la sincronización con OneDrive haya finalizado.</p>
       </div>
-    `);
+    `;
   }
 
   // Ajustar tamaío de la modal segín nímero de cards: si solo 1, hacerla mís angosta

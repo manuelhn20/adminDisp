@@ -43,6 +43,9 @@
   <link id="favicon32" rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}?v=2">
   <link id="favicon16" rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16x16.png') }}?v=2">
   <link id="faviconApple" rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}?v=2">
+  {% if disable_global_sanitize_patch %}
+  <script>window.DISABLE_GLOBAL_SANITIZE_PATCH = true;</script>
+  {% endif %}
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
   <script src="{{ url_for('static', filename='js/security-sanitize.js') }}"></script>
   <script>
@@ -2051,7 +2054,7 @@
   </script>
   <!-- Modal: Historial de impresora (impresión y copias) -->
   <div id="modalPrinterHistory" class="modal-overlay">
-    <div class="modal" style="max-width:860px; width:95vw;">
+    <div class="modal" style="max-width:980px; width:97vw;">
       <div class="modal-header">
         <h3 id="modalPrinterHistoryTitle">Historial de impresora</h3>
         <button class="modal-close" onclick="closePrinterHistoryModal()">&times;</button>
@@ -2098,20 +2101,27 @@
           body.dark-mode .history-tab:not(.history-tab-active):hover { color: #cfcfcf; }
         </style>
         <div id="printerHistoryTabs" style="display:none;">
+          <div style="padding:10px 16px 0 16px; display:flex; justify-content:flex-end;">
+            <input
+              id="printerHistorySearchInput"
+              type="text"
+              class="global-table-search"
+              placeholder="Buscar en historial..."
+              style="width:180px; padding:6px 10px; font-size:0.9rem;"
+              oninput="applyPrinterHistorySearchFilter(this.value)"
+            />
+          </div>
           <div class="history-tabs-row">
             <button id="tabBtnPrint" class="history-tab history-tab-active" onclick="switchHistoryTab('print')">Impresión</button>
             <button id="tabBtnCopy"  class="history-tab" onclick="switchHistoryTab('copy')">Copias</button>
           </div>
           <div id="tabContentPrint" style="padding:18px 18px 8px 18px; max-height:60vh; overflow:auto;">
-            <div id="printerHistoryContentPrint">Cargando tabla…</div>
+            <div id="printerHistoryGridPrint" class="ag-theme-material" style="width:100%; min-height:420px; height:56vh; border:1px solid #1f2937; border-radius:10px; overflow:hidden;"></div>
           </div>
           <div id="tabContentCopy" style="padding:18px 18px 8px 18px; max-height:60vh; overflow:auto; display:none;">
-            <div id="printerHistoryContentCopy">Cargando tabla…</div>
+            <div id="printerHistoryGridCopy" class="ag-theme-material" style="width:100%; min-height:420px; height:56vh; border:1px solid #1f2937; border-radius:10px; overflow:hidden;"></div>
           </div>
         </div>
-      </div>
-      <div class="modal-footer" style="gap:8px;">
-        <button class="btn btn-cancel" onclick="closePrinterHistoryModal()">Cerrar</button>
       </div>
     </div>
   </div>
@@ -2123,9 +2133,18 @@
 
     function closePrinterHistoryModal() {
       document.getElementById('modalPrinterHistory').classList.remove('active');
-      // Clear injected content
-      try { document.getElementById('printerHistoryContentPrint').innerHTML = ''; } catch(e) {}
-      try { document.getElementById('printerHistoryContentCopy').innerHTML = ''; } catch(e) {}
+      try {
+        if (window._printerHistoryGridApis?.print) {
+          window._printerHistoryGridApis.print.setGridOption('rowData', []);
+        }
+        if (window._printerHistoryGridApis?.copy) {
+          window._printerHistoryGridApis.copy.setGridOption('rowData', []);
+        }
+      } catch(e) {}
+      try {
+        const input = document.getElementById('printerHistorySearchInput');
+        if (input) input.value = '';
+      } catch(e) {}
       _printerHistoryIp   = null;
       _printerHistorySlug = null;
     }
@@ -2146,6 +2165,11 @@
           btnP.classList.remove('history-tab-active');
         }
       } catch(e) {}
+      try {
+        const searchInput = document.getElementById('printerHistorySearchInput');
+        if (searchInput) applyPrinterHistorySearchFilter(searchInput.value || '');
+      } catch(e) {}
+      try { _refreshActivePrinterHistoryGridLayout(); } catch(e) {}
     }
 
     function _showHistoryState(state) {
@@ -2156,94 +2180,146 @@
       document.getElementById('printerHistoryTabs').style.display    = state === 'tabs'    ? '' : 'none';
     }
 
-    // Guardar URLs de paginación para cada contenedor
-    window._printerHistoryUrls = {};
+    window._printerHistoryGridApis = { print: null, copy: null };
+    window._printerHistoryData = { print: [], copy: [] };
 
-    async function _fetchAndRenderTable(url, containerId) {
-      try {
-        const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
-        const data = await resp.json();
-        const container = document.getElementById(containerId);
-        if (!container) return;
+    async function ensureAgGridAssets() {
+      if (window.agGrid && typeof window.agGrid.createGrid === 'function') return;
+      if (window.__printerHistoryAgGridLoadingPromise) {
+        await window.__printerHistoryAgGridLoadingPromise;
+        return;
+      }
 
-        if (!data.success || !data.records || data.records.length === 0) {
-          container.innerHTML = '<div style="color:#888; padding:16px; text-align:center;">No hay registros para mostrar.</div>';
+      window.__printerHistoryAgGridLoadingPromise = new Promise((resolve, reject) => {
+        const ensureCss = (id, href) => {
+          if (document.getElementById(id)) return;
+          const link = document.createElement('link');
+          link.id = id;
+          link.rel = 'stylesheet';
+          link.href = href;
+          document.head.appendChild(link);
+        };
+
+        ensureCss('printerHistoryAgGridCss', 'https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css');
+        ensureCss('printerHistoryAgGridThemeCss', 'https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-material.css');
+
+        if (window.agGrid && typeof window.agGrid.createGrid === 'function') {
+          resolve();
           return;
         }
 
-        // Guardar URL base para paginación
-        const urlObj = new URL(url, window.location.origin);
-        const baseUrl = url.split('?')[0];
-        const limit = new URLSearchParams(urlObj.search).get('limit') || 50;
-        window._printerHistoryUrls[containerId] = { baseUrl, limit, currentPage: data.page };
-
-        // Construir tabla HTML desde JSON
-        let html = '<table style="width:100%; border-collapse:collapse;">';
-        html += '<thead style="background-color:#eaf4fb; color:#1177c9;"><tr>';
-        
-        // Detectar tipo (print o copy) por los campos disponibles
-        const hasNombreArchivo = data.records.some(r => r.nombre_archivo);
-        const hasNombreUsuario = data.records.some(r => r.nombre_usuario);
-        
-        html += '<th style="padding:12px; text-align:left; border-bottom:1px solid #ccc;">Hora de inicio</th>';
-        if (hasNombreArchivo) html += '<th style="padding:12px; text-align:left; border-bottom:1px solid #ccc;">Nombre de archivo</th>';
-        if (hasNombreUsuario) html += '<th style="padding:12px; text-align:left; border-bottom:1px solid #ccc;">Nombre de usuario</th>';
-        html += '<th style="padding:12px; text-align:left; border-bottom:1px solid #ccc;">Hojas x copias</th>';
-        html += '</tr></thead>';
-        
-        html += '<tbody>';
-        data.records.forEach((record, idx) => {
-          const bgColor = idx % 2 === 0 ? '#ffffff' : '#f5f5f5';
-          html += `<tr style="background-color:${bgColor}; border-bottom:1px solid #e5e5e5;">`;
-          html += `<td style="padding:12px;">${record.hora_inicio || '-'}</td>`;
-          if (hasNombreArchivo) html += `<td style="padding:12px;">${record.nombre_archivo || '-'}</td>`;
-          if (hasNombreUsuario) html += `<td style="padding:12px;">${record.nombre_usuario || '-'}</td>`;
-          html += `<td style="padding:12px;">${record.hojas_x_copias || '-'}</td>`;
-          html += '</tr>';
-        });
-        html += '</tbody>';
-        html += '</table>';
-
-        // Agregar info de paginación con botones
-        if (data.pages > 1) {
-          html += `<div style="padding:16px; text-align:center;">`;
-          html += `<div style="color:#666; font-size:0.9rem; margin-bottom:12px;">Página ${data.page} de ${data.pages} (${data.total} registros totales)</div>`;
-          html += `<div style="display:flex; gap:8px; justify-content:center;">`;
-          
-          if (data.page > 1) {
-            html += `<button onclick="_goToPage('${containerId}', ${data.page - 1})" style="padding:8px 16px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem;">← Anterior</button>`;
-          } else {
-            html += `<button disabled style="padding:8px 16px; background:#ccc; color:#666; border:none; border-radius:4px; cursor:not-allowed; font-size:0.9rem;">← Anterior</button>`;
-          }
-          
-          if (data.page < data.pages) {
-            html += `<button onclick="_goToPage('${containerId}', ${data.page + 1})" style="padding:8px 16px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem;">Siguiente →</button>`;
-          } else {
-            html += `<button disabled style="padding:8px 16px; background:#ccc; color:#666; border:none; border-radius:4px; cursor:not-allowed; font-size:0.9rem;">Siguiente →</button>`;
-          }
-          
-          html += `</div>`;
-          html += `</div>`;
+        let script = document.getElementById('printerHistoryAgGridScript');
+        if (!script) {
+          script = document.createElement('script');
+          script.id = 'printerHistoryAgGridScript';
+          script.src = 'https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js';
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('No se pudo cargar AG Grid para historial de impresoras'));
+          document.head.appendChild(script);
+        } else {
+          script.addEventListener('load', () => resolve(), { once: true });
+          script.addEventListener('error', () => reject(new Error('No se pudo cargar AG Grid para historial de impresoras')), { once: true });
         }
+      });
 
-        container.innerHTML = html;
-      } catch(e) {
-        const container = document.getElementById(containerId);
-        if (container) container.innerHTML = `<div style="color:#b00020; padding:16px;">Error al cargar: ${e.message}</div>`;
+      await window.__printerHistoryAgGridLoadingPromise;
+    }
+
+    function _buildPrinterHistoryColumnDefs(mode, rowData) {
+      const hasNombreArchivo = Array.isArray(rowData) && rowData.some(r => r && r.nombre_archivo);
+      const hasNombreUsuario = Array.isArray(rowData) && rowData.some(r => r && r.nombre_usuario);
+      const columns = [
+        { headerName: 'Hora de inicio', field: 'hora_inicio', minWidth: 220, flex: 1.2 },
+      ];
+
+      if (mode === 'print' || hasNombreArchivo) {
+        columns.push({ headerName: 'Nombre de archivo', field: 'nombre_archivo', minWidth: 320, flex: 2.2 });
       }
+      if (mode === 'print' || hasNombreUsuario) {
+        columns.push({ headerName: 'Nombre de usuario', field: 'nombre_usuario', minWidth: 200, flex: 1.1 });
+      }
+
+      columns.push({ headerName: 'Hojas x copias', field: 'hojas_x_copias', minWidth: 110, maxWidth: 140, flex: 0.55 });
+      return columns;
     }
 
-    async function _goToPage(containerId, pageNum) {
-      const config = window._printerHistoryUrls[containerId];
-      if (!config) return;
-      const url = `${config.baseUrl}?page=${pageNum}&limit=${config.limit}&t=${Date.now()}`;
-      await _fetchAndRenderTable(url, containerId);
+    function initPrinterHistoryAgGrid(mode) {
+      const containerId = mode === 'print' ? 'printerHistoryGridPrint' : 'printerHistoryGridCopy';
+      const container = document.getElementById(containerId);
+      if (!container || !window.agGrid || typeof window.agGrid.createGrid !== 'function') return null;
+      if (window._printerHistoryGridApis[mode]) return window._printerHistoryGridApis[mode];
+
+      const rowData = window._printerHistoryData[mode] || [];
+      const api = agGrid.createGrid(container, {
+        columnDefs: _buildPrinterHistoryColumnDefs(mode, rowData),
+        rowData,
+        defaultColDef: { sortable: true, filter: true, resizable: true },
+        pagination: true,
+        paginationPageSize: 25,
+        paginationPageSizeSelector: [25, 50, 100],
+        animateRows: true,
+        enableCellTextSelection: true,
+        copyHeadersToClipboard: true,
+      });
+
+      window._printerHistoryGridApis[mode] = api;
+      return api;
     }
 
-    function _loadHistoryContent(slug) {
+    function _refreshActivePrinterHistoryGridLayout() {
+      const activeMode = (document.getElementById('tabContentPrint')?.style.display !== 'none') ? 'print' : 'copy';
+      const api = window._printerHistoryGridApis[activeMode];
+      if (!api) return;
+      try { if (typeof api.sizeColumnsToFit === 'function') api.sizeColumnsToFit(); } catch(e) {}
+      try { if (typeof api.refreshCells === 'function') api.refreshCells({ force: true }); } catch(e) {}
+    }
+
+    function _setPrinterHistoryGridData(mode, records) {
+      window._printerHistoryData[mode] = Array.isArray(records) ? records : [];
+      const api = initPrinterHistoryAgGrid(mode);
+      if (!api) return;
+      api.setGridOption('columnDefs', _buildPrinterHistoryColumnDefs(mode, window._printerHistoryData[mode]));
+      api.setGridOption('rowData', window._printerHistoryData[mode]);
+      try { if (typeof api.sizeColumnsToFit === 'function') api.sizeColumnsToFit(); } catch(e) {}
+    }
+
+    async function _fetchPrinterHistoryRecords(slug, mode) {
       const ts = Date.now();
-      _fetchAndRenderTable(`/dispositivos/historial/${slug}/print?page=1&limit=50&t=${ts}`, 'printerHistoryContentPrint');
-      _fetchAndRenderTable(`/dispositivos/historial/${slug}/copy?page=1&limit=50&t=${ts}`, 'printerHistoryContentCopy');
+      const resp = await fetch(`/dispositivos/historial/${slug}/${mode}?page=1&limit=5000&t=${ts}`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.success || !Array.isArray(data.records)) return [];
+      return data.records;
+    }
+
+    async function _loadHistoryContent(slug) {
+      const [printRecords, copyRecords] = await Promise.all([
+        _fetchPrinterHistoryRecords(slug, 'print'),
+        _fetchPrinterHistoryRecords(slug, 'copy')
+      ]);
+
+      _setPrinterHistoryGridData('print', printRecords);
+      _setPrinterHistoryGridData('copy', copyRecords);
+
+      if (!printRecords.length && !copyRecords.length) {
+        _showHistoryState('empty');
+        return;
+      }
+
+      _showHistoryState('tabs');
+      _refreshActivePrinterHistoryGridLayout();
+      const searchInput = document.getElementById('printerHistorySearchInput');
+      if (searchInput) applyPrinterHistorySearchFilter(searchInput.value || '');
+    }
+
+    function applyPrinterHistorySearchFilter(searchValue) {
+      const activeMode = (document.getElementById('tabContentPrint')?.style.display !== 'none') ? 'print' : 'copy';
+      const api = window._printerHistoryGridApis[activeMode];
+      if (!api) return;
+      api.setGridOption('quickFilterText', String(searchValue || '').trim());
     }
 
     function openPrinterHistory(ip, slug, desc) {
@@ -2272,14 +2348,18 @@
         document.getElementById('printerHistoryError').textContent = '';
         document.getElementById('modalPrinterHistory').classList.add('active');
         switchHistoryTab('print');
+        try {
+          const searchInput = document.getElementById('printerHistorySearchInput');
+          if (searchInput) searchInput.value = '';
+        } catch(e) {}
 
         if (ok) {
-          // Load fresh content
           try {
-            _loadHistoryContent(slug);
-            _showHistoryState('tabs');
+            await ensureAgGridAssets();
+            await _loadHistoryContent(slug);
           } catch (e) {
-            _showHistoryState('empty');
+            document.getElementById('printerHistoryError').textContent = `No se pudo cargar el historial: ${e.message}`;
+            _showHistoryState('error');
           }
         } else {
           // Show error state inside modal
@@ -2371,6 +2451,24 @@
   <script>
     let globalDeleteUrl = null;
     let globalDeleteCallback = null;
+    function _bringGlobalModalToFront(modalId) {
+      try {
+        const el = document.getElementById(modalId);
+        if (!el) return;
+        let topZ = (window.__modalZBase && Number.isFinite(window.__modalZBase)) ? Number(window.__modalZBase) : 12000;
+        const activeOverlays = document.querySelectorAll('.modal-overlay.active');
+        activeOverlays.forEach((overlay) => {
+          const z = parseInt(window.getComputedStyle(overlay).zIndex || '0', 10);
+          if (Number.isFinite(z) && z > topZ) topZ = z;
+        });
+        const overlayZ = topZ + 10;
+        const modalZ = overlayZ + 1;
+        el.style.zIndex = String(overlayZ);
+        const inner = el.querySelector('.modal');
+        if (inner) inner.style.zIndex = String(modalZ);
+      } catch (e) {}
+    }
+
     function openGlobalDeleteModal(urlOrCallback, titleText, itemName=null) {
       // urlOrCallback can be a URL string for DELETE fetch, or a function to call when confirmed
       if (typeof urlOrCallback === 'function') {
@@ -2398,7 +2496,13 @@
       }
       document.getElementById('globalDeleteError').style.display = 'none';
       // Use centralized modal stack handling so global modals appear on top
-      openModal('globalDeleteModal');
+      if (typeof openModal === 'function') {
+        openModal('globalDeleteModal');
+      } else {
+        const modal = document.getElementById('globalDeleteModal');
+        if (modal) modal.classList.add('active');
+      }
+      _bringGlobalModalToFront('globalDeleteModal');
     }
 
     function closeGlobalDeleteModal() {
@@ -2414,6 +2518,7 @@
       // Ensure any previous timer is cleared
       try { if (window.__globalSuccessTimer) { clearTimeout(window.__globalSuccessTimer); window.__globalSuccessTimer = null; } } catch(e) {}
       openModal('globalSuccessModal', true);
+      _bringGlobalModalToFront('globalSuccessModal');
       // If there is a pending global success callback, avoid auto-closing
       // so the user can explicitly acknowledge the success (and the callback will run on close).
       if (!window.__globalSuccessCallback) {
@@ -2459,6 +2564,7 @@
         icon.textContent = 'ℹ'; icon.style.color = 'var(--primary-color)';
       }
       openModal('globalMessageModal');
+      _bringGlobalModalToFront('globalMessageModal');
     }
 
     function closeGlobalMessageModal() {

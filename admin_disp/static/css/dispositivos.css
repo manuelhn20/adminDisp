@@ -245,3 +245,128 @@
               max-width: 720px !important;
               width: calc(100% - 40px) !important;
             }
+
+/* ---- */
+
+/* AG Grid layout/theme for Devices (main + modal grids) */
+#devicesGrid,
+#deletedDevicesGrid,
+#celularesGrid {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#devicesGrid {
+  height: 68vh;
+  min-height: 560px;
+}
+
+#deletedDevicesGrid,
+#celularesGrid {
+  height: 62vh;
+  min-height: 500px;
+}
+
+.ag-theme-material .ag-root-wrapper,
+.ag-theme-material .ag-header,
+.ag-theme-material .ag-paging-panel {
+  background-color: var(--ag-background-color);
+  border-color: var(--ag-border-color);
+}
+
+.ag-theme-material .ag-header-cell,
+.ag-theme-material .ag-cell,
+.ag-theme-material .ag-paging-panel,
+.ag-theme-material .ag-floating-filter,
+.ag-theme-material .ag-input-field-input {
+  color: var(--ag-foreground-color);
+}
+
+.ag-theme-material .ag-header-cell-label {
+  font-weight: 700;
+}
+
+.ag-theme-material .ag-header-cell.ag-actions-header .ag-header-cell-label {
+  justify-content: center;
+}
+
+.ag-theme-material .ag-cell-value,
+.ag-theme-material .ag-header-cell-text {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.ag-theme-material .table-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ag-theme-material .table-actions .btn-danger {
+  display: inline-flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* AG Grid modals need flexible body sizing to avoid clipped/blank content */
+#modalDeletedDevicesGrid .modal {
+  max-width: 1300px !important;
+  width: 97% !important;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#modalCelularesGrid .modal {
+  max-width: 1600px !important;
+  width: 98% !important;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#modalDeletedDevicesGrid .modal-body,
+#modalCelularesGrid .modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.devices-modal-grid-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.devices-modal-grid-toolbar__left {
+  min-height: 1px;
+}
+
+.devices-modal-grid-toolbar__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  #devicesGrid {
+    height: 58vh;
+    min-height: 420px;
+  }
+
+  #deletedDevicesGrid,
+  #celularesGrid {
+    height: 56vh;
+    min-height: 380px;
+  }
+}

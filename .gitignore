@@ -48,6 +48,7 @@ Thumbs.db
 
 # Tools (archivos descargados, duplicados, no necesarios)
 tools/
+tests/
 
 # Base de datos
 *.db

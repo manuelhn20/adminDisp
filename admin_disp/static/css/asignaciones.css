@@ -193,4 +193,116 @@
 
 /* ====================================================================== */
 
+.asignaciones-grid {
+  width: 100%;
+  height: 68vh;
+  min-height: 520px;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.transfer-grid {
+  height: 46vh;
+  min-height: 320px;
+}
+
+.historico-grid {
+  height: 62vh;
+  min-height: 460px;
+}
+
+.ag-theme-material {
+  --ag-foreground-color: #f5f5f5;
+  --ag-background-color: #070707;
+  --ag-header-foreground-color: #ffffff;
+  --ag-header-background-color: #000000;
+  --ag-odd-row-background-color: #0d0d0d;
+  --ag-border-color: #222222;
+  --ag-row-hover-color: rgba(255, 255, 255, 0.08);
+  --ag-selected-row-background-color: rgba(255, 255, 255, 0.16);
+}
+
+.ag-theme-material .ag-root-wrapper,
+.ag-theme-material .ag-header,
+.ag-theme-material .ag-paging-panel {
+  background-color: var(--ag-background-color);
+}
+
+.ag-theme-material .ag-header-cell,
+.ag-theme-material .ag-cell,
+.ag-theme-material .ag-paging-panel,
+.ag-theme-material .ag-floating-filter,
+.ag-theme-material .ag-input-field-input {
+  color: var(--ag-foreground-color);
+}
+
+.ag-theme-material .ag-header-cell-label {
+  font-weight: 700;
+}
+
+.ag-theme-material .ag-header-cell.ag-actions-header .ag-header-cell-label {
+  justify-content: center;
+}
+
+.ag-theme-material .asig-actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+#modalTransferDevices .modal,
+#modalHistoricoAsignacionesGrid .modal {
+  max-height: 92vh;
+}
+
+/* Elevar z-index de modales de documentación para que aparezcan encima del histórico */
+#modalDocumentosOneDrive,
+#modalPDFViewer,
+#modalObservacionesDispositivo,
+#modalFinalizeAsignacionEmpleado,
+#modalEmpleadoDevices {
+  z-index: 13000 !important;
+}
+
+#modalDocumentosOneDrive .modal-overlay,
+#modalPDFViewer .modal-overlay,
+#modalObservacionesDispositivo .modal-overlay,
+#modalFinalizeAsignacionEmpleado .modal-overlay,
+#modalEmpleadoDevices .modal-overlay {
+  z-index: 13000 !important;
+}
+
+#modalTransferDevices .modal {
+  width: 88%;
+  max-width: 1180px;
+}
+
+#modalTransferDevices .modal-body,
+#modalHistoricoAsignacionesGrid .modal-body {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .asignaciones-grid {
+    height: 58vh;
+    min-height: 420px;
+  }
+
+  #modalTransferDevices .modal {
+    width: 96%;
+    max-width: 96%;
+  }
+
+  .transfer-grid,
+  .historico-grid {
+    height: 52vh;
+    min-height: 360px;
+  }
+}
+
+/* ====================================================================== */
+
 html,body{height:100%;margin:0}

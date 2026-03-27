@@ -1,12 +1,21 @@
 {% extends 'base.html' %}
 {% block title %}PROIMA - Dispositivos{% endblock %}
 {% block page_title %}Dispositivos{% endblock %}
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-material.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dispositivos.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+<script src="{{ url_for('static', filename='js/dispositivos.js') }}" defer></script>
+{% endblock %}
 {% block content %}
 
-<!-- Material Icons -->
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dispositivos.css') }}">
-<script src="{{ url_for('static', filename='js/dispositivos.js') }}" defer></script>
+<script>
+  window.__DEVICES_ACTIVE_DATA = {{ devices|tojson }};
+  window.__DEVICES_DELETED_DATA = {{ devices_eliminados|tojson }};
+  window.__DEVICES_CELULARES_DATA = {{ devices_celulares|tojson }};
+</script>
 
 <!-- Modal: Confirmar restauración de dispositivo -->
 <div id="modalConfirmRestore" class="modal-overlay">
@@ -108,14 +117,6 @@
     <button class="btn btn-primary offset-btn" onclick="openGestionarMarcasModelosModal()">Gestionar marca y modelo</button>
     <button class="btn btn-primary offset-btn" onclick="toggleEliminadosView()" id="btnVerEliminados">Ver eliminados</button>
     <button class="btn btn-primary offset-btn" onclick="toggleCelularesView()" id="btnVerCelulares">Ver celulares</button>
-    <button class="btn btn-primary offset-btn" onclick="toggleEliminadosView()" id="btnVolverActivos" style="display:none;">
-      <img src="{{ url_for('static', filename='img/backw.png') }}" alt="Volver" style="height:16px; vertical-align:middle; margin-right:8px;">
-      <span style="position:relative; top:2px; display:inline-block;">Volver</span>
-    </button>
-    <button class="btn btn-primary offset-btn" onclick="toggleCelularesView()" id="btnVolverCelulares" style="display:none;">
-      <img src="{{ url_for('static', filename='img/backw.png') }}" alt="Volver" style="height:16px; vertical-align:middle; margin-right:8px;">
-      <span style="position:relative; top:2px; display:inline-block;">Volver</span>
-    </button>
     <span id="devices-loading" class="htmx-indicator" style="color:var(--text-gray);font-size:14px;display:flex;align-items:center;gap:6px;">
       <span class="spinner" style="display:inline-block;width:16px;height:16px;border:2px solid var(--text-gray);border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span>
       Actualizando...
@@ -131,8 +132,9 @@
 </div>
 
 <div id="viewActivos">
+  <div id="devicesGrid" class="ag-theme-material" style="width:100%; min-height:560px;"></div>
 {% if devices %}
-  <table role="grid" id="devicesTable">
+  <table role="grid" id="devicesTable" style="display:none;">
     <thead>
       <tr>
         <th data-sortable="categoria">Tipo <img id="sortIndicator_categoria" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
@@ -187,112 +189,40 @@
 {% endif %}
 </div>
 
-<div id="viewEliminados" style="display:none;">
-{% if devices_eliminados %}
-  <table role="grid" id="deletedDevicesTable">
-    <thead>
-      <tr>
-        <th data-sortable="categoria">Tipo <img id="sortIndicator_eliminados_categoria" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-        <th data-sortable="numero_serie">No de Serie <img id="sortIndicator_eliminados_numero_serie" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-        <th data-sortable="nombre_modelo">Modelo <img id="sortIndicator_eliminados_nombre_modelo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-        <th data-sortable="nombre_marca">Marca <img id="sortIndicator_eliminados_nombre_marca" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-        <th data-sortable="ip_asignada">Dirección IP <img id="sortIndicator_eliminados_ip_asignada" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-        <th>Observaciones</th>
-        <th id="thActionsDeleted">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for d in devices_eliminados %}
-      <tr>
-        <td>{{ d.categoria }}</td>
-        <td><code>{{ d.numero_serie }}</code></td>
-        <td>{{ d.nombre_modelo }}</td>
-        <td>{{ d.nombre_marca or '' }}</td>
-        <td>{{ d.ip_asignada or '' }}</td>
-        <td>{{ d.observaciones or '-' }}</td>
-        <td class="table-actions">
-          <button class="btn btn-success btn-small" title="Restaurar dispositivo" onclick="openRestoreModal({{ d.id_dispositivo }}, '{{ (d.numero_serie or '')|replace("'","\\'") }}', '{{ (d.nombre_marca or '')|replace("'","\\'") }}', '{{ (d.nombre_modelo or '')|replace("'","\\'") }}')"
-            style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
-            <div style="width:42px; height:42px; border-radius:50%; background:#28a745; position:absolute;"></div>
-            <img src="/static/img/res.png" alt="Restaurar" style="width:32px; height:32px; position:relative; z-index:1; filter:brightness(0) invert(1);">
-          </button>
-        </td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-{% else %}
-  <article role="alert" class="empty-state">
-    No hay dispositivos eliminados.
-  </article>
-{% endif %}
+<div id="modalDeletedDevicesGrid" class="modal-overlay">
+  <div class="modal" style="max-width:1280px; width:95%;">
+    <div class="modal-header">
+      <h3>Dispositivos eliminados</h3>
+      <button class="modal-close" onclick="closeModal('modalDeletedDevicesGrid')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="deletedDevicesModalToolbar" class="devices-modal-grid-toolbar">
+        <div class="devices-modal-grid-toolbar__left"></div>
+        <div class="devices-modal-grid-toolbar__right">
+          <input id="deletedDevicesSearch" class="global-table-search" placeholder="Buscar eliminados..." style="width:240px;" />
+        </div>
+      </div>
+      <div id="deletedDevicesGrid" class="ag-theme-material" style="width:100%; min-height:560px;"></div>
+    </div>
+  </div>
 </div>
 
-<div id="viewCelulares" style="display:none;">
-{% if devices_celulares %}
-  <table role="grid" id="celularesTable">
-    <thead>
-      <tr>
-        <th data-sortable="identificador">Identificador <img id="sortIndicator_celulares_identificador" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-        <th data-sortable="imei">IMEI <img id="sortIndicator_celulares_imei" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-        <th data-sortable="nombre_modelo">Modelo <img id="sortIndicator_celulares_nombre_modelo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-        <th data-sortable="nombre_marca">Marca <img id="sortIndicator_celulares_nombre_marca" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-        <th data-sortable="estado">Estado <img id="sortIndicator_celulares_estado" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-        <th data-sortable="nombre_completo">Nombre <img id="sortIndicator_celulares_nombre_completo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-        <th data-sortable="numero_linea">Número de Línea <img id="sortIndicator_celulares_numero_linea" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-        <th id="thActionsCelulares">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for d in devices_celulares %}
-      <tr>
-        <td><a href="javascript:void(0)" class="device-link" onclick="showDeviceDetails({{ d.id_dispositivo }})" style="color:#007bff; text-decoration:none; cursor:pointer; font-weight:500;">{{ d.identificador or '-' }}</a></td>
-        <td><code>{{ d.imei or '-' }}</code></td>
-        <td>{{ d.nombre_modelo }}</td>
-        <td>{{ d.nombre_marca or '' }}</td>
-        <td>
-          {% set estado_val = d.estado|int if d.estado is defined else 0 %}
-          {% set estado_texto = 'Sin asignar' if estado_val == 0 else 'Asignado' if estado_val == 1 else 'En reparación' if estado_val == 2 else 'Eliminado' if estado_val == 3 else 'Uso general' if estado_val == 4 else 'Sin asignar' %}
-          {% set estado_color = 'danger' if estado_val == 0 else 'success' if estado_val == 1 else 'warning' if estado_val == 2 else 'secondary' if estado_val == 3 else 'primary' if estado_val == 4 else 'danger' %}
-          <span class="text-{{ estado_color }}">{{ estado_texto }}</span>
-        </td>
-        <td>
-          {% if d.fk_id_empleado %}
-            <a href="javascript:void(0)" class="empleado-link" onclick="showEmpleadoDetails({{ d.fk_id_empleado }})">{{ d.nombre_completo or '-' }}</a>
-          {% else %}
-            -
-          {% endif %}
-        </td>
-        <td>
-          {% if d.numero_sin_codigo %}
-            +({{ d.codigo_pais }}) {{ d.numero_sin_codigo[:4] }}-{{ d.numero_sin_codigo[4:] }}
-          {% else %}
-            -
-          {% endif %}
-        </td>
-        <td class="table-actions">
-          <button class="btn btn-primary btn-small" title="Editar dispositivo" onclick="openEditDeviceModal({{ d.id_dispositivo }})" style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
-            <div style="width:42px; height:42px; border-radius:50%; background:#f59e0b; position:absolute;"></div>
-            <img src="/static/img/edd.png" alt="Editar" style="width:32px; height:32px; position:relative; z-index:1;">
-          </button>
-          <button class="btn btn-info btn-small" title="Ver historial de asignaciones" onclick="openDeviceHistoryModal({{ d.id_dispositivo }})" style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
-            <div style="width:42px; height:42px; border-radius:50%; background:#17a2b8; position:absolute;"></div>
-            <img src="/static/img/dh.png" alt="Historial" style="width:32px; height:32px; position:relative; z-index:1;">
-          </button>
-            <button class="btn btn-danger btn-small" title="Eliminar dispositivo" onclick="openDeleteDeviceModal({{ d.id_dispositivo }}, '{{ (d.numero_serie or '')|replace("'","\\'") }}', '{{ (d.nombre_marca or '')|replace("'","\\'") }}', '{{ (d.nombre_modelo or '')|replace("'","\\'") }}', '{{ (d.categoria or '')|replace("'","\\'") }}')" style="width:44px; height:44px; border-radius:10px; background:transparent; border:none; display:inline-flex; align-items:center; justify-content:center; position:relative;">
-              <div style="width:42px; height:42px; border-radius:50%; background:#dc3545; position:absolute;"></div>
-              <img src="/static/img/dd.png" alt="Eliminar" style="width:28px; height:28px; position:relative; z-index:1;">
-            </button>
-        </td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-{% else %}
-  <article role="alert" class="empty-state">
-    No hay celulares registrados.
-  </article>
-{% endif %}
+<div id="modalCelularesGrid" class="modal-overlay">
+  <div class="modal" style="max-width:1280px; width:95%;">
+    <div class="modal-header">
+      <h3>Celulares</h3>
+      <button class="modal-close" onclick="closeModal('modalCelularesGrid')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="celularesModalToolbar" class="devices-modal-grid-toolbar">
+        <div class="devices-modal-grid-toolbar__left"></div>
+        <div class="devices-modal-grid-toolbar__right">
+          <input id="celularesSearch" class="global-table-search" placeholder="Buscar celular..." style="width:240px;" />
+        </div>
+      </div>
+      <div id="celularesGrid" class="ag-theme-material" style="width:100%; min-height:560px;"></div>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL: Nuevo Dispositivo -->

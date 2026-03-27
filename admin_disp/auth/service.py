@@ -941,23 +941,31 @@ class AuthServiceExtended(AuthService):
         if not roles_dict:
             return ""
         
-        # Mapear nombres de sistema al nombre corto para mostrar
+        # Aceptar llaves largas (desde DB) y llaves cortas (payload frontend).
         sistema_display = {
             'Administración de Dispositivos': 'adminDisp',
+            'dispositivos': 'adminDisp',
+            'Cuentas por Cobrar': 'cxc',
+            'cxc': 'cxc',
             'KARDEX': 'kardex',
-            'Cuentas por Cobrar': 'cxc'
+            'kardex': 'kardex',
         }
-        
-        # Orden específico: adminDisp, cxc, kardex
-        orden = ['Administración de Dispositivos', 'Cuentas por Cobrar', 'KARDEX']
-        
+
+        # Orden de salida requerido por auditoría.
+        orden_display = ['adminDisp', 'cxc', 'kardex']
+        normalizado = {}
+        for sistema_key, rol in roles_dict.items():
+            if not rol:
+                continue
+            display_name = sistema_display.get(sistema_key)
+            if display_name:
+                normalizado[display_name] = rol
+
         parts = []
-        for sistema_key in orden:
-            if sistema_key in roles_dict:
-                rol = roles_dict[sistema_key]
-                if rol:
-                    display_name = sistema_display.get(sistema_key, sistema_key)
-                    parts.append(f"{display_name}: {rol}")
+        for display_name in orden_display:
+            rol = normalizado.get(display_name)
+            if rol:
+                parts.append(f"{display_name}: {rol}")
         
         return "; ".join(parts) if parts else ""
 

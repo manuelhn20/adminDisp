@@ -122,7 +122,7 @@
 <!-- ── Filtros ─────────────────────────────────────────────────────────── -->
 <section class="filters" id="filtersSection">
   <div class="field" id="fieldSucursal"{% if cxc_role|lower in ('operador', 'auditor') %} style="display:none"{% endif %}>
-    <label for="filterSucursal">sucursal</label>
+    <label for="filterSucursal">Sucursal</label>
     <select id="filterSucursal">
       <option value="">Todas</option>
       {% for s in sucursales %}
@@ -132,7 +132,7 @@
   </div>
 
   <div class="field" id="fieldEjecutivo"{% if cxc_role|lower == 'auditor' %} style="display:none"{% endif %}>
-    <label for="filterEjecutivo">ejecutivo</label>
+    <label for="filterEjecutivo">Ejecutivo</label>
     <select id="filterEjecutivo"{% if cxc_role|lower == 'auditor' %} disabled{% endif %}>
       <option value="">Todos</option>
       {% for e in ejecutivos %}
@@ -152,7 +152,7 @@
   </div>
 
   <div class="field" style="flex: 0 0 auto; width: 120px;">
-    <label for="filterLiquidado">liquidado</label>
+    <label for="filterLiquidado">Liquidado</label>
     <select id="filterLiquidado">
       <option value="">Todos</option>
       <option value="1">Sí</option>

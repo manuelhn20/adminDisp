@@ -4,7 +4,10 @@
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pdf_cards.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/progress-steps.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-material.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/asignaciones.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
 {% endblock %}
 {% block content %}
 <div class="button-group" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
@@ -14,11 +17,6 @@
     </button>
     <button class="btn btn-primary offset-btn" onclick="openTransferDevicesModal()" id="topBtnTransferDevices">Transferir dispositivos</button>
     <button class="btn btn-primary offset-btn" onclick="toggleHistoricoView()" id="btnHistoricoAsignaciones">Ver Histórico Asignaciones</button>
-
-    <button class="btn btn-primary offset-btn" onclick="toggleHistoricoView()" id="btnVolverResumen" style="display:none;">
-      <img src="{{ url_for('static', filename='img/backw.png') }}" alt="Volver" style="height:16px; vertical-align:middle; margin-right:8px;">
-      <span style="position:relative; top:2px; display:inline-block;">Volver al Resumen</span>
-    </button>
     <span id="asignaciones-loading" class="htmx-indicator" style="color:var(--text-gray);font-size:14px;display:flex;align-items:center;gap:6px;">
       <span class="spinner" style="display:inline-block;width:16px;height:16px;border:2px solid var(--text-gray);border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span>
       Actualizando...
@@ -302,35 +300,13 @@
         <div style="flex:1;">
           <div class="table-container">
             <div style="font-weight:600; margin-bottom:6px;">Origen: <span id="transferSourceLabel">-</span></div>
-            <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
-              <thead>
-                <tr>
-                  <th><input type="checkbox" id="transferSelectAll" aria-label="Seleccionar todo"></th>
-                  <th>Tipo</th>
-                  <th>No de Serie</th>
-                  <th>Marca</th>
-                  <th>Modelo</th>
-                </tr>
-              </thead>
-              <tbody id="transferSourceTbody"></tbody>
-            </table>
+            <div id="transferSourceGrid" class="ag-theme-material asignaciones-grid transfer-grid"></div>
           </div>
         </div>
         <div style="flex:1;">
           <div class="table-container">
             <div style="font-weight:600; margin-bottom:6px;">Destino: <span id="transferTargetLabel">-</span></div>
-            <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>Tipo</th>
-                  <th>No de Serie</th>
-                  <th>Marca</th>
-                  <th>Modelo</th>
-                </tr>
-              </thead>
-              <tbody id="transferTargetTbody"></tbody>
-            </table>
+            <div id="transferTargetGrid" class="ag-theme-material asignaciones-grid transfer-grid"></div>
           </div>
         </div>
       </div>
@@ -368,84 +344,26 @@
 
 <!-- Vista de Resumen por Empleado -->
 <div id="viewResumen">
-  {% if empleados_options %}
-    <table role="grid" id="asignacionesTable">
-      <thead>
-        <tr>
-          <th data-sortable="empleado">Empleado <img id="sortIndicator_empleado" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-          <th data-sortable="empresa">Empresa <img id="sortIndicator_empresa" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-          <th data-sortable="puesto">Puesto Asignado <img id="sortIndicator_puesto" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-          <th id="thActionsAsignaciones">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="asignacionesTbody">
-      {% for emp in empleados_options %}
-        <tr data-emp-id="{{ emp.IdEmpleado }}">
-          <td>
-            <div style="display:flex; align-items:center; justify-content:space-between;">
-              <div style="flex:1;">{{ emp.NombreCompleto }}</div>
-              <div style="flex:0 0 auto; margin-left:8px; text-align:right; display:flex; align-items:center; gap:8px;">
-                {% if emp.IsActive is defined and not emp.IsActive %}
-                  <span class="inactive-badge" title="Empleado inactivo">Inactivo</span>
-                {% endif %}
-                <span class="device-count-badge {% if (emp.DispositivosCount|default(0)) > 0 %}has-count{% endif %}">{{ emp.DispositivosCount|default(0) }}</span>
-              </div>
-            </div>
-          </td>
-          <td>{{ emp.Empresa or '' }}</td>
-          <td>{{ emp.Cargo or '-' }}</td>
-            <td class="table-actions">
-            <button class="btn btn-primary btn-small" onclick="openEmpleadoDevicesModalFromResumen({{ emp.IdEmpleado }})" style="display:inline-flex;align-items:center;gap:8px;">
-              <span>Ver</span>
-              <img src="{{ url_for('static', filename='img/devicesb.png') }}" alt="Dispositivos" style="width:30px; height:30px; vertical-align:middle;">
-            </button>
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <article role="alert" class="empty-state">
-      No hay empleados registrados.
-    </article>
-  {% endif %}
+  <div id="asignacionesGrid" class="ag-theme-material asignaciones-grid"></div>
 </div>
 
-<!-- Vista de Histórico de Asignaciones -->
-<div id="viewHistorico" style="display:none;">
-  {% if asignaciones %}
-    <table role="grid" id="historicoTable">
-      <thead>
-        <tr>
-          <th data-sortable="dispositivo">Dispositivo <img id="sortIndicator_h_dispositivo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-          <th data-sortable="empleado">Empleado <img id="sortIndicator_h_empleado" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-          <th data-sortable="fecha_inicio">Fecha Inicio <img id="sortIndicator_h_fecha_inicio" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-          <th data-sortable="fecha_fin">Fecha Fin <img id="sortIndicator_h_fecha_fin" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-          <th data-sortable="correlativo">Correlativo <img id="sortIndicator_h_correlativo" class="sort-icon" src="{{ url_for('static', filename='img/sort.png') }}" alt=""></th>
-          <th id="thActionsHistorico">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for a in asignaciones %}
-        <tr data-asignacion-id="{{ a.id_asignacion }}">
-          <td>{{ a.categoria or '-' }}</td>
-          <td>{{ a.empleado_nombre or a.fk_id_empleado }}</td>
-          <td>{{ a.fecha_inicio_asignacion }}</td>
-          <td>{{ a.fecha_fin_asignacion or '-' }}</td>
-          <td>{{ a.correlativo|format_correlativo }}</td>
-          <td class="table-actions">
-            <button class="btn btn-primary btn-small" title="Editar asignación" onclick="openEditAsignacionModal({{ a.id_asignacion }})" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:none;position:relative;margin-right:6px;"><div style="width:42px;height:42px;border-radius:50%;background:#06a7e6;position:absolute;"></div><img src="/static/img/edi.png" alt="Editar" style="width:28px;height:28px;position:relative;z-index:1;"></button>
-            <button class="btn btn-primary btn-small" title="Generar documentacion" onclick="abrirModalSeleccionarTipoDocumentacion({{ a.id_asignacion }})" style="width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:1.0rem;background:transparent;border:none;position:relative;"><div style="width:42px;height:42px;border-radius:50%;background:transparent;position:absolute;"></div><img src="{{ url_for('static', filename='img/docgen.png') }}" alt="Generar documentación" style="width:38px;height:38px;position:relative;z-index:1;"></button>
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <article role="alert" class="empty-state">
-      No hay asignaciones registradas.
-    </article>
-  {% endif %}
+<!-- Vista histórica legacy oculta; se usa modal AG Grid -->
+<div id="viewHistorico" style="display:none;"></div>
+
+<!-- Modal: Histórico de Asignaciones (AG Grid) -->
+<div id="modalHistoricoAsignacionesGrid" class="modal-overlay">
+  <div class="modal" style="max-width:1180px; width:88%;">
+    <div class="modal-header">
+      <h3>Histórico de Asignaciones</h3>
+      <button class="modal-close" onclick="closeModal('modalHistoricoAsignacionesGrid')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px;align-items:center;">
+        <input id="historicoAsignacionesSearchInput" type="text" placeholder="Buscar en histórico..." class="global-table-search" style="width:180px; padding:6px 10px; font-size:0.9rem;" onkeyup="applyAsignacionesGridSearchFilter(this.value)" />
+      </div>
+      <div id="historicoAsignacionesGrid" class="ag-theme-material asignaciones-grid historico-grid"></div>
+    </div>
+  </div>
 </div>
 
 <div id="modalNewAsignacion" class="modal-overlay">
@@ -1577,6 +1495,8 @@
   // Server-side data injected for asignaciones.js
   window._currentUsername = '{{ current_user.username if current_user else "admin" }}';
   window._empleadosOptions = [{% for emp in empleados_options %}{ "id": {{ emp.IdEmpleado }}, "name": {{ emp.NombreCompleto | tojson }} }{% if not loop.last %},{% endif %}{% endfor %}];
+  window.__ASIGNACIONES_RESUMEN_DATA = {{ empleados_options | tojson }};
+  window.__ASIGNACIONES_HISTORICO_DATA = {{ asignaciones | tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/asignaciones.js') }}" defer></script>
 {% endblock %}

@@ -11,15 +11,6 @@ function showModalMessage(message, type = 'error') {
   openGlobalMessageModal(type, title, message);
 }
 
-function setSafeHTML(el, html) {
-  if (!el) return;
-  if (typeof window.safeSetHTML === 'function') {
-    window.safeSetHTML(el, html);
-    return;
-  }
-  el.textContent = String(html == null ? '' : html);
-}
-
 // Page-scoped modal helpers that also clear IP validation state to prevent persistent native bubbles
 function closeModal(modalId) {
   const el = document.getElementById(modalId);
@@ -27,6 +18,9 @@ function closeModal(modalId) {
     el.classList.remove('active');
     // Restaurar z-index cuando se cierra el modal
     el.style.zIndex = '';
+  }
+  if (modalId === 'modalDeletedDevicesGrid' || modalId === 'modalCelularesGrid') {
+    currentDeviceView = 'activos';
   }
   try {
     const newIp = document.querySelector('input[name="ip_asignada"]');
@@ -112,38 +106,337 @@ function getEstadoColor(estado) {
   return ESTADO_COLOR_MAP && ESTADO_COLOR_MAP[estado] ? ESTADO_COLOR_MAP[estado] : 'secondary';
 }
 
-// Update a single device row in-place after partial changes
+let devicesGridApi = null;
+let deletedDevicesGridApi = null;
+let celularesGridApi = null;
+
+let devicesActiveData = Array.isArray(window.__DEVICES_ACTIVE_DATA) ? window.__DEVICES_ACTIVE_DATA : [];
+let devicesDeletedData = Array.isArray(window.__DEVICES_DELETED_DATA) ? window.__DEVICES_DELETED_DATA : [];
+let devicesCelularesData = Array.isArray(window.__DEVICES_CELULARES_DATA) ? window.__DEVICES_CELULARES_DATA : [];
+
+function _findDeviceAcrossCollections(deviceId) {
+  const id = Number(deviceId);
+  if (!id) return null;
+  return devicesActiveData.find(d => Number(d.id_dispositivo) === id)
+    || devicesCelularesData.find(d => Number(d.id_dispositivo) === id)
+    || devicesDeletedData.find(d => Number(d.id_dispositivo) === id)
+    || null;
+}
+
+function _buildEstadoBadge(estado) {
+  const colorClass = getEstadoColor(estado);
+  const colorMap = {
+    'danger': '#dc3545',
+    'success': '#28a745',
+    'warning': '#ffc107',
+    'primary': '#007bff',
+    'secondary': '#6c757d'
+  };
+  const color = colorMap[colorClass] || '#6c757d';
+  return `<span style="color: ${color}; font-weight: 600;">${getEstadoText(estado)}</span>`;
+}
+
+function _formatNumeroLinea(cel) {
+  if (cel && cel.numero_sin_codigo) {
+    const code = cel.codigo_pais || '';
+    const num = String(cel.numero_sin_codigo || '');
+    if (num.length >= 8) {
+      return `+(${code}) ${num.slice(0, 4)}-${num.slice(4)}`;
+    }
+    return `+(${code}) ${num}`;
+  }
+  return '-';
+}
+
+function _formatPlanFechaFin(value) {
+  if (!value) return '-';
+  try {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '-';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
+  } catch (e) {
+    return '-';
+  }
+}
+
+function _formatDiasRestantes(cel) {
+  const raw = cel && cel.plan_dias_restantes;
+  if (raw === null || raw === undefined || raw === '') return '-';
+  const dias = Number(raw);
+  if (!Number.isFinite(dias)) return '-';
+  if (dias < 0) return `Vencido ${Math.abs(dias)}d`;
+  return `${dias}d`;
+}
+
+function _buildActiveActionsCell(id) {
+  return `
+    <div class="table-actions">
+      <button class="btn btn-primary btn-small" data-action="edit-device" data-id="${id}" title="Editar dispositivo" style="width:44px;height:44px;border-radius:10px;background:transparent;border:none;display:inline-flex;align-items:center;justify-content:center;position:relative;">
+        <div style="width:42px;height:42px;border-radius:50%;background:#f59e0b;position:absolute;"></div>
+        <img src="/static/img/edd.png" alt="Editar" style="width:32px;height:32px;position:relative;z-index:1;">
+      </button>
+      <button class="btn btn-info btn-small" data-action="history-device" data-id="${id}" title="Ver historial de asignaciones" style="width:44px;height:44px;border-radius:10px;background:transparent;border:none;display:inline-flex;align-items:center;justify-content:center;position:relative;">
+        <div style="width:42px;height:42px;border-radius:50%;background:#17a2b8;position:absolute;"></div>
+        <img src="/static/img/dh.png" alt="Historial" style="width:32px;height:32px;position:relative;z-index:1;">
+      </button>
+      <button class="btn btn-danger btn-small" data-action="delete-device" data-id="${id}" title="Eliminar dispositivo" style="width:44px;height:44px;border-radius:10px;background:transparent;border:none;display:inline-flex;align-items:center;justify-content:center;position:relative;">
+        <div style="width:42px;height:42px;border-radius:50%;background:#dc3545;position:absolute;"></div>
+        <img src="/static/img/dd.png" alt="Eliminar" style="width:28px;height:28px;position:relative;z-index:1;">
+      </button>
+    </div>`;
+}
+
+function _buildDeletedActionsCell(id) {
+  return `
+    <div class="table-actions">
+      <button class="btn btn-success btn-small" data-action="restore-device" data-id="${id}" title="Restaurar dispositivo" style="width:44px;height:44px;border-radius:10px;background:transparent;border:none;display:inline-flex;align-items:center;justify-content:center;position:relative;">
+        <div style="width:42px;height:42px;border-radius:50%;background:#28a745;position:absolute;"></div>
+        <img src="/static/img/res.png" alt="Restaurar" style="width:32px;height:32px;position:relative;z-index:1;filter:brightness(0) invert(1);">
+      </button>
+    </div>`;
+}
+
+function _buildSelectionColumnDef() {
+  return {
+    headerName: '',
+    field: '__row_select__',
+    width: 52,
+    minWidth: 52,
+    maxWidth: 56,
+    pinned: 'left',
+    lockPinned: true,
+    suppressSizeToFit: true,
+    sortable: false,
+    filter: false,
+    resizable: false,
+    suppressMovable: true,
+    checkboxSelection: true,
+    headerCheckboxSelection: true,
+  };
+}
+
+function _bindDevicesGridActions(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el || el._boundActions) return;
+  el.addEventListener('click', (event) => {
+    const actionBtn = event.target.closest('[data-action]');
+    if (!actionBtn) return;
+    const action = actionBtn.getAttribute('data-action');
+    const deviceId = Number(actionBtn.getAttribute('data-id') || 0);
+    if (!deviceId) return;
+    const d = _findDeviceAcrossCollections(deviceId) || {};
+
+    if (action === 'edit-device') {
+      openEditDeviceModal(deviceId);
+      return;
+    }
+    if (action === 'history-device') {
+      openDeviceHistoryModal(deviceId);
+      return;
+    }
+    if (action === 'delete-device') {
+      openDeleteDeviceModal(deviceId, d.numero_serie || d.imei || '-', d.nombre_marca || '-', d.nombre_modelo || '-', d.categoria || '-');
+      return;
+    }
+    if (action === 'restore-device') {
+      openRestoreModal(deviceId, d.numero_serie || '-', d.nombre_marca || '-', d.nombre_modelo || '-');
+      return;
+    }
+    if (action === 'open-device-details') {
+      showDeviceDetails(deviceId);
+      return;
+    }
+    if (action === 'open-empleado-details') {
+      const empleadoId = Number(actionBtn.getAttribute('data-empleado-id') || 0);
+      if (empleadoId) showEmpleadoDetails(empleadoId);
+    }
+  });
+  el._boundActions = true;
+}
+
+function _setDevicesGridData() {
+  if (devicesGridApi) devicesGridApi.setGridOption('rowData', devicesActiveData);
+  if (deletedDevicesGridApi) deletedDevicesGridApi.setGridOption('rowData', devicesDeletedData);
+  if (celularesGridApi) celularesGridApi.setGridOption('rowData', devicesCelularesData);
+}
+
+function _refreshGridLayout(gridApi) {
+  if (!gridApi) return;
+  try {
+    if (typeof gridApi.refreshCells === 'function') {
+      gridApi.refreshCells({ force: true });
+    }
+  } catch (e) {}
+  try {
+    if (typeof gridApi.resetRowHeights === 'function') {
+      gridApi.resetRowHeights();
+    }
+  } catch (e) {}
+  try {
+    if (typeof gridApi.sizeColumnsToFit === 'function') {
+      gridApi.sizeColumnsToFit();
+    }
+  } catch (e) {}
+}
+
+function initDevicesAgGrids() {
+  if (typeof agGrid === 'undefined') return;
+
+  if (!devicesGridApi) {
+    const el = document.getElementById('devicesGrid');
+    if (el) {
+      devicesGridApi = agGrid.createGrid(el, {
+        columnDefs: [
+          { headerName: 'Tipo', field: 'categoria', minWidth: 120, flex: 1 },
+          { headerName: 'Identificador', field: 'identificador', minWidth: 140, flex: 1 },
+          { headerName: 'No de Serie', field: 'numero_serie', minWidth: 170, flex: 1, cellRenderer: p => `<code>${p.value || ''}</code>` },
+          { headerName: 'Modelo', field: 'nombre_modelo', minWidth: 160, flex: 1 },
+          { headerName: 'Marca', field: 'nombre_marca', minWidth: 150, flex: 1 },
+          { headerName: 'Estado', field: 'estado', minWidth: 130, cellRenderer: p => _buildEstadoBadge(p.value) },
+          { headerName: 'Dirección IP', field: 'ip_asignada', minWidth: 150, flex: 1 },
+          { headerName: 'Acciones', field: 'id_dispositivo', minWidth: 220, maxWidth: 240, sortable: false, filter: false, headerClass: 'ag-actions-header', cellRenderer: p => _buildActiveActionsCell(Number(p.value || 0)) },
+        ],
+        rowData: devicesActiveData,
+        defaultColDef: { sortable: true, filter: true, resizable: true },
+        enableCellTextSelection: true,
+        copyHeadersToClipboard: true,
+        pagination: true,
+        paginationPageSize: 25,
+        paginationPageSizeSelector: [25, 50, 100],
+        suppressCellFocus: false,
+        animateRows: true,
+      });
+      _bindDevicesGridActions('devicesGrid');
+      setTimeout(() => _refreshGridLayout(devicesGridApi), 0);
+    }
+  }
+}
+
+function ensureDeletedDevicesGrid() {
+  if (typeof agGrid === 'undefined' || deletedDevicesGridApi) return;
+  if (!deletedDevicesGridApi) {
+    const el = document.getElementById('deletedDevicesGrid');
+    if (el) {
+      deletedDevicesGridApi = agGrid.createGrid(el, {
+        columnDefs: [
+          { headerName: 'Tipo', field: 'categoria', minWidth: 80, maxWidth: 110, flex: 0.6 },
+          { headerName: 'No de Serie', field: 'numero_serie', minWidth: 110, maxWidth: 150, flex: 0.8, cellRenderer: p => `<code>${p.value || ''}</code>` },
+          { headerName: 'Modelo', field: 'nombre_modelo', minWidth: 95, maxWidth: 130, flex: 0.65 },
+          { headerName: 'Marca', field: 'nombre_marca', minWidth: 90, maxWidth: 120, flex: 0.6 },
+          { headerName: 'Dirección IP', field: 'ip_asignada', minWidth: 100, maxWidth: 130, flex: 0.7 },
+          { headerName: 'Observaciones', field: 'observaciones', minWidth: 260, flex: 1.9 },
+          {
+            headerName: 'Acciones',
+            field: 'id_dispositivo',
+            minWidth: 86,
+            maxWidth: 98,
+            sortable: false,
+            filter: false,
+            headerClass: 'ag-actions-header',
+            pinned: 'right',
+            lockPinned: true,
+            suppressMovable: true,
+            cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', paddingLeft: '6px', paddingRight: '6px' },
+            cellRenderer: p => _buildDeletedActionsCell(Number(p.value || 0))
+          },
+        ],
+        rowData: devicesDeletedData,
+        defaultColDef: { sortable: true, filter: true, resizable: true },
+        enableCellTextSelection: true,
+        copyHeadersToClipboard: true,
+        pagination: true,
+        paginationPageSize: 25,
+        paginationPageSizeSelector: [25, 50, 100],
+        suppressCellFocus: false,
+        animateRows: true,
+      });
+      _bindDevicesGridActions('deletedDevicesGrid');
+      setTimeout(() => _refreshGridLayout(deletedDevicesGridApi), 0);
+    }
+  }
+}
+
+function ensureCelularesGrid() {
+  if (typeof agGrid === 'undefined' || celularesGridApi) return;
+  if (!celularesGridApi) {
+    const el = document.getElementById('celularesGrid');
+    if (el) {
+      celularesGridApi = agGrid.createGrid(el, {
+        columnDefs: [
+          { headerName: 'Identificador', field: 'identificador', minWidth: 150, flex: 0.9, cellRenderer: p => `<a href="javascript:void(0)" data-action="open-device-details" data-id="${Number((p.data && p.data.id_dispositivo) || 0)}" style="color:#007bff;text-decoration:none;font-weight:500;">${p.value || '-'}</a>` },
+          { headerName: 'IMEI', field: 'imei', minWidth: 160, flex: 0.9, cellRenderer: p => `<code>${p.value || '-'}</code>` },
+          { headerName: 'Modelo', field: 'nombre_modelo', minWidth: 120, maxWidth: 160, flex: 0.75 },
+          { headerName: 'Marca', field: 'nombre_marca', minWidth: 110, maxWidth: 150, flex: 0.7 },
+          { headerName: 'Estado', field: 'estado', minWidth: 120, flex: 0.8, cellRenderer: p => _buildEstadoBadge(p.value) },
+          { headerName: 'Nombre', field: 'nombre_completo', minWidth: 240, flex: 1.2, cellRenderer: p => {
+              const empleadoId = Number((p.data && p.data.fk_id_empleado) || 0);
+              if (!empleadoId) return '-';
+              return `<a href="javascript:void(0)" data-action="open-empleado-details" data-empleado-id="${empleadoId}" data-id="${Number((p.data && p.data.id_dispositivo) || 0)}">${p.value || '-'}</a>`;
+            }
+          },
+          { headerName: 'Número de Línea', field: 'numero_sin_codigo', minWidth: 180, flex: 1, valueGetter: p => _formatNumeroLinea(p.data) },
+          { headerName: 'Fecha Fin Plan', field: 'plan_fecha_fin', minWidth: 155, maxWidth: 170, flex: 0.8, valueGetter: p => _formatPlanFechaFin(p.data && p.data.plan_fecha_fin) },
+          { headerName: 'Restantes', field: 'plan_dias_restantes', minWidth: 125, flex: 0.65, valueGetter: p => _formatDiasRestantes(p.data) },
+          { headerName: 'Acciones', field: 'id_dispositivo', minWidth: 198, maxWidth: 216, sortable: false, filter: false, headerClass: 'ag-actions-header', cellRenderer: p => _buildActiveActionsCell(Number(p.value || 0)) },
+        ],
+        rowData: devicesCelularesData,
+        defaultColDef: { sortable: true, filter: true, resizable: true },
+        enableCellTextSelection: true,
+        copyHeadersToClipboard: true,
+        pagination: true,
+        paginationPageSize: 25,
+        paginationPageSizeSelector: [25, 50, 100],
+        suppressCellFocus: false,
+        animateRows: true,
+      });
+      _bindDevicesGridActions('celularesGrid');
+      setTimeout(() => _refreshGridLayout(celularesGridApi), 0);
+    }
+  }
+}
+
+function applyDevicesSearchFilter(value) {
+  const v = (value || '').trim();
+  if (devicesGridApi) devicesGridApi.setGridOption('quickFilterText', v);
+  if (deletedDevicesGridApi) deletedDevicesGridApi.setGridOption('quickFilterText', v);
+  if (celularesGridApi) celularesGridApi.setGridOption('quickFilterText', v);
+}
+
+function applyDeletedDevicesSearchFilter(value) {
+  const v = (value || '').trim();
+  if (deletedDevicesGridApi) deletedDevicesGridApi.setGridOption('quickFilterText', v);
+}
+
+function applyCelularesSearchFilter(value) {
+  const v = (value || '').trim();
+  if (celularesGridApi) celularesGridApi.setGridOption('quickFilterText', v);
+}
+
+function bindDevicesModalSearchInputs() {
+  const deletedSearch = document.getElementById('deletedDevicesSearch');
+  if (deletedSearch && !deletedSearch._bound) {
+    deletedSearch.addEventListener('input', () => {
+      applyDeletedDevicesSearchFilter(deletedSearch.value || '');
+    });
+    deletedSearch._bound = true;
+  }
+
+  const celularesSearch = document.getElementById('celularesSearch');
+  if (celularesSearch && !celularesSearch._bound) {
+    celularesSearch.addEventListener('input', () => {
+      applyCelularesSearchFilter(celularesSearch.value || '');
+    });
+    celularesSearch._bound = true;
+  }
+}
+
+// Update a single device row after partial changes
 async function updateDeviceRow(deviceId) {
   if (!deviceId) return;
-  if (window.__DEV_LOGS) console.log('[updateDeviceRow] Starting for deviceId:', deviceId);
-  try {
-    const r = await fetch(`/devices/${deviceId}`);
-    if (!r.ok) { console.warn('[updateDeviceRow] Fetch failed, status:', r.status); return; }
-    const d = await r.json();
-    if (window.__DEV_LOGS) console.log('[updateDeviceRow] Fetched device data:', d);
-    // Find row by data-device-id attribute
-    const targetRow = document.querySelector(`#devicesTable tbody tr[data-device-id="${deviceId}"]`);
-    if (!targetRow) { console.warn('[updateDeviceRow] Row not found for deviceId:', deviceId); return; }
-    if (window.__DEV_LOGS) console.log('[updateDeviceRow] Found target row, updating cells');
-    // update columns matching the table layout (must match <thead> order)
-    const statusColor = getEstadoColor(d.estado);
-    // expected cells: 0:tipo,1:identificador,2:numero_serie,3:modelo,4:marca,5:estado,6:ip,7:actions
-    const cells = targetRow.children;
-    if (cells.length >= 8) {
-      cells[0].textContent = d.categoria || '';
-      cells[1].textContent = d.identificador || '';
-      setSafeHTML(cells[2], `<code>${d.numero_serie || ''}</code>`);
-      cells[3].textContent = d.nombre_modelo || '';
-      cells[4].textContent = d.nombre_marca || '';
-      setSafeHTML(cells[5], `<span class="text-${statusColor}">${getEstadoText(d.estado)}</span>`);
-      cells[6].textContent = d.ip_asignada || '';
-      if (window.__DEV_LOGS) console.log('[updateDeviceRow] Row updated successfully. New estado:', d.estado, 'Color:', statusColor);
-    } else {
-      console.warn('[updateDeviceRow] Not enough cells:', cells.length);
-    }
-  } catch (e) {
-    console.error('[updateDeviceRow] Error:', e);
-  }
+  await reloadDevicesTable();
 }
 
 // ============================================
@@ -283,6 +576,10 @@ document.getElementById('formNewDevice')?.addEventListener('submit', function(e)
 
 // Bind the local devices page search to the shared global search/filter logic
 document.addEventListener('DOMContentLoaded', () => {
+  initDevicesAgGrids();
+  reloadDevicesTable();
+  bindDevicesModalSearchInputs();
+
   // Wizard: Abrir modal de nuevo dispositivo si venimos de wizard
   if (localStorage.getItem('wizardOpenNewDevice') === 'true') {
     localStorage.removeItem('wizardOpenNewDevice');
@@ -298,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (localSearch && !localSearch._bound) {
       localSearch.addEventListener('input', (e) => {
         const v = (localSearch.value || '').trim();
-        try { if (typeof applyGlobalTableSearchFilter === 'function') applyGlobalTableSearchFilter(v); } catch(e) {}
+        applyDevicesSearchFilter(v);
       });
       localSearch._bound = true;
     }
@@ -326,16 +623,16 @@ async function openDocsPreviewModal(employeeCode){
     // default params
     const year = 2026; const month = 1; const code = employeeCode || 'P-EM-000125';
     const grid = document.getElementById('docsPreviewGrid');
-    setSafeHTML(grid, '<div class="loading">Buscando archivos...</div>');
+    grid.innerHTML = '<div class="loading">Buscando archivos...</div>';
     // open modal
     openModal('modalDocsPreview', true);
     // fetch list
     const resp = await fetch(`/documents/list/${year}/${month}/${encodeURIComponent(code)}`);
-    if(!resp.ok){ setSafeHTML(grid, '<div class="loading">No se pudo obtener la lista de documentos.</div>'); return; }
+    if(!resp.ok){ grid.innerHTML = '<div class="loading">No se pudo obtener la lista de documentos.</div>'; return; }
     const j = await resp.json().catch(()=>({success:false, files:[]}));
     const files = (j && j.success) ? (j.files || []) : [];
-    if(!files.length){ setSafeHTML(grid, '<div class="loading">No hay PDFs en la carpeta indicada.</div>'); return; }
-    grid.textContent = '';
+    if(!files.length){ grid.innerHTML = '<div class="loading">No hay PDFs en la carpeta indicada.</div>'; return; }
+    grid.innerHTML = '';
     files.forEach((f, idx)=>{
       const c = document.createElement('div'); c.className='docs-card';
       const b = document.createElement('div'); b.className='badge';
@@ -363,7 +660,7 @@ async function openDocsPreviewModal(employeeCode){
     updateConfirmState();
   }catch(e){
     console.error('openDocsPreviewModal', e);
-    const grid = document.getElementById('docsPreviewGrid'); if(grid) setSafeHTML(grid, '<div class="loading">Error cargando documentos.</div>');
+    const grid = document.getElementById('docsPreviewGrid'); if(grid) grid.innerHTML = '<div class="loading">Error cargando documentos.</div>';
   }
 }
 
@@ -714,32 +1011,32 @@ document.addEventListener('DOMContentLoaded', function(){
 
 async function openDeviceHistoryModal(deviceId) {
   const tbody = document.getElementById('deviceHistoryTbody');
-  setSafeHTML(tbody, '<tr><td colspan="3" style="text-align:center; padding:12px;">Cargando...</td></tr>');
+  tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:12px;">Cargando...</td></tr>';
   openModal('modalDeviceHistory', true);
   try {
     const resp = await fetch(`/devices/${deviceId}/asignaciones/device`);
     if (!resp.ok) {
-      setSafeHTML(tbody, `<tr><td colspan="3" style="text-align:center; color:#b00020;">Error cargando historial</td></tr>`);
+      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#b00020;">Error cargando historial</td></tr>`;
       return;
     }
     const j = await resp.json();
     if (!j || !j.success) {
-      setSafeHTML(tbody, `<tr><td colspan="3" style="text-align:center; color:#b00020;">No se pudo obtener historial</td></tr>`);
+      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#b00020;">No se pudo obtener historial</td></tr>`;
       return;
     }
     const rows = j.asignaciones || [];
     if (rows.length === 0) {
-      setSafeHTML(tbody, `<tr><td colspan="3" style="text-align:center;">No hay historial</td></tr>`);
+      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;">No hay historial</td></tr>`;
       return;
     }
-    setSafeHTML(tbody, rows.map(a => {
+    tbody.innerHTML = rows.map(a => {
       const nombre = a.empleado_nombre || a.fk_id_empleado || '-';
       const inicio = a.fecha_inicio_asignacion ? new Date(a.fecha_inicio_asignacion).toLocaleDateString() : '-';
       const fin = a.fecha_fin_asignacion ? new Date(a.fecha_fin_asignacion).toLocaleDateString() : '-';
       return `<tr><td>${nombre}</td><td>${inicio}</td><td>${fin}</td></tr>`;
-    }).join(''));
+    }).join('');
   } catch (err) {
-    setSafeHTML(tbody, `<tr><td colspan="3" style="text-align:center; color:#b00020;">Error: ${err && err.message ? err.message : err}</td></tr>`);
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#b00020;">Error: ${err && err.message ? err.message : err}</td></tr>`;
   }
 }
 
@@ -1557,7 +1854,7 @@ function renderSuggestionCards(suggestions) {
   const container = document.getElementById('suggestionCardsContainer');
   if (!container) return;
   
-  setSafeHTML(container, suggestions.map(dev => {
+  container.innerHTML = suggestions.map(dev => {
     const categoria = dev.categoria || '-';
     const marca = dev.nombre_marca || '-';
     const modelo = dev.nombre_modelo || '-';
@@ -1626,7 +1923,7 @@ function renderSuggestionCards(suggestions) {
         ${componentesHtml}
       </div>
     `;
-  }).join(''));
+  }).join('');
   
   // Store suggestions data for later use
   window.__deviceSuggestions = suggestions;
@@ -2081,130 +2378,37 @@ async function updateIdentificador() {
 
 // finalize-assignment controls removed (were part of edit modal)
 
-// Recargar tabla de dispositivos SIN recargar la página
+// Recargar datasets de dispositivos SIN recargar la página
 async function reloadDevicesTable() {
+  const loading = document.getElementById('devices-loading');
   try {
-    const table = document.querySelector('#devicesTable');
-    if (table) showTableLoader(table.parentElement || table);
-    
-    // Construir URL con parámetros de ordenamiento si existen
-    let url = '/devices/ui/tbody';
-    if (window.__devicesSortField && window.__devicesSortDir) {
-      url += `?sort=${encodeURIComponent(window.__devicesSortField)}&dir=${encodeURIComponent(window.__devicesSortDir)}`;
+    if (loading) loading.style.display = 'flex';
+
+    const [activeResp, deletedResp, celularesResp] = await Promise.all([
+      fetch('/devices/', { credentials: 'same-origin' }),
+      fetch('/devices/deleted/', { credentials: 'same-origin' }),
+      fetch('/devices/celulares/', { credentials: 'same-origin' }),
+    ]);
+
+    if (activeResp.ok) {
+      devicesActiveData = await activeResp.json();
     }
-    
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Error al cargar dispositivos');
-    
-    const html = await response.text();
-    const tbody = document.querySelector('#devicesTable tbody');
-    if (tbody) {
-      setSafeHTML(tbody, html);
+    if (deletedResp.ok) {
+      devicesDeletedData = await deletedResp.json();
     }
-    
-    if (table) hideTableLoader(table.parentElement || table);
+    if (celularesResp.ok) {
+      devicesCelularesData = await celularesResp.json();
+    }
+
+    _setDevicesGridData();
+    const localSearch = document.getElementById('devicesPageSearch');
+    applyDevicesSearchFilter(localSearch ? localSearch.value : '');
   } catch (err) {
-    console.error('Error recargando tabla:', err);
-    const table = document.querySelector('#devicesTable');
-    if (table) hideTableLoader(table.parentElement || table);
+    console.error('Error recargando datasets de dispositivos:', err);
+  } finally {
+    if (loading) loading.style.display = 'none';
   }
 }
-
-window.__devicesSortField = null;
-window.__devicesSortDir = null; // 'asc' or 'desc'
-
-function toggleSort(field) {
-  if (!field) return;
-  if (window.__devicesSortField === field) {
-    // toggle dir
-    window.__devicesSortDir = window.__devicesSortDir === 'asc' ? 'desc' : 'asc';
-  } else {
-    window.__devicesSortField = field;
-    window.__devicesSortDir = 'asc';
-  }
-  // update indicators: show only the active header's icon and set rotation
-  document.querySelectorAll('.sort-icon').forEach(el => { el.classList.remove('active'); el.style.transform = 'rotate(0deg)'; });
-  const id = `sortIndicator_${field}`;
-  const el = document.getElementById(id);
-  if (el) {
-    el.classList.add('active');
-    el.style.transform = window.__devicesSortDir === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)';
-  }
-  // reload table
-  if (typeof reloadDevicesTable === 'function') reloadDevicesTable();
-}
-
-// Initialize shared sorting for devices table and wire Actions to clear sorting + reload
-document.addEventListener('DOMContentLoaded', () => {
-  try { initTableSorting('#devicesTable', { iconPrefix: 'sortIndicator_', clientSide: false }); } catch(e) {}
-  try {
-    const table = document.getElementById('devicesTable');
-    // When user clicks a header, keep server-side sorting in sync by reloading with params
-    if (table && !table._serverSyncBound) {
-      table.addEventListener('click', (ev) => {
-        try {
-          const th = ev.target.closest('th[data-sortable]');
-          if (!th) return;
-          // Determine field clicked and toggle direction for server-side sort
-          const field = th.getAttribute('data-sortable');
-          if (!field) return;
-          // If currently sorting by this field, toggle dir; otherwise start asc
-          if (window.__devicesSortField === field) {
-            window.__devicesSortDir = (window.__devicesSortDir === 'asc') ? 'desc' : 'asc';
-          } else {
-            window.__devicesSortField = field;
-            window.__devicesSortDir = 'asc';
-          }
-          
-          // Update sort icons to show active state
-          try {
-            document.querySelectorAll('.sort-icon').forEach(el => { 
-              el.classList.remove('active'); 
-              el.style.transform = 'rotate(0deg)'; 
-            });
-            const iconId = 'sortIndicator_' + field;
-            const icon = document.getElementById(iconId);
-            if (icon) { 
-              icon.classList.add('active'); 
-              icon.style.transform = (window.__devicesSortDir === 'asc') ? 'rotate(0deg)' : 'rotate(180deg)'; 
-            }
-          } catch(e) { console.warn('Error updating sort icons', e); }
-          
-          // trigger server reload so subsequent operations respect server ordering
-          if (typeof reloadDevicesTable === 'function') reloadDevicesTable();
-        } catch(e) { /* ignore */ }
-      });
-      table._serverSyncBound = true;
-    }
-    // Actions header: reset sort/filters to default when clicked
-    const thActions = document.getElementById('thActions');
-    if (thActions && !thActions._boundReset) {
-      thActions.style.cursor = 'pointer';
-      thActions.addEventListener('click', () => {
-        try { const t = document.getElementById('devicesTable'); if (t && typeof t.clearSorting === 'function') t.clearSorting(); } catch(e) {}
-        // clear shared search state if helper exists
-        try { if (typeof window.clearGlobalTableSearch === 'function') { window.clearGlobalTableSearch(); } } catch(e) {}
-        try { const p = document.getElementById('devicesPageSearch'); if (p) p.value = ''; } catch(e) {}
-        // clear server-side sort state and reload
-        try { window.__devicesSortField = null; window.__devicesSortDir = null; } catch(e) {}
-        if (typeof reloadDevicesTable === 'function') reloadDevicesTable();
-      });
-      thActions._boundReset = true;
-    }
-    // Actions header for celulares table: reset sort/filters when clicked
-    const thActionsCelulares = document.getElementById('thActionsCelulares');
-    if (thActionsCelulares && !thActionsCelulares._boundReset) {
-      thActionsCelulares.style.cursor = 'pointer';
-      thActionsCelulares.addEventListener('click', () => {
-        try { const t = document.getElementById('celularesTable'); if (t && typeof t.clearSorting === 'function') t.clearSorting(); } catch(e) {}
-        // clear shared search state if helper exists
-        try { if (typeof window.clearGlobalTableSearch === 'function') { window.clearGlobalTableSearch(); } } catch(e) {}
-        try { const p = document.getElementById('devicesPageSearch'); if (p) p.value = ''; } catch(e) {}
-      });
-      thActionsCelulares._boundReset = true;
-    }
-  } catch(e) {}
-});
 
 // Manejar visibilidad de campos requeridos según tipo de dispositivo seleccionado
 // Agrupaciones de tipos para uso local (sin refactorizar el resto del código)
@@ -2579,35 +2783,23 @@ let currentDeviceForComponents = null;
     async function populateCompModelos(){
       const sel = document.getElementById('compModelo');
       if (!sel) return;
-      setSafeHTML(sel, '<option value="">-- Cargando modelos --</option>');
+      sel.innerHTML = '<option value="">-- Cargando modelos --</option>';
       try {
         const resp = await fetch('/devices/modelo/?estado=2');
         const data = await resp.json().catch(()=>[]);
         const marcaSel = document.getElementById('compMarca')?.value || '';
         const modelos = Array.isArray(data) ? data : [];
         const filtered = marcaSel ? modelos.filter(m => String(m.fk_id_marca) === String(marcaSel)) : modelos;
-        sel.textContent = '';
-        {
-          const baseOpt = document.createElement('option');
-          baseOpt.value = '';
-          baseOpt.textContent = '-- Seleccionar modelo --';
-          sel.appendChild(baseOpt);
-          filtered.forEach((m) => {
-            const opt = document.createElement('option');
-            opt.value = String(m.id_modelo);
-            opt.textContent = m.nombre_modelo;
-            sel.appendChild(opt);
-          });
-        }
+        sel.innerHTML = '<option value="">-- Seleccionar modelo --</option>' + filtered.map(m => `<option value="${String(m.id_modelo)}">${m.nombre_modelo}</option>`).join('');
       } catch (e){
-        setSafeHTML(sel, '<option value="">-- Error cargando modelos --</option>');
+        sel.innerHTML = '<option value="">-- Error cargando modelos --</option>';
       }
     }
 
     async function populateEditCompModelos(){
       const sel = document.getElementById('editCompModelo');
       if (!sel) return;
-      setSafeHTML(sel, '<option value="">-- Cargando modelos --</option>');
+      sel.innerHTML = '<option value="">-- Cargando modelos --</option>';
       try {
         const tipo = document.getElementById('editCompTipo')?.value || '';
         let url = '/devices/modelo/?estado=2';
@@ -2619,21 +2811,9 @@ let currentDeviceForComponents = null;
         const marcaSel = document.getElementById('editCompMarca')?.value || '';
         const modelos = Array.isArray(data) ? data : [];
         const filtered = marcaSel ? modelos.filter(m => String(m.fk_id_marca) === String(marcaSel)) : modelos;
-        sel.textContent = '';
-        {
-          const baseOpt = document.createElement('option');
-          baseOpt.value = '';
-          baseOpt.textContent = '-- Seleccionar modelo --';
-          sel.appendChild(baseOpt);
-          filtered.forEach((m) => {
-            const opt = document.createElement('option');
-            opt.value = String(m.id_modelo);
-            opt.textContent = m.nombre_modelo;
-            sel.appendChild(opt);
-          });
-        }
+        sel.innerHTML = '<option value="">-- Seleccionar modelo --</option>' + filtered.map(m => `<option value="${String(m.id_modelo)}">${m.nombre_modelo}</option>`).join('');
       } catch (e){
-        setSafeHTML(sel, '<option value="">-- Error cargando modelos --</option>');
+        sel.innerHTML = '<option value="">-- Error cargando modelos --</option>';
       }
     }
 
@@ -2682,7 +2862,7 @@ let currentDeviceForComponents = null;
         const resp = await fetch(`/devices/${deviceId}/componentes`);
         const j = await resp.json();
         const tbody = document.querySelector('#componentsTable tbody');
-        tbody.textContent = '';
+        tbody.innerHTML = '';
         if (!j.success) return;
         const isCel = (currentDeviceTypeForComponents || '').toString() === 'Celular' || (currentDeviceTypeForComponents || '').toString() === 'Tablet';
         // build header
@@ -2690,13 +2870,13 @@ let currentDeviceForComponents = null;
         if (thead) {
             if (isCel) {
             // For celulares/tablet: show Tipo, Capacidad, Tipo memoria, Acciones
-            setSafeHTML(thead, `<tr><th>Tipo</th><th>Capacidad (GB)</th><th>Tipo memoria</th><th>Acciones</th></tr>`);
+            thead.innerHTML = `<tr><th>Tipo</th><th>Capacidad (GB)</th><th>Tipo memoria</th><th>Acciones</th></tr>`;
             // hide add button and hide Tipo label/input in add form and hide legend
             try { document.getElementById('btnAddComponente').style.display = 'none'; } catch(e){}
             try { const compTipoEl = document.getElementById('compTipo'); if (compTipoEl && compTipoEl.closest) compTipoEl.closest('label').style.display = 'none'; } catch(e){}
             try { const legendNew = document.querySelector('#formNewComponente fieldset legend'); if (legendNew) legendNew.style.display = 'none'; } catch(e){}
             } else {
-              setSafeHTML(thead, `<tr><th>Tipo</th><th>No. Serie</th><th>Frecuencia</th><th>Tipo memoria</th><th>Capacidad (GB)</th><th>Tipo disco</th><th>Marca</th><th>Acciones</th></tr>`);
+              thead.innerHTML = `<tr><th>Tipo</th><th>No. Serie</th><th>Frecuencia</th><th>Tipo memoria</th><th>Capacidad (GB)</th><th>Tipo disco</th><th>Marca</th><th>Acciones</th></tr>`;
             try { document.getElementById('btnAddComponente').style.display = ''; } catch(e){}
             try { const compTipoEl = document.getElementById('compTipo'); if (compTipoEl && compTipoEl.closest) compTipoEl.closest('label').style.display = ''; } catch(e){}
             try { const legendNew = document.querySelector('#formNewComponente fieldset legend'); if (legendNew) legendNew.style.display = ''; } catch(e){}
@@ -2818,8 +2998,8 @@ let currentDeviceForComponents = null;
       const tipoMem = document.getElementById('compTipoMemoria');
       if (!frec || !tipoMem) return;
       // clear
-      setSafeHTML(frec, '<option value="">-- Seleccionar --</option>');
-      setSafeHTML(tipoMem, '<option value="">-- Seleccionar --</option>');
+      frec.innerHTML = '<option value="">-- Seleccionar --</option>';
+      tipoMem.innerHTML = '<option value="">-- Seleccionar --</option>';
       // common frequencies (MHz) - modern ranges (exclude very low legacy values)
       const frecs = [2400,2666,2933,3000,3200,3600,3733,4000,4266,4800,5200,5600];
       frecs.forEach(f=>{ const o=document.createElement('option'); o.value=f; o.textContent=f; frec.appendChild(o); });
@@ -2872,30 +3052,30 @@ let currentDeviceForComponents = null;
       // If RAM selected, populate memory-specific options and adjust factor options by device
       if (isRam){
         const tipoMemEl = document.getElementById('compTipoMemoria');
-        if (tipoMemEl) setSafeHTML(tipoMemEl, '<option value="">-- Seleccionar --</option>');
+        if (tipoMemEl) tipoMemEl.innerHTML = '<option value="">-- Seleccionar --</option>';
         const factorEl = document.getElementById('compTipoModulo');
         const capEl = document.getElementById('compCapacidad');
         if (isLaptopOrDesktop){
           ['DDR3','DDR4','DDR5'].forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; if (tipoMemEl) tipoMemEl.appendChild(o); });
           const frec = document.getElementById('compFrecuencia');
           if (frec) {
-            setSafeHTML(frec, '<option value="">-- Seleccionar --</option>');
+            frec.innerHTML = '<option value="">-- Seleccionar --</option>';
             [2400,2666,2933,3000,3200,3600,3733,4000,4266,4800,5200,5600].forEach(f=>{ const o=document.createElement('option'); o.value=f; o.textContent=f; frec.appendChild(o); });
           }
-          if (capEl) { setSafeHTML(capEl, '<option value="">-- Seleccionar --</option>'); [4,8,16,32,64,128,256].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; capEl.appendChild(o); }); }
-          if (factorEl){ setSafeHTML(factorEl, '<option value="">-- Seleccionar --</option>'); ['SODIMM','DIMM'].forEach(ff=>{ const o=document.createElement('option'); o.value=ff; o.textContent=ff; factorEl.appendChild(o); }); }
+          if (capEl) { capEl.innerHTML = '<option value="">-- Seleccionar --</option>'; [4,8,16,32,64,128,256].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; capEl.appendChild(o); }); }
+          if (factorEl){ factorEl.innerHTML = '<option value="">-- Seleccionar --</option>'; ['SODIMM','DIMM'].forEach(ff=>{ const o=document.createElement('option'); o.value=ff; o.textContent=ff; factorEl.appendChild(o); }); }
         } else {
-          if (capEl) setSafeHTML(capEl, '<option value="">-- Seleccionar --</option>');
-          if (factorEl) setSafeHTML(factorEl, '<option value="">-- Seleccionar --</option>');
+          if (capEl) capEl.innerHTML = '<option value="">-- Seleccionar --</option>';
+          if (factorEl) factorEl.innerHTML = '<option value="">-- Seleccionar --</option>';
         }
       } else if (isDisco){
         // For disks, capacity options larger
         const cap = document.getElementById('compCapacidad');
-        if (cap) { setSafeHTML(cap, '<option value="">-- Seleccionar --</option>'); [32,64,128,256,512,1024,2048].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; cap.appendChild(o); }); }
+        if (cap) { cap.innerHTML = '<option value="">-- Seleccionar --</option>'; [32,64,128,256,512,1024,2048].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; cap.appendChild(o); }); }
         // Populate tipo disco for DISCO
         const tipoDiscoEl = document.getElementById('compTipoDisco');
         if (tipoDiscoEl) {
-          setSafeHTML(tipoDiscoEl, '<option value="">-- Seleccionar --</option>');
+          tipoDiscoEl.innerHTML = '<option value="">-- Seleccionar --</option>';
           ['HDD','SSD SATA','SSD NVMe'].forEach(td=>{ const o=document.createElement('option'); o.value=td; o.textContent=td; tipoDiscoEl.appendChild(o); });
         }
         // show serial field for disks
@@ -2903,10 +3083,10 @@ let currentDeviceForComponents = null;
         if (serialElD) serialElD.style.display = '';
       } else {
         // no generic fallback: clear component-specific selects
-        const frec = document.getElementById('compFrecuencia'); if (frec) setSafeHTML(frec, '<option value="">-- Seleccionar --</option>');
-        const tipoMemEl2 = document.getElementById('compTipoMemoria'); if (tipoMemEl2) setSafeHTML(tipoMemEl2, '<option value="">-- Seleccionar --</option>');
-        const cap2 = document.getElementById('compCapacidad'); if (cap2) setSafeHTML(cap2, '<option value="">-- Seleccionar --</option>');
-        const factorEl2 = document.getElementById('compTipoModulo'); if (factorEl2) setSafeHTML(factorEl2, '<option value="">-- Seleccionar --</option>');
+        const frec = document.getElementById('compFrecuencia'); if (frec) frec.innerHTML = '<option value="">-- Seleccionar --</option>';
+        const tipoMemEl2 = document.getElementById('compTipoMemoria'); if (tipoMemEl2) tipoMemEl2.innerHTML = '<option value="">-- Seleccionar --</option>';
+        const cap2 = document.getElementById('compCapacidad'); if (cap2) cap2.innerHTML = '<option value="">-- Seleccionar --</option>';
+        const factorEl2 = document.getElementById('compTipoModulo'); if (factorEl2) factorEl2.innerHTML = '<option value="">-- Seleccionar --</option>';
       }
 
       // CPU specific: show manual frequency input and limit tipo_memoria to Cache
@@ -2918,7 +3098,7 @@ let currentDeviceForComponents = null;
       if (isCpu) {
         if (compFreqSelect) { compFreqSelect.style.display = 'none'; compFreqSelect.name = ''; }
         if (compFreqInput) { compFreqInput.style.display = ''; compFreqInput.name = 'frecuencia'; }
-        if (tipoMemEl) { setSafeHTML(tipoMemEl, '<option value="">-- Seleccionar --</option>'); const o=document.createElement('option'); o.value='Cache'; o.textContent='Cache'; tipoMemEl.appendChild(o); }
+        if (tipoMemEl) { tipoMemEl.innerHTML = '<option value="">-- Seleccionar --</option>'; const o=document.createElement('option'); o.value='Cache'; o.textContent='Cache'; tipoMemEl.appendChild(o); }
         if (labelCompModeloEl) { labelCompModeloEl.style.display = ''; }
         // populate modelos estado=2 for CPU
         if (compModeloEl) populateCompModelos();
@@ -3392,7 +3572,7 @@ let currentDeviceForComponents = null;
         if (isRam) {
           const frecEl = document.getElementById('editCompFrecuencia');
           const currentFrecValue = frecEl.value;
-          setSafeHTML(frecEl, '<option value="">-- Seleccionar --</option>');
+          frecEl.innerHTML = '<option value="">-- Seleccionar --</option>';
           [2400,2666,2933,3000,3200,3600,3733,4000,4266,4800,5200,5600].forEach(f=>{ 
             const o=document.createElement('option'); 
             o.value=f; 
@@ -3404,7 +3584,7 @@ let currentDeviceForComponents = null;
           // Populate tipo de módulo for laptop/desktop RAM
           const ffEl = document.getElementById('editCompTipoModulo');
           const currentFFValue = ffEl.value;
-          setSafeHTML(ffEl, '<option value="">-- Seleccionar --</option>');
+          ffEl.innerHTML = '<option value="">-- Seleccionar --</option>';
           ['DIMM','SODIMM'].forEach(ff=>{ 
             const o=document.createElement('option'); 
             o.value=ff; 
@@ -3429,7 +3609,7 @@ let currentDeviceForComponents = null;
       if (isDisco && !isCelular) {
         const tipoDiscoEl = document.getElementById('editCompTipoDisco');
         const currentTipoDisco = tipoDiscoEl?.value || '';
-        setSafeHTML(tipoDiscoEl, '<option value="">-- Seleccionar --</option>');
+        tipoDiscoEl.innerHTML = '<option value="">-- Seleccionar --</option>';
         ['HDD','SSD SATA','SSD NVMe'].forEach(td=>{ 
           const o=document.createElement('option'); 
           o.value=td; 
@@ -3463,7 +3643,7 @@ let currentDeviceForComponents = null;
       if (isRam) {
         const tipoMemEl = document.getElementById('editCompTipoMemoria');
         const currentTipoMemValue = tipoMemEl.value;
-        setSafeHTML(tipoMemEl, '<option value="">-- Seleccionar --</option>');
+        tipoMemEl.innerHTML = '<option value="">-- Seleccionar --</option>';
         if (isCelular) {
           ['LPDDR3X','LPDDR4','LPDDR4X','LPDDR5','LPDDR5X'].forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; tipoMemEl.appendChild(o); });
         } else if (isLaptopOrDesktop) {
@@ -3479,7 +3659,7 @@ let currentDeviceForComponents = null;
       if (isCpu) {
         if (frecInp) { frecInp.style.display = 'none'; frecInp.name = ''; }
         if (frecText) { frecText.style.display = ''; frecText.name = 'frecuencia'; }
-        if (tipoMemEl2) { setSafeHTML(tipoMemEl2, '<option value="">-- Seleccionar --</option>'); const o=document.createElement('option'); o.value='Cache'; o.textContent='Cache'; tipoMemEl2.appendChild(o); }
+        if (tipoMemEl2) { tipoMemEl2.innerHTML = '<option value="">-- Seleccionar --</option>'; const o=document.createElement('option'); o.value='Cache'; o.textContent='Cache'; tipoMemEl2.appendChild(o); }
         // Ensure the edit modal shows the Frecuencia label too when CPU is selected
         try { if (!isCelular) document.getElementById('labelEditFrecuencia').style.display = ''; } catch(e) {}
         // Clear and disable capacidad in edit modal for CPU
@@ -3499,7 +3679,7 @@ let currentDeviceForComponents = null;
       if (tipo) {
         const capEl = document.getElementById('editCompCapacidad');
         const currentValue = capEl.value;
-        setSafeHTML(capEl, '<option value="">-- Seleccionar --</option>');
+        capEl.innerHTML = '<option value="">-- Seleccionar --</option>';
         
         if (isRam) {
           if (isCelular) {
@@ -3812,27 +3992,14 @@ function cargarMarcas() {
       marcasData = data || [];
       const select = document.getElementById('selectMarcaGestion');
       if (select) {
-        select.textContent = '';
-        {
-          const baseOpt = document.createElement('option');
-          baseOpt.value = '';
-          baseOpt.textContent = '-- Selecciona una marca --';
-          select.appendChild(baseOpt);
-          if (Array.isArray(data)) {
-            data.forEach((m) => {
-              const opt = document.createElement('option');
-              opt.value = m.id_marca;
-              opt.textContent = m.nombre_marca;
-              select.appendChild(opt);
-            });
-          }
-        }
+        select.innerHTML = '<option value="">-- Selecciona una marca --</option>' +
+          (Array.isArray(data) ? data.map(m => `<option value="${m.id_marca}">${m.nombre_marca}</option>`).join('') : '');
       }
       return marcasData;
     })
     .catch(() => {
       const select = document.getElementById('selectMarcaGestion');
-      if (select) setSafeHTML(select, '<option value="">Error al cargar marcas</option>');
+      if (select) select.innerHTML = '<option value="">Error al cargar marcas</option>';
       return [];
     });
 }
@@ -3927,26 +4094,15 @@ function cargarModelos() {
       if (marcasData.length === 0) {
         cargarMarcasParaSelector();
       }
-      select.textContent = '';
-      {
-        const baseOpt = document.createElement('option');
-        baseOpt.value = '';
-        baseOpt.textContent = '-- Selecciona un modelo --';
-        select.appendChild(baseOpt);
-        if (Array.isArray(data)) {
-          data.forEach((m) => {
-            const marca = marcasData.find(ma => ma.id_marca == m.fk_id_marca);
-            const opt = document.createElement('option');
-            opt.value = m.id_modelo;
-            opt.textContent = `${m.nombre_modelo} (${marca?.nombre_marca || '-'})`;
-            select.appendChild(opt);
-          });
-        }
-      }
+      select.innerHTML = '<option value="">-- Selecciona un modelo --</option>' +
+        (Array.isArray(data) ? data.map(m => {
+          const marca = marcasData.find(ma => ma.id_marca == m.fk_id_marca);
+          return `<option value="${m.id_modelo}">${m.nombre_modelo} (${marca?.nombre_marca || '-'})</option>`;
+        }).join('') : '');
     })
     .catch(() => {
       const select = document.getElementById('selectModeloGestion');
-      if (select) setSafeHTML(select, '<option value="">Error al cargar modelos</option>');
+      if (select) select.innerHTML = '<option value="">Error al cargar modelos</option>';
     });
 }
 
@@ -3957,21 +4113,8 @@ function cargarMarcasParaSelector() {
       marcasData = marcas || [];
       const select = document.getElementById('editModeloMarcaInline');
       if (select) {
-        select.textContent = '';
-        {
-          const baseOpt = document.createElement('option');
-          baseOpt.value = '';
-          baseOpt.textContent = '-- Selecciona marca --';
-          select.appendChild(baseOpt);
-          if (Array.isArray(marcas)) {
-            marcas.forEach((m) => {
-              const opt = document.createElement('option');
-              opt.value = m.id_marca;
-              opt.textContent = m.nombre_marca;
-              select.appendChild(opt);
-            });
-          }
-        }
+        select.innerHTML = '<option value="">-- Selecciona marca --</option>' +
+          (Array.isArray(marcas) ? marcas.map(m => `<option value="${m.id_marca}">${m.nombre_marca}</option>`).join('') : '');
       }
     })
     .catch(() => {
@@ -4501,19 +4644,7 @@ async function populateSelectMarcaNew(selectedMarcaId) {
   }
   const sel = document.getElementById('selectMarcaNewModelo');
   if (!sel) return;
-  sel.textContent = '';
-  {
-    const baseOpt = document.createElement('option');
-    baseOpt.value = '';
-    baseOpt.textContent = '-- Selecciona marca --';
-    sel.appendChild(baseOpt);
-    marcasData.forEach((m) => {
-      const opt = document.createElement('option');
-      opt.value = m.id_marca;
-      opt.textContent = m.nombre_marca;
-      sel.appendChild(opt);
-    });
-  }
+  sel.innerHTML = '<option value="">-- Selecciona marca --</option>' + (marcasData.map(m => `<option value="${m.id_marca}">${m.nombre_marca}</option>`).join(''));
   if (selectedMarcaId) {
     sel.value = selectedMarcaId;
   } else {
@@ -4546,112 +4677,34 @@ if(localStorage.getItem('openNewDeviceModal') === 'true'){
 // Variable to track current view
 let currentDeviceView = 'activos';
 
-// Toggle between activos and eliminados views
-function toggleEliminadosView() {
-  const viewActivos = document.getElementById('viewActivos');
-  const viewEliminados = document.getElementById('viewEliminados');
-  if (!viewActivos || !viewEliminados) return;
-  
-  if (currentDeviceView === 'activos') {
-    viewActivos.style.display = 'none';
-    viewEliminados.style.display = 'block';
-    currentDeviceView = 'eliminados';
-    
-    const btnVer = document.getElementById('btnVerEliminados');
-    const btnVolver = document.getElementById('btnVolverActivos');
-    if (btnVer) btnVer.style.display = 'none';
-    if (btnVolver) btnVolver.style.display = 'inline-block';
-    // Also hide the "Ver Celulares" control to avoid switching directly
-    const btnVerCelulares = document.getElementById('btnVerCelulares');
-    if (btnVerCelulares) btnVerCelulares.style.display = 'none';
-    
-    // Update header title
-    try {
-      const h1 = document.querySelector('.main-header h1');
-      if (h1) h1.textContent = 'Dispositivos (Eliminados)';
-    } catch(e) {}
-    
-    // Initialize sorting for deleted table
-    try { initTableSorting('#deletedDevicesTable', { iconPrefix: 'sortIndicator_eliminados_' }); } catch(e) {}
-  } else {
-    viewActivos.style.display = 'block';
-    viewEliminados.style.display = 'none';
-    currentDeviceView = 'activos';
-    
-    const btnVer = document.getElementById('btnVerEliminados');
-    const btnVolver = document.getElementById('btnVolverActivos');
-    if (btnVer) btnVer.style.display = 'inline-block';
-    if (btnVolver) btnVolver.style.display = 'none';
-    // Restore visibility of "Ver Celulares" when returning to activos
-    const btnVerCelulares2 = document.getElementById('btnVerCelulares');
-    if (btnVerCelulares2) btnVerCelulares2.style.display = 'inline-block';
-    
-    // Restore header title
-    try {
-      const h1 = document.querySelector('.main-header h1');
-      if (h1) h1.textContent = 'Dispositivos';
-    } catch(e) {}
+async function toggleEliminadosView() {
+  currentDeviceView = 'eliminados';
+  try { await reloadDevicesTable(); } catch (e) { console.warn('No se pudo actualizar eliminados', e); }
+  openModal('modalDeletedDevicesGrid', true);
+  ensureDeletedDevicesGrid();
+  if (deletedDevicesGridApi) {
+    deletedDevicesGridApi.setGridOption('rowData', devicesDeletedData);
   }
-  
-  // Clear search
-  try {
-    const searchEl = document.getElementById('devicesPageSearch');
-    if (searchEl) searchEl.value = '';
-    if (typeof window.clearGlobalTableSearch === 'function') window.clearGlobalTableSearch();
-  } catch(e) {}
+  const deletedSearch = document.getElementById('deletedDevicesSearch');
+  applyDeletedDevicesSearchFilter(deletedSearch ? deletedSearch.value : '');
+  setTimeout(() => {
+    _refreshGridLayout(deletedDevicesGridApi);
+  }, 80);
 }
 
-// Toggle between activos and celulares views
-function toggleCelularesView() {
-  const viewActivos = document.getElementById('viewActivos');
-  const viewCelulares = document.getElementById('viewCelulares');
-  if (!viewActivos || !viewCelulares) return;
-  
-  if (currentDeviceView === 'activos') {
-    viewActivos.style.display = 'none';
-    viewCelulares.style.display = 'block';
-    currentDeviceView = 'celulares';
-    
-    const btnVerEliminados = document.getElementById('btnVerEliminados');
-    const btnVerCelulares = document.getElementById('btnVerCelulares');
-    const btnVolver = document.getElementById('btnVolverCelulares');
-    if (btnVerEliminados) btnVerEliminados.style.display = 'none';
-    if (btnVerCelulares) btnVerCelulares.style.display = 'none';
-    if (btnVolver) btnVolver.style.display = 'inline-block';
-    
-    // Update header title
-    try {
-      const h1 = document.querySelector('.main-header h1');
-      if (h1) h1.textContent = 'Dispositivos (Celulares)';
-    } catch(e) {}
-    
-    // Initialize sorting for celulares table
-    try { initTableSorting('#celularesTable', { iconPrefix: 'sortIndicator_celulares_' }); } catch(e) {}
-  } else {
-    viewActivos.style.display = 'block';
-    viewCelulares.style.display = 'none';
-    currentDeviceView = 'activos';
-    
-    const btnVerEliminados = document.getElementById('btnVerEliminados');
-    const btnVerCelulares = document.getElementById('btnVerCelulares');
-    const btnVolver = document.getElementById('btnVolverCelulares');
-    if (btnVerEliminados) btnVerEliminados.style.display = 'inline-block';
-    if (btnVerCelulares) btnVerCelulares.style.display = 'inline-block';
-    if (btnVolver) btnVolver.style.display = 'none';
-    
-    // Restore header title
-    try {
-      const h1 = document.querySelector('.main-header h1');
-      if (h1) h1.textContent = 'Dispositivos';
-    } catch(e) {}
+async function toggleCelularesView() {
+  currentDeviceView = 'celulares';
+  try { await reloadDevicesTable(); } catch (e) { console.warn('No se pudo actualizar celulares', e); }
+  openModal('modalCelularesGrid', true);
+  ensureCelularesGrid();
+  if (celularesGridApi) {
+    celularesGridApi.setGridOption('rowData', devicesCelularesData);
   }
-  
-  // Clear search
-  try {
-    const searchEl = document.getElementById('devicesPageSearch');
-    if (searchEl) searchEl.value = '';
-    if (typeof window.clearGlobalTableSearch === 'function') window.clearGlobalTableSearch();
-  } catch(e) {}
+  const celularesSearch = document.getElementById('celularesSearch');
+  applyCelularesSearchFilter(celularesSearch ? celularesSearch.value : '');
+  setTimeout(() => {
+    _refreshGridLayout(celularesGridApi);
+  }, 80);
 }
 
 // Function to open restore modal for deleted device
@@ -4699,12 +4752,12 @@ async function showEmpleadoDetails(empleadoId) {
   // Open modal and show loading state
   openModal('modalEmpleadoDetails', true);
   const contentDiv = document.getElementById('empleadoDetailsContent');
-  setSafeHTML(contentDiv, `
+  contentDiv.innerHTML = `
     <div style="text-align:center; padding:20px;">
       <span class="spinner" style="display:inline-block;width:24px;height:24px;border:3px solid var(--text-gray);border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span>
       <p style="margin-top:12px; color:var(--text-gray);">Cargando datos...</p>
     </div>
-  `);
+  `;
   
   try {
     const resp = await fetch(`/devices/empleado/${empleadoId}`);
@@ -4721,7 +4774,7 @@ async function showEmpleadoDetails(empleadoId) {
     const puesto = empleado.puesto || '-';
     const empresa = empleado.empresa || '-';
     
-    setSafeHTML(contentDiv, `
+    contentDiv.innerHTML = `
       <div style="display:flex; flex-direction:column; gap:16px;">
         <div style="border-left:4px solid #007bff; padding-left:12px;">
           <div style="font-size:0.875rem; color:var(--text-gray); margin-bottom:4px;">Nombre Completo</div>
@@ -4744,15 +4797,15 @@ async function showEmpleadoDetails(empleadoId) {
           <div style="font-size:1rem; font-weight:600; color:var(--text-primary);">${empresa}</div>
         </div>
       </div>
-    `);
+    `;
   } catch (err) {
     console.error('Error cargando datos del empleado:', err);
-    setSafeHTML(contentDiv, `
+    contentDiv.innerHTML = `
       <div style="text-align:center; padding:20px;">
         <p style="color:#dc3545; font-weight:600;">Error al cargar los datos del empleado</p>
         <p style="color:var(--text-gray); font-size:0.875rem; margin-top:8px;">Por favor, intenta nuevamente</p>
       </div>
-    `);
+    `;
   }
 }
 
@@ -4763,12 +4816,12 @@ async function showDeviceDetails(deviceId) {
   // Open modal and show loading state
   openModal('modalDeviceDetails', true);
   const contentDiv = document.getElementById('deviceDetailsContent');
-  setSafeHTML(contentDiv, `
+  contentDiv.innerHTML = `
     <div style="text-align:center; padding:20px;">
       <span class="spinner" style="display:inline-block;width:24px;height:24px;border:3px solid var(--text-gray);border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span>
       <p style="margin-top:12px; color:var(--text-gray);">Cargando datos...</p>
     </div>
-  `);
+  `;
   
   try {
     // Fetch device data
@@ -4875,15 +4928,15 @@ async function showDeviceDetails(deviceId) {
       </div>
     `;
     
-    setSafeHTML(contentDiv, deviceHTML);
+    contentDiv.innerHTML = deviceHTML;
   } catch (err) {
     console.error('Error cargando datos del dispositivo:', err);
-    setSafeHTML(contentDiv, `
+    contentDiv.innerHTML = `
       <div style="text-align:center; padding:20px;">
         <p style="color:#dc3545; font-weight:600;">Error al cargar los datos del dispositivo</p>
         <p style="color:var(--text-gray); font-size:0.875rem; margin-top:8px;">Por favor, intenta nuevamente</p>
       </div>
-    `);
+    `;
   }
 }
 

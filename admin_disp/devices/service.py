@@ -128,8 +128,6 @@ class DeviceService:
             )
 
         cur = self.conn.get_cursor()
-        # SECURITY: order_by se construye exclusivamente desde allowlist interna
-        # y dirección ASC/DESC derivada de booleano, no desde SQL libre de usuario.
         query = (
             """
             SELECT d.id_dispositivo, d.numero_serie, d.identificador, d.imei, d.imei2, d.direccion_mac,
@@ -141,7 +139,7 @@ class DeviceService:
             LEFT JOIN marca ma ON ma.id_marca = m.fk_id_marca
             WHERE d.estado != 3
             ORDER BY """
-            + order_by  # nosec B608
+            + order_by
         )
         cur.execute(query)
         cols = [c[0] for c in cur.description]
@@ -1074,7 +1072,7 @@ class DeviceService:
         cur = self.conn.get_cursor()
         try:
             # Primero obtener el tipo de cada dispositivo que será transferido
-            placeholders = ','.join(['?'] * len(device_ids))  # nosec B608
+            placeholders = ','.join(['?'] * len(device_ids))
             query = (
                 """
                 SELECT d.id_dispositivo, m.categoria
@@ -1277,8 +1275,7 @@ class DeviceService:
             vals.extend([1 if cargador else 0, estado, fk_id_modelo])
 
             placeholders = ','.join(['?'] * len(cols))
-            # SECURITY: cols proviene de lista hardcodeada, los valores siguen parametrizados.
-            cols_sql = ', '.join(cols)  # nosec B608
+            cols_sql = ', '.join(cols)
             sql = "INSERT INTO dispositivo (" + cols_sql + ") OUTPUT INSERTED.id_dispositivo VALUES (" + placeholders + ")"
             cur.execute(sql, tuple(vals))
             result = cur.fetchone()
@@ -1328,8 +1325,7 @@ class DeviceService:
                 vals.insert(1, None)
 
             placeholders = ','.join(['?'] * len(cols))
-            # SECURITY: cols proviene de lista hardcodeada, los valores siguen parametrizados.
-            cols_sql = ', '.join(cols)  # nosec B608
+            cols_sql = ', '.join(cols)
             sql = "INSERT INTO dispositivo (" + cols_sql + ") OUTPUT INSERTED.id_dispositivo VALUES (" + placeholders + ")"
             cur.execute(sql, tuple(vals))
             result = cur.fetchone()
@@ -1414,14 +1410,13 @@ class DeviceService:
             base_where += " AND m.categoria = ?"
             params.append(str(categoria).strip())
         
-        # SECURITY: base_where se arma con literales controlados; categoria se envía parametrizada.
         sql = """
             SELECT m.id_modelo, m.nombre_modelo, m.categoria, m.fk_id_marca,
                    ma.nombre_marca, ISNULL(m.estado,1) AS estado,
                    m.salidas, m.capacidad
             FROM modelo m
             LEFT JOIN marca ma ON ma.id_marca = m.fk_id_marca
-            WHERE """ + base_where + """  # nosec B608
+            WHERE """ + base_where + """
             ORDER BY m.nombre_modelo
         """
         cur.execute(sql, params)
@@ -1553,7 +1548,7 @@ class DeviceService:
                 conn_emp = get_db_empleados()
                 cur_emp = conn_emp.get_cursor()
                 # Construir placeholders para pyodbc
-                placeholders = ','.join(['?'] * len(emp_ids))  # nosec B608
+                placeholders = ','.join(['?'] * len(emp_ids))
                 sql = "SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, tuple(emp_ids))
                 for row in cur_emp.fetchall():
@@ -1586,7 +1581,7 @@ class DeviceService:
             try:
                 conn_emp = get_db_empleados()
                 cur_emp = conn_emp.get_cursor()
-                placeholders = ','.join(['?'] * len(missing_ids))  # nosec B608
+                placeholders = ','.join(['?'] * len(missing_ids))
                 sql = "SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, tuple(missing_ids))
                 emp_map2 = {int(r[0]): str(r[1]) for r in cur_emp.fetchall()}
@@ -1866,9 +1861,15 @@ class DeviceService:
     # CRUD para Reclamos
     def list_reclamos(self):
         cur = self.conn.get_cursor()
+        has_tipo_reclamo = self.has_column('reclamo_seguro', 'tipoReclamo')
+        has_observaciones = self.has_column('reclamo_seguro', 'observaciones')
+        tipo_col = "r.tipoReclamo," if has_tipo_reclamo else "CAST(0 AS INT) AS tipoReclamo,"
+        obs_col = "r.observaciones," if has_observaciones else "CAST(NULL AS NVARCHAR(MAX)) AS observaciones,"
         cur.execute("""
             SELECT r.id_reclamo, r.fk_id_asignacion, r.fecha_incidencia, r.lugar_incidencia,
                    r.fecha_inicio_reclamo, r.lugar_reclamo, r.estado_proceso, r.fecha_fin_reclamo,
+                   """ + tipo_col + """
+                   """ + obs_col + """
                    a.fk_id_empleado,
                    d.numero_serie, d.imei,
                    m.nombre_modelo, ma.nombre_marca
@@ -1904,7 +1905,7 @@ class DeviceService:
             try:
                 conn_emp = get_db_empleados()
                 cur_emp = conn_emp.get_cursor()
-                placeholders = ','.join(['?'] * len(missing_ids))  # nosec B608
+                placeholders = ','.join(['?'] * len(missing_ids))
                 sql = "SELECT id_empleado, nombre_completo, empresa FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, tuple(missing_ids))
                 emp_map = {}
@@ -1943,9 +1944,15 @@ class DeviceService:
 
     def get_reclamo(self, reclamo_id: int):
         cur = self.conn.get_cursor()
+        has_tipo_reclamo = self.has_column('reclamo_seguro', 'tipoReclamo')
+        has_observaciones = self.has_column('reclamo_seguro', 'observaciones')
+        tipo_col = "r.tipoReclamo," if has_tipo_reclamo else "CAST(0 AS INT) AS tipoReclamo,"
+        obs_col = "r.observaciones," if has_observaciones else "CAST(NULL AS NVARCHAR(MAX)) AS observaciones,"
         cur.execute("""
             SELECT r.id_reclamo, r.fk_id_asignacion, r.fecha_incidencia, r.lugar_incidencia,
                    r.fecha_inicio_reclamo, r.lugar_reclamo, r.estado_proceso, r.fecha_fin_reclamo,
+                   """ + tipo_col + """
+                   """ + obs_col + """
                    a.fk_id_empleado,
                    d.numero_serie, d.imei,
                    m.nombre_modelo, ma.nombre_marca
@@ -1961,33 +1968,30 @@ class DeviceService:
             return None
         cols = [c[0] for c in cur.description]
         recl = dict(zip(cols, row))
-        # Resolver nombre del empleado con fallback a AuthService y finalmente al id
+        # Resolver nombre y empresa del empleado asignado al dispositivo
         try:
-            name = self._get_empleado_nombre(recl.get('fk_id_empleado'))
-        except Exception:
-            name = None
-        if name:
-            recl['empleado_nombre'] = name
-        else:
-            try:
-                fk = recl.get('fk_id_empleado')
-                if fk:
-                    conn_emp = get_db_empleados()
-                    cur_emp = conn_emp.get_cursor()
-                    cur_emp.execute("SELECT nombre_completo, empresa FROM empleados WHERE id_empleado = ?", (int(fk),))
-                    rrow = cur_emp.fetchone()
-                    if rrow:
-                        recl['empleado_nombre'] = rrow[0]
-                        recl['empresa'] = rrow[1] if rrow[1] is not None else ''
-                    else:
-                        recl['empleado_nombre'] = recl.get('fk_id_empleado')
-                        recl['empresa'] = ''
+            fk = recl.get('fk_id_empleado')
+            if fk:
+                conn_emp = get_db_empleados()
+                cur_emp = conn_emp.get_cursor()
+                cur_emp.execute("SELECT nombre_completo, empresa FROM empleados WHERE id_empleado = ?", (int(fk),))
+                rrow = cur_emp.fetchone()
+                if rrow:
+                    recl['empleado_nombre'] = rrow[0] if rrow[0] is not None else recl.get('fk_id_empleado')
+                    recl['empresa'] = rrow[1] if rrow[1] is not None else ''
                 else:
-                    recl['empleado_nombre'] = recl.get('fk_id_empleado')
+                    try:
+                        name = self._get_empleado_nombre(fk)
+                    except Exception:
+                        name = None
+                    recl['empleado_nombre'] = name if name else recl.get('fk_id_empleado')
                     recl['empresa'] = ''
-            except Exception:
+            else:
                 recl['empleado_nombre'] = recl.get('fk_id_empleado')
                 recl['empresa'] = ''
+        except Exception:
+            recl['empleado_nombre'] = recl.get('fk_id_empleado')
+            recl['empresa'] = ''
 
         # Ensure empresa exists if not set above
         if 'empresa' not in recl:
@@ -1997,7 +2001,7 @@ class DeviceService:
 
     def create_reclamo(self, fk_id_asignacion, fecha_incidencia, lugar_incidencia,
                       fecha_inicio_reclamo, lugar_reclamo, estado_proceso, fecha_fin_reclamo=None,
-                      img_evidencia=None, img_form=None):
+                      archivo_reclamo_pdf=None, tipo_reclamo=None, observaciones=None):
         # Fecha y lugar de la incidencia son opcionales. Requerimos al menos la asignación
         # y la fecha de inicio del reclamo (fecha_inicio_reclamo) para continuar.
         if not fk_id_asignacion or not fecha_inicio_reclamo:
@@ -2014,27 +2018,60 @@ class DeviceService:
             estado_val = 0
 
         cur = self.conn.get_cursor()
-        # Si el reclamo ya viene marcado como completado y no se pasó fecha_fin,
-        # insertar usando la fecha/hora actual del servidor (GETDATE()).
-        # Insertar los nuevos campos `fecha_incidencia` y `lugar_incidencia`.
+        has_tipo_reclamo = self.has_column('reclamo_seguro', 'tipoReclamo')
+        has_observaciones = self.has_column('reclamo_seguro', 'observaciones')
+        has_archivo_reclamo_pdf = self.has_column('reclamo_seguro', 'archivo_reclamo_pdf')
+
+        if not has_archivo_reclamo_pdf:
+            raise ValueError("La columna archivo_reclamo_pdf no existe en reclamo_seguro. Ejecute la migración correspondiente.")
+
+        columns = [
+            'fk_id_asignacion',
+            'fecha_incidencia',
+            'lugar_incidencia',
+            'fecha_inicio_reclamo',
+            'lugar_reclamo',
+            'estado_proceso',
+            'archivo_reclamo_pdf',
+        ]
+        values = [
+            fk_id_asignacion,
+            fecha_incidencia,
+            lugar_incidencia,
+            fecha_inicio_reclamo,
+            lugar_reclamo,
+            estado_val,
+            archivo_reclamo_pdf,
+        ]
+
+        if has_tipo_reclamo:
+            columns.append('tipoReclamo')
+            tipo_val = 1 if str(tipo_reclamo) in ('1', 'true', 'True') else 0
+            values.append(tipo_val)
+
+        if has_observaciones:
+            columns.append('observaciones')
+            values.append(observaciones if observaciones not in ('', None) else None)
+
         if estado_val and (not fecha_fin_reclamo):
-            cur.execute("""
-                INSERT INTO reclamo_seguro (
-                    fk_id_asignacion, fecha_incidencia, lugar_incidencia,
-                    fecha_inicio_reclamo, lugar_reclamo, estado_proceso, fecha_fin_reclamo,
-                    img_evidencia, img_form
-                ) VALUES (?, ?, ?, ?, ?, ?, GETDATE(), ?, ?)
-            """, (fk_id_asignacion, fecha_incidencia, lugar_incidencia,
-                fecha_inicio_reclamo, lugar_reclamo, estado_val, img_evidencia, img_form))
+            columns_with_fin = columns + ['fecha_fin_reclamo']
+            placeholders = ', '.join(['?'] * len(columns) + ['GETDATE()'])
+            query = (
+                "INSERT INTO reclamo_seguro (" + ', '.join(columns_with_fin) + ") "
+                "OUTPUT INSERTED.id_reclamo VALUES (" + placeholders + ")"
+            )
+            cur.execute(query, values)
         else:
-            cur.execute("""
-                INSERT INTO reclamo_seguro (
-                    fk_id_asignacion, fecha_incidencia, lugar_incidencia,
-                    fecha_inicio_reclamo, lugar_reclamo, estado_proceso, fecha_fin_reclamo,
-                    img_evidencia, img_form
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (fk_id_asignacion, fecha_incidencia, lugar_incidencia,
-                fecha_inicio_reclamo, lugar_reclamo, estado_val, fecha_fin_reclamo, img_evidencia, img_form))
+            columns_with_fin = columns + ['fecha_fin_reclamo']
+            placeholders = ', '.join(['?'] * len(columns_with_fin))
+            query = (
+                "INSERT INTO reclamo_seguro (" + ', '.join(columns_with_fin) + ") "
+                "OUTPUT INSERTED.id_reclamo VALUES (" + placeholders + ")"
+            )
+            cur.execute(query, values + [fecha_fin_reclamo])
+
+        row_new = cur.fetchone()
+        reclamo_id = int(row_new[0]) if row_new else None
 
         # Después de insertar el reclamo, actualizar el estado del dispositivo asociado a "En reparacion" (2)
         try:
@@ -2050,6 +2087,7 @@ class DeviceService:
             raise
 
         self.conn.commit()
+        return reclamo_id
 
     def get_asignacion(self, asignacion_id: int):
         cur = self.conn.get_cursor()
@@ -2131,8 +2169,8 @@ class DeviceService:
             return False
 
     def update_reclamo(self, reclamo_id: int, estado_proceso=None, fecha_fin_reclamo=None, lugar_reclamo=None,
-                      img_evidencia=None, img_form=None, remove_img_evidencia=False, remove_img_form=False,
-                      fecha_robo=None, fecha_inicio_reclamo=None):
+                      archivo_reclamo_pdf=None, remove_archivo_reclamo_pdf=False,
+                      fecha_robo=None, fecha_inicio_reclamo=None, lugar_incidencia=None, tipo_reclamo=None, observaciones=None):
         cur = self.conn.get_cursor()
         # Normalizar estado a entero 0/1
         try:
@@ -2147,24 +2185,30 @@ class DeviceService:
         updates.append("estado_proceso = ?")
         params.append(estado_val)
         
-        # img_evidencia handling: if a new file is provided, use it; else if remove flag set, set to NULL
-        if img_evidencia is not None:
-            updates.append("img_evidencia = ?")
-            params.append(img_evidencia)
-        elif remove_img_evidencia:
-            updates.append("img_evidencia = ?")
-            params.append(None)
-        
-        if img_form is not None:
-            updates.append("img_form = ?")
-            params.append(img_form)
-        elif remove_img_form:
-            updates.append("img_form = ?")
-            params.append(None)
+        if self.has_column('reclamo_seguro', 'archivo_reclamo_pdf'):
+            if archivo_reclamo_pdf is not None:
+                updates.append("archivo_reclamo_pdf = ?")
+                params.append(archivo_reclamo_pdf)
+            elif remove_archivo_reclamo_pdf:
+                updates.append("archivo_reclamo_pdf = ?")
+                params.append(None)
 
         # lugar_reclamo can be explicitly set to None to clear it; use provided value
         updates.append("lugar_reclamo = ?")
         params.append(lugar_reclamo)
+
+        if lugar_incidencia is not None:
+            updates.append("lugar_incidencia = ?")
+            params.append(lugar_incidencia if lugar_incidencia != '' else None)
+
+        if observaciones is not None and self.has_column('reclamo_seguro', 'observaciones'):
+            updates.append("observaciones = ?")
+            params.append(observaciones if observaciones != '' else None)
+
+        if tipo_reclamo is not None and self.has_column('reclamo_seguro', 'tipoReclamo'):
+            tipo_val = 1 if str(tipo_reclamo) in ('1', 'true', 'True') else 0
+            updates.append("tipoReclamo = ?")
+            params.append(tipo_val)
 
         # fecha_robo (fecha de la incidencia) and fecha_inicio_reclamo: update only if provided (not None)
         from datetime import datetime
@@ -2205,15 +2249,13 @@ class DeviceService:
         
         # Si se marca como completado y no se provee fecha_fin_reclamo, usar GETDATE().
         if estado_val and (not fecha_fin_reclamo):
-            # SECURITY: updates contiene solo expresiones SET predefinidas por código.
-            set_clause = ', '.join(updates)  # nosec B608
+            set_clause = ', '.join(updates)
             query = "UPDATE reclamo_seguro SET " + set_clause + ", fecha_fin_reclamo = GETDATE() WHERE id_reclamo = ?"
             cur.execute(query, params + [reclamo_id])
         else:
             updates.append("fecha_fin_reclamo = ?")
             params.append(fecha_fin_reclamo)
-            # SECURITY: updates contiene solo expresiones SET predefinidas por código.
-            set_clause = ', '.join(updates)  # nosec B608
+            set_clause = ', '.join(updates)
             query = "UPDATE reclamo_seguro SET " + set_clause + " WHERE id_reclamo = ?"
             cur.execute(query, params + [reclamo_id])
 
@@ -2280,8 +2322,7 @@ class DeviceService:
             
             # Bracket-quote each column name: identifiers are from the allowed_fields whitelist
             # but quoting prevents any edge-case injection if the list were ever extended.
-            # SECURITY: nombres de columna filtrados por allowlist stricta (allowed_fields).
-            set_clause = ', '.join(['[' + k + '] = ?' for k in normalized_kwargs.keys() if k in allowed_fields])  # nosec B608
+            set_clause = ', '.join(['[' + k + '] = ?' for k in normalized_kwargs.keys() if k in allowed_fields])
             values = [v for k, v in normalized_kwargs.items() if k in allowed_fields]
             
             if not set_clause:
@@ -2383,8 +2424,14 @@ class DeviceService:
                     existing_obs = ''
 
                 motivo_norm = (motivo_baja or '').strip()
+                motivo_norm_l = motivo_norm.lower()
+                # Normalizar para evitar prefijos duplicados enviados desde frontend/automatismos.
+                if motivo_norm_l.startswith('motivo baja:'):
+                    motivo_norm = motivo_norm[12:].strip()
                 # Si el motivo ya aparece en las observaciones (ignorar mayúsculas/minúsculas), no lo duplicamos
-                if motivo_norm and motivo_norm.lower() not in (existing_obs or '').lower():
+                existing_obs_l = (existing_obs or '').lower()
+                marker_l = f"motivo baja: {motivo_norm.lower()}" if motivo_norm else ''
+                if motivo_norm and marker_l not in existing_obs_l and motivo_norm.lower() not in existing_obs_l:
                     # Evitar truncamiento: consultar longitud máxima de la columna
                     try:
                         cur3 = self.conn.get_cursor()
@@ -2400,11 +2447,10 @@ class DeviceService:
 
                     combined_marker = ' | Motivo baja: ' + motivo_norm
                     try:
-                        effective_max = 100
-                        if isinstance(maxlen, int) and maxlen > 0 and maxlen < 100:
-                            effective_max = int(maxlen)
+                        # No truncar artificialmente a 100; usar la longitud real de la columna.
+                        effective_max = int(maxlen) if isinstance(maxlen, int) and maxlen > 0 else 4000
                     except Exception:
-                        effective_max = 100
+                        effective_max = 4000
 
                     # Usar LEFT para evitar excepciones por truncamiento
                     cur.execute("""
@@ -2497,7 +2543,12 @@ class DeviceService:
                    ISNULL(d.estado, 0) as estado,
                    m.nombre_modelo, m.categoria, ma.nombre_marca,
                    a.fk_id_empleado,
-                   p.numero_linea
+                   p.numero_linea,
+                   p.fecha_fin as plan_fecha_fin,
+                   CASE 
+                       WHEN p.fecha_fin IS NULL THEN NULL
+                       ELSE DATEDIFF(DAY, CAST(GETDATE() AS DATE), CAST(p.fecha_fin AS DATE))
+                   END as plan_dias_restantes
             FROM dispositivo d
             JOIN modelo m ON m.id_modelo = d.fk_id_modelo
             LEFT JOIN marca ma ON ma.id_marca = m.fk_id_marca
@@ -2519,7 +2570,7 @@ class DeviceService:
             try:
                 conn_emp = get_db_empleados()
                 cur_emp = conn_emp.get_cursor()
-                placeholders = ','.join('?' * len(empleado_ids))  # nosec B608
+                placeholders = ','.join('?' * len(empleado_ids))
                 sql = "SELECT id_empleado, nombre_completo FROM empleados WHERE id_empleado IN (" + placeholders + ")"
                 cur_emp.execute(sql, empleado_ids)
                 for row in cur_emp.fetchall():
